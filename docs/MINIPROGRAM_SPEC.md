@@ -1,6 +1,6 @@
 # WeChat Mini Program Spec — Kering Store Device Inspection
 
-Status: v1 (Kering-specific) · Backend: HengjiAMS1 (Django) · Client: native WeChat mini program (monorepo `miniprogram/`)
+Status: v1 (Kering-specific) · Backend: Waypost (Django) · Client: native WeChat mini program (monorepo `miniprogram/`)
 
 ## 1. Purpose
 
@@ -8,7 +8,7 @@ Digitize the Kering EUS store health-check. The mini program replaces the Feishu
 questionnaire used onsite: engineers download their assigned store, capture
 per-device readings and photos (offline-first), record rack/network/speedtest
 photos, issues, and confirmed device counts, collect signatures, and sync to
-HengjiAMS. The server regenerates the client deliverable:
+Waypost. The server regenerates the client deliverable:
 
 - `<JDA> <Brand> <Store> Report Per Store.xlsx` with sheets `inspection_items`,
   `confirmation_page`, `cover_page`, `asset_list`

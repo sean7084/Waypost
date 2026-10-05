@@ -1,5 +1,5 @@
 """
-Views for HengJi AMS REST API.
+Views for Waypost REST API.
 Provides ViewSets and API views for assets, categories, brands, companies, and more.
 """
 from rest_framework import viewsets, status, filters

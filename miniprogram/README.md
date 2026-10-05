@@ -2,7 +2,7 @@
 
 Field client for the Kering EUS store health-check. It replaces the Feishu
 questionnaire: engineers download their assigned store, capture per-device
-readings and photos onsite (offline-first), then sync to the HengjiAMS backend,
+readings and photos onsite (offline-first), then sync to the Waypost backend,
 which regenerates the per-store `Report Per Store.xlsx` + `Photo/` archive.
 
 ## Status

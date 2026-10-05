@@ -1,4 +1,4 @@
-# (C:\Users\sean_\miniconda3\shell\condabin\conda-hook.ps1) ; (conda activate HengjiAMS1) ; python manage.py shell -c "exec(open('scripts/smoke_quote_pdf_delivery.py', encoding='utf-8').read())"
+# .venv\Scripts\Activate.ps1 ; python manage.py shell -c "exec(open('scripts/smoke_quote_pdf_delivery.py', encoding='utf-8').read())"
 
 from datetime import date, timedelta
 from decimal import Decimal

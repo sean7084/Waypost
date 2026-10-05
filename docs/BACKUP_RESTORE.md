@@ -1,6 +1,6 @@
-# Backup & Restore Runbook — HengJi AMS
+# Backup & Restore Runbook — Waypost
 
-**Applies to:** HengJi AMS (Django 5.2.8) on Ubuntu 24.04 LTS
+**Applies to:** Waypost (Django 5.2.8) on Ubuntu 24.04 LTS
 **Production DB:** PostgreSQL · **Dev DB:** SQLite (`db.sqlite3`)
 **Last Updated:** September 7, 2026
 
@@ -12,11 +12,11 @@
 
 | Asset | Location | Why | Method |
 |-------|----------|-----|--------|
-| **Database** | PostgreSQL `hengjiams_db` (prod) / `db.sqlite3` (dev) | All business data | `pg_dump` / file copy |
+| **Database** | PostgreSQL `waypost_db` (prod) / `db.sqlite3` (dev) | All business data | `pg_dump` / file copy |
 | **Media uploads** | `media/` (delivery signatures, invoice files, asset photos, quotation tuning, profiles) | Not in the DB; user-uploaded files | `tar` / `rsync` |
 | **Document templates** | `template_files/` | **Gitignored** but required — PDF/Excel generation fails without it | `tar` |
 | **Environment/secrets** | `.env` | `DJANGO_SECRET_KEY`, `DJANGO_FIELD_ENCRYPTION_KEY`, DB creds | Encrypted copy |
-| **Web/service config** | `/etc/nginx/sites-available/hengjiams`, `/etc/systemd/system/hengjiams.service` | Reproduce the server | Copy |
+| **Web/service config** | `/etc/nginx/sites-available/waypost`, `/etc/systemd/system/waypost.service` | Reproduce the server | Copy |
 
 > 🔐 **Critical:** `.env` holds `DJANGO_FIELD_ENCRYPTION_KEY`. Without it, Fernet-encrypted mailbox/SMTP credentials **cannot be decrypted** even if the database is restored. Back it up securely (see §6).
 
@@ -31,14 +31,14 @@
 Use the **custom format** (`-Fc`) — it is compressed and allows selective/parallel restore via `pg_restore`.
 
 ```bash
-# /opt/scripts/hengjiams-backup.sh
+# /opt/scripts/waypost-backup.sh
 set -euo pipefail
 
-BACKUP_DIR="/backups/hengjiams"
+BACKUP_DIR="/backups/waypost"
 STAMP=$(date +%Y%m%d_%H%M%S)
-DB_NAME="hengjiams_db"
-DB_USER="hengjiams_django"
-APP_DIR="/opt/hengji-ams"
+DB_NAME="waypost_db"
+DB_USER="waypost_django"
+APP_DIR="/opt/waypost"
 
 mkdir -p "$BACKUP_DIR"
 
@@ -53,12 +53,12 @@ tar czf "$BACKUP_DIR/template_files_$STAMP.tar.gz" -C "$APP_DIR" template_files
 
 # 4) Config (nginx + systemd)
 tar czf "$BACKUP_DIR/config_$STAMP.tar.gz" \
-  -C / etc/nginx/sites-available/hengjiams etc/systemd/system/hengjiams.service 2>/dev/null || true
+  -C / etc/nginx/sites-available/waypost etc/systemd/system/waypost.service 2>/dev/null || true
 
 echo "Backup complete: $STAMP"
 ```
 
-> `.pgpass` (mode `600`) avoids embedding the DB password: `127.0.0.1:5432:hengjiams_db:hengjiams_django:<password>`.
+> `.pgpass` (mode `600`) avoids embedding the DB password: `127.0.0.1:5432:waypost_db:waypost_django:<password>`.
 
 **Back up before every deploy/migration** as a point-in-time safety net (see [`RELEASE_PROCEDURE.md`](RELEASE_PROCEDURE.md) §6.1). This backup is the only reliable rollback path for releases containing non-reversible data migrations — see [`RELEASE_PROCEDURE.md`](RELEASE_PROCEDURE.md) §9.2.
 
@@ -68,21 +68,21 @@ echo "Backup complete: $STAMP"
 
 ```bash
 # Restore into a fresh/empty database (recommended)
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS hengjiams_db;"
-sudo -u postgres psql -c "CREATE DATABASE hengjiams_db WITH ENCODING 'UTF8';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE hengjiams_db TO hengjiams_django;"
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS waypost_db;"
+sudo -u postgres psql -c "CREATE DATABASE waypost_db WITH ENCODING 'UTF8';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE waypost_db TO waypost_django;"
 # PostgreSQL 15+:
-sudo -u postgres psql -d hengjiams_db -c "GRANT ALL ON SCHEMA public TO hengjiams_django;"
+sudo -u postgres psql -d waypost_db -c "GRANT ALL ON SCHEMA public TO waypost_django;"
 
 # Load the dump (--clean --if-exists makes it re-runnable)
-pg_restore --clean --if-exists --no-owner -U hengjiams_django -h 127.0.0.1 -d hengjiams_db /backups/hengjiams/db_<STAMP>.dump
+pg_restore --clean --if-exists --no-owner -U waypost_django -h 127.0.0.1 -d waypost_db /backups/waypost/db_<STAMP>.dump
 ```
 
 **Restore into the live database** (overwrites data — stop the app first):
 ```bash
-sudo systemctl stop hengjiams
-pg_restore --clean --if-exists --no-owner -U hengjiams_django -h 127.0.0.1 -d hengjiams_db /backups/hengjiams/db_<STAMP>.dump
-sudo systemctl start hengjiams
+sudo systemctl stop waypost
+pg_restore --clean --if-exists --no-owner -U waypost_django -h 127.0.0.1 -d waypost_db /backups/waypost/db_<STAMP>.dump
+sudo systemctl start waypost
 ```
 
 ---
@@ -107,13 +107,13 @@ A plain file copy is acceptable **only** when the app is stopped.
 
 ```bash
 # Media uploads
-tar xzf /backups/hengjiams/media_<STAMP>.tar.gz -C /opt/hengji-ams
+tar xzf /backups/waypost/media_<STAMP>.tar.gz -C /opt/waypost
 
 # Document templates (required for PDF/Excel generation)
-tar xzf /backups/hengjiams/template_files_<STAMP>.tar.gz -C /opt/hengji-ams
+tar xzf /backups/waypost/template_files_<STAMP>.tar.gz -C /opt/waypost
 
 # Fix ownership/permissions
-sudo chown -R hengjiams:hengjiams /opt/hengji-ams/media /opt/hengji-ams/template_files
+sudo chown -R waypost:waypost /opt/waypost/media /opt/waypost/template_files
 ```
 
 > Without `template_files/`, quotation/delivery/invoice document generation raises `FileNotFoundError` (see [`DEPLOYMENT.md`](DEPLOYMENT.md) Step 4b).
@@ -126,18 +126,18 @@ sudo chown -R hengjiams:hengjiams /opt/hengji-ams/media /opt/hengji-ams/template
 
 ```bash
 # Encrypt the .env backup (example: age or gpg)
-gpg --symmetric --cipher-algo AES256 -o /backups/hengjiams/env_<STAMP>.gpg /opt/hengji-ams/.env
+gpg --symmetric --cipher-algo AES256 -o /backups/waypost/env_<STAMP>.gpg /opt/waypost/.env
 
 # Restore
-gpg --decrypt /backups/hengjiams/env_<STAMP>.gpg > /opt/hengji-ams/.env
-chmod 600 /opt/hengji-ams/.env
+gpg --decrypt /backups/waypost/env_<STAMP>.gpg > /opt/waypost/.env
+chmod 600 /opt/waypost/.env
 ```
 
 Store the passphrase/key **separately** from the backups (e.g., a password manager). Config restore:
 ```bash
-tar xzf /backups/hengjiams/config_<STAMP>.tar.gz -C /
+tar xzf /backups/waypost/config_<STAMP>.tar.gz -C /
 sudo nginx -t && sudo systemctl restart nginx
-sudo systemctl daemon-reload && sudo systemctl restart hengjiams
+sudo systemctl daemon-reload && sudo systemctl restart waypost
 ```
 
 ---
@@ -147,7 +147,7 @@ sudo systemctl daemon-reload && sudo systemctl restart hengjiams
 **Schedule** (cron):
 ```cron
 # Nightly at 02:00
-0 2 * * * /opt/scripts/hengjiams-backup.sh >> /var/log/hengjiams/backup.log 2>&1
+0 2 * * * /opt/scripts/waypost-backup.sh >> /var/log/waypost/backup.log 2>&1
 ```
 
 **Retention** (example policy — adjust to your RPO):
@@ -159,7 +159,7 @@ sudo systemctl daemon-reload && sudo systemctl restart hengjiams
 
 ```bash
 # Prune daily backups older than 7 days
-find /backups/hengjiams -name 'db_*.dump' -mtime +7 -delete
+find /backups/waypost -name 'db_*.dump' -mtime +7 -delete
 ```
 
 Store at least one copy **off-host** (object storage / separate machine) to survive host loss.
@@ -170,7 +170,7 @@ Store at least one copy **off-host** (object storage / separate machine) to surv
 
 A backup you have never restored is an assumption. Run this drill monthly:
 
-1. Restore the latest `db_<STAMP>.dump` into a **scratch** database (`hengjiams_restore_test`).
+1. Restore the latest `db_<STAMP>.dump` into a **scratch** database (`waypost_restore_test`).
 2. Point a local/staging instance at it and run:
    ```bash
    python manage.py check
@@ -195,7 +195,7 @@ Order matters:
 5. Restore `media/` and `template_files/` (§5).
 6. `python manage.py migrate` (applies any migrations newer than the backup).
 7. `python manage.py collectstatic --noinput`.
-8. Restore Nginx/systemd config (§6); `systemctl enable --now hengjiams`.
+8. Restore Nginx/systemd config (§6); `systemctl enable --now waypost`.
 9. Run the verification drill (§8) before declaring recovery complete.
 
 ---
@@ -205,22 +205,22 @@ Order matters:
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `pg_restore: error: could not execute query` | Objects already exist | Use `--clean --if-exists`, or restore into an empty DB |
-| `permission denied for schema public` | PostgreSQL 15+ default | `GRANT ALL ON SCHEMA public TO hengjiams_django;` |
+| `permission denied for schema public` | PostgreSQL 15+ default | `GRANT ALL ON SCHEMA public TO waypost_django;` |
 | Garbled Chinese after restore | Non-UTF-8 database | Recreate DB with `ENCODING 'UTF8'` and re-restore |
 | Mailbox passwords unusable after restore | Missing/rotated `DJANGO_FIELD_ENCRYPTION_KEY` | Restore the **same** `.env` key used at backup time |
 | Document generation `FileNotFoundError` | `template_files/` not restored | Restore §5 templates |
-| Media 404 / permission denied | Ownership lost | `chown -R hengjiams:hengjiams media` |
+| Media 404 / permission denied | Ownership lost | `chown -R waypost:waypost media` |
 
 ---
 
 ## 11. Quick Reference
 
 ```bash
-# Backup (all)         -> /opt/scripts/hengjiams-backup.sh
-# DB backup            -> pg_dump -Fc -U hengjiams_django -h 127.0.0.1 hengjiams_db > db.dump
-# DB restore           -> pg_restore --clean --if-exists --no-owner -U hengjiams_django -h 127.0.0.1 -d hengjiams_db db.dump
-# Media restore        -> tar xzf media_<STAMP>.tar.gz -C /opt/hengji-ams
-# Templates restore    -> tar xzf template_files_<STAMP>.tar.gz -C /opt/hengji-ams
+# Backup (all)         -> /opt/scripts/waypost-backup.sh
+# DB backup            -> pg_dump -Fc -U waypost_django -h 127.0.0.1 waypost_db > db.dump
+# DB restore           -> pg_restore --clean --if-exists --no-owner -U waypost_django -h 127.0.0.1 -d waypost_db db.dump
+# Media restore        -> tar xzf media_<STAMP>.tar.gz -C /opt/waypost
+# Templates restore    -> tar xzf template_files_<STAMP>.tar.gz -C /opt/waypost
 ```
 
 ---

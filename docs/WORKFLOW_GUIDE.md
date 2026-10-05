@@ -1,6 +1,6 @@
-# Workflow Guide - HengJi AMS Operations
+# Workflow Guide - Waypost Operations
 
-This guide provides operational procedures for using the HengJi AMS in daily business operations.
+This guide provides operational procedures for using the Waypost in daily business operations.
 
 ---
 
@@ -288,7 +288,7 @@ Stored status values (`DeliveryOrder.Status`): `pending → dispatched → compl
 ### Configuration Settings
 
 #### Environment Variables
-Loaded from a repo-local **`.env`** file (via `hengjiams/runtime_setup.py::load_local_env`, called by `manage.py`/`wsgi.py`/`asgi.py`). `.env` is not tracked in Git; see `.env.example`.
+Loaded from a repo-local **`.env`** file (via `waypost/runtime_setup.py::load_local_env`, called by `manage.py`/`wsgi.py`/`asgi.py`). `.env` is not tracked in Git; see `.env.example`.
 
 Variables actually read by `settings.py`:
 - `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`
@@ -371,8 +371,8 @@ Variables actually read by `settings.py`:
 - [Contributing Guide](./CONTRIBUTING.md)
 
 ### Contact Channels
-- 📧 Email: ops@hengji.com
-- 💬 Slack Channel: #hengji-support
+- 📧 Email: ops@istore-tech.com
+- 💬 Slack Channel: #waypost-support
 - 🚨 Emergency Hotline: +86 XXX-XXXX-XXXX
 
 ---

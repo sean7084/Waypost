@@ -1,5 +1,5 @@
 """
-Company and Division models for HengJi Asset Management System.
+Company and Division models for Waypost.
 This module defines the organizational structure models that support
 multi-company and multi-division asset management.
 """

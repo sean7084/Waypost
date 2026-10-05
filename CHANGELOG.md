@@ -1,4 +1,4 @@
-# HengJi Asset Management System (AMS) - Changelog
+# Waypost - Changelog
 
 ## Release Notes v0.1.7
 
@@ -110,7 +110,7 @@
 - Updated workflow next-action labels, delivery/purchase back-links, and dashboard stock/receipt summaries to match the new flow.
 
 5. Runtime, navigation, and regression fixes
-- Added repo-local `.env` loading in `manage.py`, `hengjiams/asgi.py`, and `hengjiams/wsgi.py`, and ignored `*.env` in Git.
+- Added repo-local `.env` loading in `manage.py`, `waypost/asgi.py`, and `waypost/wsgi.py`, and ignored `*.env` in Git.
 - Added RFQ/Minimax and test outbound email override settings in Django settings.
 - Fixed authenticated login redirects to the namespaced dashboard route.
 - Renamed the product navigation entry to `Price List`, cleaned up stock links, and updated related zh-cn translations.
@@ -133,7 +133,7 @@
 3. Server-side log validation confirmed the create-download flow now persists quotations before triggering PDF downloads.
 4. `python manage.py check` completed successfully after the final workflow and documentation pass.
 
-## HengJi Asset Management System (AMS) - Release Note v0.0.1
+## Waypost - Release Note v0.0.1
 
 **Version:** 0.0.1  
 **Release Date:** July 7, 2025  
@@ -143,7 +143,7 @@
 
 ### 🚀 Overview
 
-Version 0.0.1 marks the successful establishment of the HengJi AMS foundational architecture. This release includes the complete Django project setup and a fully implemented, secure user authentication system with a modern user interface.
+Version 0.0.1 marks the successful establishment of the Waypost foundational architecture. This release includes the complete Django project setup and a fully implemented, secure user authentication system with a modern user interface.
 
 ### ✅ Key Features Delivered
 
@@ -321,7 +321,7 @@ Version 0.0.1 marks the successful establishment of the HengJi AMS foundational 
 
 ---
 
-### HengJi AMS Development Progress Report v0.0.2
+### Waypost Development Progress Report v0.0.2
 
 **Date:** July 8, 2025  
 **Focus:** Complete Implementation of Core Asset & Company Management Systems
@@ -330,7 +330,7 @@ Version 0.0.1 marks the successful establishment of the HengJi AMS foundational 
 
 #### 🎯 Overview
 
-Building on the foundation of v0.0.1, this development cycle focused on implementing the primary business logic of the HengJi AMS. Version 0.0.2 delivers a fully functional, end-to-end asset management system and the complete company/location organizational structure.
+Building on the foundation of v0.0.1, this development cycle focused on implementing the primary business logic of the Waypost. Version 0.0.2 delivers a fully functional, end-to-end asset management system and the complete company/location organizational structure.
 
 ---
 
@@ -404,7 +404,7 @@ The system is now operational with the following end-to-end features:
 #### 🏁 Conclusion
 
 Version 0.0.2 marks a major milestone, transforming the project from a foundational shell into a fully functional asset management system. The core business requirements are now met, providing a stable platform for building advanced features.
-## HengJi Asset Management System (AMS) - Changelog v0.0.3
+## Waypost - Changelog v0.0.3
 
 **Version:** 0.0.3  
 **Release Date:** August 11, 2025  
@@ -414,7 +414,7 @@ Version 0.0.2 marks a major milestone, transforming the project from a foundatio
 
 ### 🎯 Release Overview
 
-Version 0.0.3 represents a significant enhancement to the HengJi Asset Management System with a focus on comprehensive asset management features, advanced category and brand management capabilities, improved export functionality, and substantial UI/UX improvements. This release consolidates system architecture, implements missing navigation functionality, and introduces powerful data export capabilities.
+Version 0.0.3 represents a significant enhancement to the Waypost with a focus on comprehensive asset management features, advanced category and brand management capabilities, improved export functionality, and substantial UI/UX improvements. This release consolidates system architecture, implements missing navigation functionality, and introduces powerful data export capabilities.
 
 ### ✅ Major Changes and Improvements
 
@@ -813,7 +813,7 @@ This release represents significant system enhancements developed through collab
 
 ### 🏁 Conclusion
 
-Version 0.0.3 successfully consolidates the system architecture, fixes critical user interface issues, and improves the overall user experience. The HengJi Asset Management System now provides a clean, unified interface with consistent role-based access control and modern responsive design.
+Version 0.0.3 successfully consolidates the system architecture, fixes critical user interface issues, and improves the overall user experience. The Waypost now provides a clean, unified interface with consistent role-based access control and modern responsive design.
 
 **Production Readiness**: The system is ready for production deployment with robust error handling, comprehensive security, and professional user interface.
 
@@ -925,7 +925,7 @@ Version 0.0.4 introduces enhanced security, advanced reporting capabilities, mob
 
 ---
 
-*Generated on April 15, 2026 - HengJi Asset Management System v0.0.4*
+*Generated on April 15, 2026 - Waypost v0.0.4*
 *Previous versions: v0.0.1 (Foundation), v0.0.2 (Major Features), v0.0.3 (Consolidation & Fixes), v0.0.4 (Security & Reporting)*
 
 ---
@@ -990,7 +990,7 @@ Version 0.1.0 delivers the initial full Quotation & Invoice Management System wi
 
 ---
 
-*Generated on April 16, 2026 - HengJi Asset Management System v0.1.0*
+*Generated on April 16, 2026 - Waypost v0.1.0*
 
 ---
 
@@ -1030,7 +1030,7 @@ Version 0.1.1 focuses on document generation hardening and print-layout fidelity
 
 ---
 
-*Generated on April 17, 2026 - HengJi Asset Management System v0.1.1*
+*Generated on April 17, 2026 - Waypost v0.1.1*
 
 ---
 
@@ -1081,7 +1081,7 @@ Version 0.1.2 focuses on asset creation workflow usability, broader translation 
 
 ---
 
-*Generated on April 17, 2026 - HengJi Asset Management System v0.1.2*
+*Generated on April 17, 2026 - Waypost v0.1.2*
 
 ## Release Notes v0.1.3
 

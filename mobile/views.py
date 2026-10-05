@@ -1,5 +1,5 @@
 """
-Views for HengJi AMS Mobile Interface.
+Views for Waypost Mobile Interface.
 """
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin

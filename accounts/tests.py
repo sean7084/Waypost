@@ -271,7 +271,7 @@ class UserEditViewTests(TestCase):
 			reverse('accounts:settings'),
 			{
 				'system_smtp-from_email': 'noreply@example.com',
-				'system_smtp-from_display_name': 'HengJi AMS',
+				'system_smtp-from_display_name': 'Waypost',
 				'system_smtp-username': 'smtp-user',
 				'system_smtp-password': 'smtp-pass-123',
 				'system_smtp-smtp_host': 'smtp.example.com',
@@ -287,7 +287,7 @@ class UserEditViewTests(TestCase):
 
 		smtp_settings = SystemSMTPSettings.get_solo()
 		self.assertEqual(smtp_settings.from_email, 'noreply@example.com')
-		self.assertEqual(smtp_settings.from_display_name, 'HengJi AMS')
+		self.assertEqual(smtp_settings.from_display_name, 'Waypost')
 		self.assertEqual(smtp_settings.username, 'smtp-user')
 		self.assertEqual(smtp_settings.smtp_host, 'smtp.example.com')
 		self.assertEqual(smtp_settings.smtp_port, 587)
@@ -299,7 +299,7 @@ class UserEditViewTests(TestCase):
 	def test_database_email_backend_uses_saved_system_smtp_settings(self):
 		smtp_settings = SystemSMTPSettings.get_solo()
 		smtp_settings.from_email = 'noreply@example.com'
-		smtp_settings.from_display_name = 'HengJi AMS'
+		smtp_settings.from_display_name = 'Waypost'
 		smtp_settings.username = 'smtp-user'
 		smtp_settings.smtp_host = 'smtp.example.com'
 		smtp_settings.smtp_port = 587
@@ -336,7 +336,7 @@ class UserEditViewTests(TestCase):
 		self.assertTrue(captured['kwargs']['use_tls'])
 		self.assertFalse(captured['kwargs']['use_ssl'])
 		self.assertEqual(captured['kwargs']['timeout'], 25)
-		self.assertEqual(captured['messages'][0].from_email, 'HengJi AMS <noreply@example.com>')
+		self.assertEqual(captured['messages'][0].from_email, 'Waypost <noreply@example.com>')
 		self.assertEqual(captured['messages'][0].to, ['recipient@example.com'])
 
 	@override_settings(
@@ -347,7 +347,7 @@ class UserEditViewTests(TestCase):
 	def test_database_email_backend_routes_all_outbound_email_to_override_recipient(self):
 		smtp_settings = SystemSMTPSettings.get_solo()
 		smtp_settings.from_email = 'noreply@example.com'
-		smtp_settings.from_display_name = 'HengJi AMS'
+		smtp_settings.from_display_name = 'Waypost'
 		smtp_settings.smtp_host = 'smtp.example.com'
 		smtp_settings.smtp_port = 587
 		smtp_settings.smtp_security = SystemSMTPSettings.ConnectionSecurity.STARTTLS

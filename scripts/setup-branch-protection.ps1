@@ -1,4 +1,4 @@
-# Branch Protection Setup for HengjiAMS1
+# Branch Protection Setup for Waypost
 # ============================================================================
 # Configures branch protection rules for the `main` branch using the
 # GitHub REST API. This is the CANONICAL branch-protection script; the older
@@ -24,7 +24,7 @@
 # ============================================================================
 
 $repoOwner = "sean7084"
-$repoName = "HengjiAMS1"
+$repoName = "Waypost"
 $branch = "main"
 
 # Read token from .env (falling back to the legacy .env.local)

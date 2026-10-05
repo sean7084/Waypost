@@ -1,1 +1,1 @@
-# Mobile app for HengJi AMS
+# Mobile app for Waypost

@@ -1,6 +1,6 @@
-# Architecture Decision Records (ADR) - HengJi AMS
+# Architecture Decision Records (ADR) - Waypost
 
-This directory contains architectural decision records for the HengJi Asset Management System.
+This directory contains architectural decision records for the Waypost.
 
 ## Table of Contents
 
@@ -500,7 +500,7 @@ Feishu questionnaire plus photo archives, then transformed into a per-store Exce
 report by two standalone Python tools in the separate `EUS_Device_Inspec` repo
 (`kering_inspection_folder_and_report_creation.py`, `FeishuDeviceInspecAutomation.py`).
 We want a WeChat mini program to replace the Feishu collection step. Key constraints:
-HengjiAMS1 is a solo-maintained Django monolith; the inspection data contract is rich
+Waypost is a solo-maintained Django monolith; the inspection data contract is rich
 (per-device IP/CPU/memory/HDD/OS/C-drive/asset-tag, multiple named photos, rack/network
 photos, device counts, issue list, signatures); stores often have weak connectivity.
 
@@ -509,9 +509,9 @@ photos, device counts, issue list, signatures); stores often have weak connectiv
 1. **Monorepo.** The mini program lives in this repo under `miniprogram/`. A solo
    maintainer benefits from atomic backend+client changes and one PR/CI surface;
    the client is a first-party consumer of this backend only.
-2. **Backend in HengjiAMS1.** A new `inspections` Django app models the workflow and
+2. **Backend in Waypost.** A new `inspections` Django app models the workflow and
    the EUS report/photo logic is ported into `inspections/services/`. This reuses
-   HengjiAMS auth, roles, companies/locations/assets, and admin.
+   Waypost auth, roles, companies/locations/assets, and admin.
 3. **Kering-specific v1.** The checklist, cover-page labels, device categories, and
    photo-naming rules are hardcoded in `inspections/constants.py`; generalization is
    deferred. This matches the legacy scripts and ships fastest.
@@ -544,7 +544,7 @@ photos, device counts, issue list, signatures); stores often have weak connectiv
 - Services: `inspections/services/{transforms,photo_naming,report_generator}.py`
 - API: `api/inspection_views.py`, `api/inspection_serializers.py`, `api/views_auth.py`
 - Import: `inspections/management/commands/import_kering_master.py`
-- Settings: `hengjiams/settings.py` (SimpleJWT + WeChat config), `.env.example`
+- Settings: `waypost/settings.py` (SimpleJWT + WeChat config), `.env.example`
 
 ---
 

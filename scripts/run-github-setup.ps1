@@ -1,9 +1,9 @@
-# Master GitHub Setup Script for HengjiAMS1
+# Master GitHub Setup Script for Waypost
 # Runs all configuration steps automatically
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "GitHub Features Configuration - Master Runner" -ForegroundColor Cyan
-Write-Host "Repository: sean7084/HengjiAMS1" -ForegroundColor Yellow
+Write-Host "Repository: sean7084/Waypost" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -64,7 +64,7 @@ Write-Host "Total Time: $($totalTime.TotalSeconds.ToString('0.0')) seconds" -For
 Write-Host ""
 
 Write-Host "Next Actions:" -ForegroundColor Yellow
-Write-Host "  1. Verify labels at: https://github.com/sean7084/HengjiAMS1/labels" -ForegroundColor Gray
+Write-Host "  1. Verify labels at: https://github.com/sean7084/Waypost/labels" -ForegroundColor Gray
 Write-Host "  2. Configure project board columns and custom fields" -ForegroundColor Gray
 Write-Host "  3. Test branch protection by creating a test PR" -ForegroundColor Gray
 Write-Host "  4. Review documentation in .github/ directory" -ForegroundColor Gray

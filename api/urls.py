@@ -1,5 +1,5 @@
 """
-URL configuration for HengJi AMS REST API.
+URL configuration for Waypost REST API.
 """
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter

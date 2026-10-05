@@ -1,6 +1,6 @@
-# Contributing to HengJi AMS
+# Contributing to Waypost
 
-Thank you for your interest in contributing! This guide outlines how to contribute effectively to the HengJi Asset Management System.
+Thank you for your interest in contributing! This guide outlines how to contribute effectively to the Waypost.
 
 ## 📋 Table of Contents
 
@@ -39,12 +39,13 @@ We strive to create a welcoming, inclusive environment. Examples of community st
 ### 1. Setup Environment
 
 ```bash
-# Activate Conda environment (if using)
-conda activate HengjiAMS1
-
 # Clone repository
-git clone https://github.com/your-org/hengji-ams.git
-cd hengji-ams
+git clone https://github.com/your-org/waypost.git
+cd waypost
+
+# Create and activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
 
 # Install dependencies
 pip install -r requirements.txt
@@ -58,7 +59,7 @@ python manage.py runserver
 
 ### 2. Find an Issue
 
-- Check existing [GitHub Issues](https://github.com/your-org/hengji-ams/issues)
+- Check existing [GitHub Issues](https://github.com/your-org/waypost/issues)
 - Look for `good first issue` labels for beginner-friendly tasks
 - Comment to express interest (avoid "I'll work on this" spam)
 
@@ -439,7 +440,7 @@ docs/
 - **[GitHub Discussions]**: General Q&A and proposals
 - **[Project Board]](https://github.com/orgs/your-org/projects/1): Workflow tracking
 - **[Issues]**: Bug reports and feature requests
-- **Email**: [contact@hengji.com](mailto:contact@hengji.com) (for sensitive matters)
+- **Email**: [contact@istore-tech.com](mailto:contact@istore-tech.com) (for sensitive matters)
 
 ---
 

@@ -1,5 +1,5 @@
 """
-Models for HengJi AMS Products App.
+Models for Waypost Products App.
 Product and service pricing information for the unified catalog.
 """
 from django.conf import settings

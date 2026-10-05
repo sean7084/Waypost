@@ -1,5 +1,5 @@
 """
-Models for HengJi AMS Purchases App.
+Models for Waypost Purchases App.
 Tracks purchased assets from quotations and their receipt.
 """
 from django.db import models

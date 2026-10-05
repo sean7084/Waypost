@@ -1,4 +1,4 @@
-# Database Schema Reference - HengJi AMS
+# Database Schema Reference - Waypost
 
 **Scope:** all 52 persisted models across 11 first-party Django apps (plus `django-otp` tables).
 **Generated from:** the live Django app registry (`apps.get_models()` + `_meta`), then curated — so

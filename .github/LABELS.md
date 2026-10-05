@@ -1,8 +1,8 @@
-# GitHub Labels Configuration for HengJi AMS
+# GitHub Labels Configuration for Waypost
 
 ## Overview
 
-This document defines the labeling strategy for the HengjiAMS1 repository to streamline issue tracking, pull request management, and project workflow.
+This document defines the labeling strategy for the Waypost repository to streamline issue tracking, pull request management, and project workflow.
 
 ---
 
