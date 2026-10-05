@@ -33,8 +33,25 @@ hengjiams/urls.py                     root urlconf
 `en-us/logout/`, `en-us/users/` and the bare `en-us/` are `RedirectView`s onto the canonical
 `accounts/…` and `dashboard/` targets.
 
-`inspections` and `customers` expose **no HTML routes** — `inspections` is API-only (mini
-program) plus Django admin; `customers` contributes templates/helpers only.
+`customers` exposes **no HTML routes** — it contributes templates/helpers only.
+
+> **This section is stale for `inspections`.** The route counts above (and the `audit/` entry in
+> the tree) predate the inspections web UI and the retirement of the `audit` app. `inspections`
+> now resolves these HTML routes behind the locale prefix:
+>
+> | Path | Purpose |
+> |---|---|
+> | `inspections/` | AM/PM scheduling board — `?view=month\|week\|day`, `?date=YYYY-MM-DD`, `?batch=<uuid>` |
+> | `inspections/api/move/` | POST target for drag-and-drop rescheduling |
+> | `inspections/batches/` | Batch list (+ `new/`, `new/by-brand/`, `new/import/`, `<uuid>/`, `<uuid>/edit/`) |
+> | `inspections/batches/new/import/sample/<kind>/` | Sample `schedule` / `assets` CSV download |
+> | `inspections/list/` | Inspection list with filters |
+> | `inspections/review/` | Batch status review (+ `review/bulk/` for the bulk device action) |
+> | `inspections/<uuid>/` | Inspection detail (+ `edit/`, `assign-fe/`) |
+> | `inspections/issues/<uuid>/update/` | Inline issue description/status edit |
+> | `inspections/export/` | Asset list / photos / per-store reports export |
+>
+> Regenerating this document from the live resolver is still outstanding.
 
 ---
 
