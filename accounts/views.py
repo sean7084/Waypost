@@ -1,5 +1,5 @@
 """
-Views for HengJi Asset Management System - Accounts App.
+Views for Waypost - Accounts App.
 This module handles authentication, user management, and profile-related views.
 Includes 2FA support, multi-language interface, and role-based access control.
 """
@@ -7,6 +7,7 @@ Includes 2FA support, multi-language interface, and role-based access control.
 import qrcode
 import io
 import base64
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
@@ -52,11 +53,11 @@ def _send_user_temporary_password_email(request, user, temporary_password, *, is
         raise ValueError(_('This user does not have an email address.'))
 
     login_url = request.build_absolute_uri(reverse('accounts:login'))
-    subject = _('Your HengJi AMS temporary password')
+    subject = _('Your Waypost temporary password')
     intro = (
-        _('Your HengJi AMS password has been reset.')
+        _('Your Waypost password has been reset.')
         if is_reset
-        else _('Your HengJi AMS account has been created.')
+        else _('Your Waypost account has been created.')
     )
     message = _(
         'Hello {name},\n\n'
@@ -955,10 +956,11 @@ def setup_2fa_simple(request):
     # Store secret in session for verification
     request.session['totp_secret'] = secret
 
-    # Create TOTP URI for QR code
+    # Create TOTP URI for QR code. The issuer must match OTP_TOTP_ISSUER so the
+    # authenticator-app label and django-otp's own provisioning agree.
     totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
         name=user.email or user.username,
-        issuer_name="HengJi AMS"
+        issuer_name=settings.OTP_TOTP_ISSUER
     )
 
     # Generate QR code

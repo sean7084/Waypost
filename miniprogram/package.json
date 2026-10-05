@@ -2,7 +2,7 @@
   "name": "kering-inspection-miniprogram",
   "version": "1.0.0",
   "private": true,
-  "description": "WeChat mini program for the Kering store device inspection (HengjiAMS backend)",
+  "description": "WeChat mini program for the Kering store device inspection (Waypost backend)",
   "scripts": {
     "lint": "eslint .",
     "preview": "node scripts/ci.js preview",

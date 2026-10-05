@@ -1,6 +1,6 @@
-# GitHub Settings Overview - HengjiAMS1
+# GitHub Settings Overview - Waypost
 
-**Repository:** [sean7084/HengjiAMS1](https://github.com/sean7084/HengjiAMS1)  
+**Repository:** [sean7084/Waypost](https://github.com/sean7084/Waypost)  
 **Type:** Personal repository (single maintainer)  
 **Last Verified:** September 6, 2026  
 
@@ -323,13 +323,13 @@ $token = (Get-Content $envFile | Select-String '^GITHUB_CLASSIC_TOKEN=').ToStrin
 $headers = @{ "Authorization" = "Bearer $token"; "Accept" = "application/vnd.github.v3+json" }
 
 # Branch protection
-Invoke-RestMethod -Uri "https://api.github.com/repos/sean7084/HengjiAMS1/branches/main/protection" -Headers $headers
+Invoke-RestMethod -Uri "https://api.github.com/repos/sean7084/Waypost/branches/main/protection" -Headers $headers
 
 # CODEOWNERS validity
-Invoke-RestMethod -Uri "https://api.github.com/repos/sean7084/HengjiAMS1/codeowners/errors" -Headers $headers
+Invoke-RestMethod -Uri "https://api.github.com/repos/sean7084/Waypost/codeowners/errors" -Headers $headers
 
 # Label count
-(Invoke-RestMethod -Uri "https://api.github.com/repos/sean7084/HengjiAMS1/labels?per_page=100" -Headers $headers).Count
+(Invoke-RestMethod -Uri "https://api.github.com/repos/sean7084/Waypost/labels?per_page=100" -Headers $headers).Count
 ```
 
 ---

@@ -6,11 +6,11 @@ $envFile = @('.env', '.env.local') | Where-Object { Test-Path $_ } | Select-Obje
 if (-not $envFile) { throw "No .env (or .env.local) found in the repository root" }
 $token = Get-Content $envFile | Select-String '^GITHUB_CLASSIC_TOKEN=' | ForEach-Object { $_.ToString().Split('=')[1] }
 $headers = @{ "Authorization" = "Bearer $token"; "Accept" = "application/vnd.github.v3+json" }
-$baseUrl = "https://api.github.com/repos/sean7084/HengjiAMS1"
+$baseUrl = "https://api.github.com/repos/sean7084/Waypost"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "GitHub Configuration - Final Status Report" -ForegroundColor Cyan
-Write-Host "Repository: sean7084/HengjiAMS1" -ForegroundColor Yellow
+Write-Host "Repository: sean7084/Waypost" -ForegroundColor Yellow
 Write-Host "Date: $(Get-Date -Format 'yyyy-MM-dd')" -ForegroundColor Gray
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
@@ -103,7 +103,7 @@ Write-Host ""
 Write-Host "Next Steps:" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "1. [RECOMMENDED] Create Project Board via Web UI:" -ForegroundColor Cyan
-Write-Host "   Visit: https://github.com/sean7084/HengjiAMS1/projects" -ForegroundColor Gray
+Write-Host "   Visit: https://github.com/sean7084/Waypost/projects" -ForegroundColor Gray
 Write-Host "   Follow guide in .github/PROJECT_WORKFLOW.md" -ForegroundColor Gray
 Write-Host ""
 Write-Host "2. Test Everything Works:" -ForegroundColor Cyan

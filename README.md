@@ -1,12 +1,12 @@
-# HengJi Asset Management System (AMS)
+# Waypost
 
 [![Django](https://img.shields.io/badge/Django-5.2.3-green.svg)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)]()
 
-A comprehensive SaaS IT asset management solution built with Django, supporting multi-language (English/Chinese), 2FA authentication, multi-company asset tracking, and order-management workflows from mailbox RFQ intake through dispatch.
+Waypost (驿) is a store IT operations platform built with Django. It carries a request the whole way: mailbox RFQ intake and AI classification through quotation, purchase, delivery and invoice dispatch, plus onsite store device inspections captured on a WeChat mini program and rendered back into the client's report format. Multi-language (English/Chinese), 2FA, multi-company scoping, full audit trail.
 
-![Logo](media/logo.jpg)
+![Logo](static/images/logo.png)
 
 ---
 
@@ -25,7 +25,9 @@ A comprehensive SaaS IT asset management solution built with Django, supporting 
 
 ## Overview
 
-HengJi AMS is an enterprise asset management system designed for organizations to track, manage, and audit their physical assets across multiple companies and divisions.
+Waypost is the operations backbone for an IT services company whose work happens in other people's stores. It ties together three things that used to live in separate tools: the **commercial chain** (RFQ → quotation → purchase → delivery → invoice → dispatch email), the **asset ledger** those orders draw from and deposit into, and the **field reality** engineers verify onsite. Everything shares one company/division/location model, so a store is the same object whether it appears on a quotation, a delivery order or an inspection.
+
+The name is deliberate: a waypost is a marker along a route where status is recorded and handed on. Every entity in the system is exactly that - a `DeliveryOrder` moves `Pending → Dispatched → Delivered`, a `StoreInspection` moves `planned → in_progress → completed → submitted`.
 
 ### Key Capabilities
 
@@ -38,6 +40,7 @@ HengJi AMS is an enterprise asset management system designed for organizations t
 - User-configurable mailbox sync and dispatch email support for order-management users
 - Stock-first fulfillment workflow with purchase receipt, internal-warehouse checks, and delivery orchestration
 - Hardware and service price-list management with category default-model matching for generic RFQs
+- **Store device inspection** via an offline-first WeChat mini program: per-device readings and photos, rack/network/speedtest capture, issues, confirmed counts, signatures, then server-side regeneration of the client's `Report Per Store.xlsx` + `Photo/` archive
 - Multi-language support (English / Simplified Chinese)
 - Bulk import/export (CSV, Excel, PDF)
 - Mobile-responsive design
@@ -119,6 +122,7 @@ UI design inspired by [Ralph](https://ralphapp.com/) and [Snipe-IT](https://snip
 | `deliveries` | Delivery order (签收单) generation and tracking |
 | `invoices` | Invoice info sheets, weekly batch processing, dispatch email threading |
 | `accounts` mailbox module | User mailbox settings, inbox/outbox sync, and cached message views |
+| `inspections` | Store device inspections: `StoreInspection` / `InspectionDevice` / `InspectionPhoto` / `InspectionIssue`, DRF endpoints for the mini program, and the report + photo-archive generator |
 
 ---
 
@@ -127,19 +131,22 @@ UI design inspired by [Ralph](https://ralphapp.com/) and [Snipe-IT](https://snip
 ### Prerequisites
 
 - Python 3.11+
-- Conda environment: `HengjiAMS1`
-- Django 5.2.3
+- Django 5.2.8
 
-### 1. Activate Conda Environment
+### 1. Create and Activate a Virtual Environment
 
 ```bash
-conda activate HengjiAMS1
+python -m venv .venv
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+# macOS / Linux
+source .venv/bin/activate
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-pip install django==5.2.8 django-otp openpyxl reportlab django-extensions
+pip install -r requirements.txt
 ```
 
 ### 3. Run Database Migrations
@@ -171,7 +178,7 @@ Access the application at: http://127.0.0.1:8000/
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DJANGO_SETTINGS_MODULE` | Django settings module | `hengjiams.settings` |
+| `DJANGO_SETTINGS_MODULE` | Django settings module | `waypost.settings` |
 | `SECRET_KEY` | Django secret key | (dev key in settings) |
 | `DEBUG` | Debug mode | `True` |
 | `TEST_OUTBOUND_EMAIL_OVERRIDE` | Override all outbound email recipients during test runs | `sean.liu@istore-tech.com` |
@@ -181,7 +188,7 @@ Access the application at: http://127.0.0.1:8000/
 | `MINIMAX_RFQ_TIMEOUT_SECONDS` | Request timeout for RFQ AI calls | `30` |
 | `MINIMAX_RFQ_MAX_TOKENS` | Maximum tokens for RFQ AI responses | `800` |
 
-Repository-local `.env` values are loaded automatically by `manage.py`, `hengjiams/asgi.py`, and `hengjiams/wsgi.py`. Keep mailbox credentials, Minimax keys, and test-only overrides in that file and out of version control.
+Repository-local `.env` values are loaded automatically by `manage.py`, `waypost/asgi.py`, and `waypost/wsgi.py`. Keep mailbox credentials, Minimax keys, and test-only overrides in that file and out of version control.
 
 ### Windows WeasyPrint Runtime
 
@@ -222,9 +229,9 @@ DATABASES = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'hengjiams_db',
-        'USER': 'hengjiamsdjango',
-        'PASSWORD': 'hengjiams_djangopass',
+        'NAME': 'waypost_db',
+        'USER': 'waypost_django',
+        'PASSWORD': 'waypost_djangopass',
         'HOST': '127.0.0.1',
         'PORT': '5433',
     }
@@ -437,7 +444,7 @@ A complete business workflow for managing quotations, purchase orders, deliverie
 
 ### Integration with Asset Management
 
-The system leverages existing HengJi AMS infrastructure:
+The system leverages existing Waypost infrastructure:
 
 | Existing Component | Used For |
 |-------------------|----------|
@@ -514,9 +521,9 @@ Hardware catalog entries continue to use `AssetBrand` and `AssetModel`. Service 
 
 | Field | Value |
 |-------|-------|
-| Database | `hengjiams_db` |
-| Username | `hengjiamsdjango` |
-| Password | `hengjiams_djangopass` |
+| Database | `waypost_db` |
+| Username | `waypost_django` |
+| Password | `waypost_djangopass` |
 | Host | `127.0.0.1:5433` |
 
 ---
@@ -529,7 +536,7 @@ Hardware catalog entries continue to use `AssetBrand` and `AssetModel`. Service 
    - Bootstrap 5 responsive design
 
 2. **Environment**
-   - Use Conda environment `HengjiAMS1`
+   - Use the repo-local virtual environment (`.venv`)
    - SQLite for development, PostgreSQL for production
    - Docker deployment planned
 

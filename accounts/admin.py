@@ -186,6 +186,6 @@ class UserSessionAdmin(admin.ModelAdmin):
 
 
 # Configure admin site headers
-admin.site.site_header = _('HengJi Asset Management System')
-admin.site.site_title = _('HengJi AMS Admin')
-admin.site.index_title = _('Welcome to HengJi AMS Administration')
+admin.site.site_header = _('Waypost Administration')
+admin.site.site_title = _('Waypost Admin')
+admin.site.index_title = _('Welcome to Waypost Administration')

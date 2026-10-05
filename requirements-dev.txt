@@ -8,7 +8,7 @@
 # The canonical test runner remains Django's own (`python manage.py test`), which
 # is what CI uses. pytest is configured as an equivalent second runner for
 # selective runs and coverage reporting - see docs/TESTING.md for why the
-# `-p hengjiams.pytest_bootstrap` plugin is required.
+# `-p waypost.pytest_bootstrap` plugin is required.
 
 -r requirements.txt
 

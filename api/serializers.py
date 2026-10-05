@@ -1,5 +1,5 @@
 """
-Serializers for HengJi AMS REST API.
+Serializers for Waypost REST API.
 Provides serialization for assets, categories, brands, companies, and other models.
 """
 from rest_framework import serializers

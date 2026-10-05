@@ -1,4 +1,4 @@
-# Documentation Setup Summary - HengJi AMS
+# Documentation Setup Summary - Waypost
 
 **Date**: August 20, 2026  
 **Author**: Sean Liu (Automated)  
@@ -231,7 +231,7 @@ To Do → In Progress → Code Review → Testing → Ready for Deploy → Deplo
 
 For questions about this documentation setup:
 
-📧 Email: docs@hengji.com  
+📧 Email: docs@istore-tech.com  
 💬 Slack: #documentation-team  
 📞 Emergency escalation: +86 XXX-XXXX-XXXX  
 

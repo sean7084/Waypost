@@ -1,5 +1,5 @@
 """
-Views for HengJi AMS Reports App.
+Views for Waypost Reports App.
 Provides reporting views with filtering and chart data.
 """
 from django.shortcuts import render

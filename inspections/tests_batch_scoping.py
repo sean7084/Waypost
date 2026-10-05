@@ -31,7 +31,7 @@ class BatchScopingTestBase(TestCase):
     def setUp(self):
         _ensure_roles()
         # Company the IT admin manages, and a client company they do not.
-        self.home = Company.objects.create(name='HengJi', code='HJ')
+        self.home = Company.objects.create(name='iStore Tech', code='IST')
         self.client_company = Company.objects.create(name='Kering', code='KER')
         self.division = Division.objects.create(
             company=self.client_company, name='YSL', code='YSL')

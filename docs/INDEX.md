@@ -1,4 +1,4 @@
-# Documentation Index - HengJi AMS
+# Documentation Index - Waypost
 
 Complete list of project documentation for reference and navigation.
 
@@ -99,7 +99,7 @@ Located in `.github/ISSUE_TEMPLATE/`:
 ## Documentation Structure Diagram
 
 ```
-hengji-ams/
+waypost/
 ├── README.md                      ← Main landing page
 ├── CHANGELOG.md                   ← Release history  
 ├── LICENSE                        ← Legal terms
@@ -260,7 +260,7 @@ All documentation should:
 
 Questions about any document or suggestions for improvement?
 
-📧 Email: docs@hengji.com  
+📧 Email: docs@istore-tech.com  
 💬 Slack Channel: #documentation-team  
 📝 Contribution: Submit PR using contribution guidelines
 

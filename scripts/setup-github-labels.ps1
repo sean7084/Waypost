@@ -1,8 +1,8 @@
-# Automated GitHub Label Setup for HengjiAMS1
+# Automated GitHub Label Setup for Waypost
 # This script creates all ~33 labels with proper colors and descriptions
 
 $repoOwner = "sean7084"
-$repoName = "HengjiAMS1"
+$repoName = "Waypost"
 # Read GITHUB_CLASSIC_TOKEN from .env (the documented local secrets file),
 # falling back to the legacy .env.local if that is what exists.
 $envFile = @('.env', '.env.local') | Where-Object { Test-Path $_ } | Select-Object -First 1

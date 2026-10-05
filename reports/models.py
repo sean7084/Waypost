@@ -1,5 +1,5 @@
 """
-Reports models for HengJi Asset Management System.
+Reports models for Waypost.
 This module defines models for generating, storing, and managing
 various types of reports and analytics for the asset management system.
 """

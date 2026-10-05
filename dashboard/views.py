@@ -1,5 +1,5 @@
 """
-Dashboard views for HengJi Asset Management System.
+Dashboard views for Waypost.
 Provides main dashboard and overview functionality.
 """
 from django.shortcuts import render, redirect

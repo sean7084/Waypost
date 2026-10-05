@@ -1,5 +1,5 @@
 """
-Models for HengJi Asset Management System - Assets App.
+Models for Waypost - Assets App.
 This module defines models for asset management including assets, categories,
 brands, and asset history tracking.
 """

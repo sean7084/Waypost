@@ -121,7 +121,7 @@ HTTP 400 (`api/inspection_views.py::_reject_oversized_uploads`), and Nginx
 ```nginx
     # Photo/report downloads (served directly by Nginx)
     location /media/inspections/ {
-        alias /opt/hengji-ams/media/inspections/;
+        alias /opt/waypost/media/inspections/;
         expires 7d;
         add_header Content-Disposition 'attachment';   # force download for xlsx/zip
     }

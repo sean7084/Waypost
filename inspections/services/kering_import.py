@@ -268,7 +268,7 @@ def import_kering_master(schedule_file, assets_file=None, *,
                          engineer=None, batch=None, user=None,
                          dry_run=False, track_rollback=True,
                          auto_arrange=False, arrange_start=None, arrange_end=None):
-    """Import a Kering schedule (+ optional master asset list) into HengjiAMS.
+    """Import a Kering schedule (+ optional master asset list) into Waypost.
 
     Args:
         schedule_file: path or file-like for schedule.xlsx (required).

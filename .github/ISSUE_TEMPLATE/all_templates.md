@@ -1,4 +1,4 @@
-# Issue Templates for HengJi AMS
+# Issue Templates for Waypost
 
 Place these files in `.github/ISSUE_TEMPLATE/` directory.
 
@@ -208,7 +208,7 @@ assignees: []
 - OS: [Windows/Linux/Mac, version]
 - Python version: [from `python --version`]
 - Database: [SQLite/PostgreSQL version, MySQL version]
-- Conda/Virtual environment details
+- Virtual environment details (`.venv`)
 
 ## Steps Taken
 Describe exactly what commands/actions were performed to reproduce the issue.
@@ -314,7 +314,7 @@ Please treat this report as confidential. Do not publish details until remediate
 ---
 
 ## Reporting Guidelines
-For security issues, please also email: security@hengji.com
+For security issues, please also email: security@istore-tech.com
 We commit to responding within 48 hours.
 ```
 

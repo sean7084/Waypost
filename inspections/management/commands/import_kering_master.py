@@ -1,5 +1,5 @@
 """
-Import the Kering master dataset into HengjiAMS.
+Import the Kering master dataset into Waypost.
 
 Thin CLI wrapper around :func:`inspections.services.kering_import.import_kering_master`.
 The heavy lifting (parsing, get-or-create logic, rollback tracking) lives in the
@@ -23,7 +23,7 @@ from inspections.services.kering_import import import_kering_master
 
 
 class Command(BaseCommand):
-    help = 'Import the Kering schedule + master asset list into HengjiAMS (store inspections).'
+    help = 'Import the Kering schedule + master asset list into Waypost (store inspections).'
 
     def add_arguments(self, parser):
         parser.add_argument('--schedule', required=True, help='Path to schedule.xlsx')

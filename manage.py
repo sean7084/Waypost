@@ -3,7 +3,7 @@
 import os
 import sys
 
-from hengjiams.runtime_setup import configure_windows_fontconfig, configure_windows_weasyprint_runtime, load_local_env
+from waypost.runtime_setup import configure_windows_fontconfig, configure_windows_weasyprint_runtime, load_local_env
 
 
 def main():
@@ -11,7 +11,7 @@ def main():
     load_local_env()
     configure_windows_weasyprint_runtime()
     configure_windows_fontconfig()
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hengjiams.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'waypost.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

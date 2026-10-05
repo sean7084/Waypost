@@ -1,8 +1,8 @@
-# Automated GitHub Project Board Setup for HengjiAMS1
+# Automated GitHub Project Board Setup for Waypost
 # This script creates project board, columns, custom fields, and automation rules
 
 $repoOwner = "sean7084"
-$repoName = "HengjiAMS1"
+$repoName = "Waypost"
 # Read GITHUB_CLASSIC_TOKEN from .env (the documented local secrets file),
 # falling back to the legacy .env.local if that is what exists.
 $envFile = @('.env', '.env.local') | Where-Object { Test-Path $_ } | Select-Object -First 1
@@ -25,7 +25,7 @@ try {
         -Method Get `
         -Headers $headers
     
-    $project = $existingProjects | Where-Object { $_.name -eq "HengJi AMS Development" }
+    $project = $existingProjects | Where-Object { $_.name -eq "Waypost Development" }
     
     if ($project) {
         Write-Host "[✓] Found existing project: $($project.name)" -ForegroundColor Green
@@ -35,8 +35,8 @@ try {
         Write-Host "[✗] No existing project found, creating new one..." -ForegroundColor Yellow
         
         $projectData = @{
-            name = "HengJi AMS Development"
-            body = "Project board for tracking HengjiAMS1 development workflow, sprints, and releases"
+            name = "Waypost Development"
+            body = "Project board for tracking Waypost development workflow, sprints, and releases"
             source = "repository"
         } | ConvertTo-Json
         
@@ -51,8 +51,8 @@ try {
             # Alternative: Use repository projects
             Write-Host "Using alternative method via repository..." -ForegroundColor Yellow
             $projectCreate = @{
-                name = "HengJi AMS Development"
-                body = "Project board for tracking HengjiAMS1 development workflow, sprints, and releases"
+                name = "Waypost Development"
+                body = "Project board for tracking Waypost development workflow, sprints, and releases"
             } | ConvertTo-Json
             
             $newProject = Invoke-RestMethod `
@@ -69,7 +69,7 @@ try {
             Write-Host "  1. Go to your repository's Projects tab" -ForegroundColor Gray
             Write-Host "  2. Click 'New project'" -ForegroundColor Gray
             Write-Host "  3. Select 'Board' view" -ForegroundColor Gray
-            Write-Host "  4. Name it: 'HengJi AMS Development'" -ForegroundColor Gray
+            Write-Host "  4. Name it: 'Waypost Development'" -ForegroundColor Gray
             throw "Project API not available"
         }
     }

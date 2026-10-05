@@ -1,5 +1,5 @@
 # LANGUAGE translation of Django.
-# Copyright (C) 2025 HengJi AMS
+# Copyright (C) 2026 iStore Tech (Waypost)
 # This file is distributed under the same license as the Django package.
 
 msgid ""
@@ -830,8 +830,45 @@ msgstr "毛计"
 msgid "Gross Amount"
 msgstr "总额（含税）"
 
-msgid "HengJi AMS"
-msgstr "恒记资产管理系统"
+# --- Waypost brand block -------------------------------------------------
+# The product name itself is never translated (templates render "Waypost" as a
+# literal); only the tagline is. Kept as one block instead of alphabetised so
+# the next rebrand is a single edit.
+#
+# "iStore Tech" is the PUBLISHING entity (footer copyright, LICENSE, docs).
+# The CONTRACTING entity that signs customer PDFs is 上海珩际信息科技有限公司 -
+# it is not a translatable string, it comes from settings.COMPANY_NAME_ZH.
+# Do not "fix" one to match the other.
+msgid "From RFQ to the shop floor"
+msgstr "驿 · 从询价到门店现场，一路留痕"
+
+msgid "iStore Tech"
+msgstr "上海思导信息科技有限公司"
+
+msgid "Waypost Administration"
+msgstr "Waypost 管理后台"
+
+msgid "Waypost Admin"
+msgstr "Waypost 管理"
+
+msgid "Welcome to Waypost Administration"
+msgstr "欢迎使用 Waypost 管理后台"
+
+msgid "Your Waypost temporary password"
+msgstr "您的 Waypost 临时密码"
+
+msgid "Your Waypost password has been reset."
+msgstr "您的 Waypost 密码已重置。"
+
+msgid "Your Waypost account has been created."
+msgstr "您的 Waypost 账号已创建。"
+
+msgid "REST API for Waypost"
+msgstr "Waypost REST API"
+
+msgid "Enter company code (e.g., ISTORE)"
+msgstr "请输入公司代码（例如 ISTORE）"
+# --- end brand block -----------------------------------------------------
 
 msgid "History"
 msgstr "历史"
@@ -1075,9 +1112,6 @@ msgstr "价格表"
 
 msgid "Products & Sales"
 msgstr "产品与销售"
-
-msgid "Professional asset tracking and management solution."
-msgstr "专业的资产追踪与管理解决方案。"
 
 msgid "Purchase Date"
 msgstr "购买日期"

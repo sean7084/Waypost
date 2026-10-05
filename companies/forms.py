@@ -30,7 +30,7 @@ class CompanyForm(forms.ModelForm):
             }),
             'code': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': _('Enter company code (e.g., HENGJI)')
+                'placeholder': _('Enter company code (e.g., ISTORE)')
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-control',

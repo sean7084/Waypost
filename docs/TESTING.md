@@ -1,4 +1,4 @@
-# Testing Guide - HengJi AMS
+# Testing Guide - Waypost
 
 **Status:** strategy + tooling foundation. This document defines how to run tests, the
 conventions the existing suite follows, the **measured** coverage baseline, and a ratchet plan.
@@ -72,7 +72,7 @@ python -m pytest --lf                  # re-run only last failures
 python -m pytest inspections/tests.py  # one file
 ```
 
-> ⚠️ **Do not remove `-p hengjiams.pytest_bootstrap` from `addopts` in `pyproject.toml`.**
+> ⚠️ **Do not remove `-p waypost.pytest_bootstrap` from `addopts` in `pyproject.toml`.**
 > pytest-django calls `django.setup()` inside the `pytest_load_initial_conftests` hook, which
 > runs *before* a root `conftest.py` is imported. `manage.py` performs three bootstrap calls
 > (`load_local_env`, `configure_windows_weasyprint_runtime`, `configure_windows_fontconfig`)

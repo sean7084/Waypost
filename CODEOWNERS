@@ -1,4 +1,4 @@
-# CODEOWNERS file for HengjiAMS1
+# CODEOWNERS file for Waypost
 # This file defines code ownership and automatically requests reviews
 # from the specified owners when pull requests modify matching files.
 #
@@ -61,7 +61,7 @@
 /utils/ @sean7084
 
 # Core Django settings
-/hengjiams/ @sean7084
+/waypost/ @sean7084
 
 # Database migrations - Require extra careful review
 **/migrations/ @sean7084

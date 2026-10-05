@@ -23,9 +23,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: hengjiams_ci
-          POSTGRES_USER: hengjiams
-          POSTGRES_PASSWORD: hengjiams
+          POSTGRES_DB: waypost_ci
+          POSTGRES_USER: waypost
+          POSTGRES_PASSWORD: waypost
         ports:
           - 5432:5432
         options: >-
@@ -48,9 +48,9 @@ jobs:
       # encryption key, WeChat creds) do not block CI.
       DJANGO_DEBUG: 'True'
       DATABASE_ENGINE: django.db.backends.postgresql
-      DATABASE_NAME: hengjiams_ci
-      DATABASE_USER: hengjiams
-      DATABASE_PASSWORD: hengjiams
+      DATABASE_NAME: waypost_ci
+      DATABASE_USER: waypost
+      DATABASE_PASSWORD: waypost
       DATABASE_HOST: 127.0.0.1
       DATABASE_PORT: '5432'
       DJANGO_REDIS_CACHE_URL: redis://127.0.0.1:6379/1

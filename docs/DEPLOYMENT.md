@@ -1,6 +1,70 @@
-# Deployment Guide - HengJi AMS
+# Deployment Guide - Waypost
 
-This guide covers deploying HengJi AMS to production environments.
+This guide covers deploying Waypost to production environments.
+
+---
+
+## Upgrading a pre-rebrand `hengjiams` deployment
+
+The project was renamed from `hengjiams` / HengJi AMS to `waypost` / Waypost. A
+server provisioned before this change still carries the old identifiers, so the
+rest of this guide will not match it. Apply the following once, in a maintenance
+window, **after** taking a `pg_dump`. No schema is touched - this is purely a
+rename of the database, role, paths and service units.
+
+```bash
+# 1. Stop the app: renaming a PostgreSQL database requires zero connections.
+sudo systemctl stop hengjiams
+
+# 2. Rename the database and its owning role.
+sudo -u postgres psql -c 'ALTER DATABASE hengjiams_db RENAME TO waypost_db;'
+sudo -u postgres psql -c 'ALTER ROLE hengjiams_django RENAME TO waypost_django;'
+
+# 3. Rename the OS account, deploy directory, log directory and backup paths.
+sudo usermod -l waypost hengjiams_django 2>/dev/null || sudo usermod -l waypost hengjiams
+sudo groupmod -n waypost hengjiams
+sudo mv /opt/hengji-ams /opt/waypost
+sudo mv /var/log/hengjiams /var/log/waypost
+sudo mv /backups/hengjiams /backups/waypost
+sudo mv /opt/scripts/hengjiams-backup.sh /opt/scripts/waypost-backup.sh
+
+# 4. Rename the systemd unit and nginx site, then fix the paths inside them:
+#    WorkingDirectory/ExecStart -> /opt/waypost, User/Group -> waypost,
+#    gunicorn target -> waypost.wsgi:application, alias -> /opt/waypost/...
+sudo mv /etc/systemd/system/hengjiams.service /etc/systemd/system/waypost.service
+sudo mv /etc/nginx/sites-available/hengjiams /etc/nginx/sites-available/waypost
+sudo ln -s /etc/nginx/sites-available/waypost /etc/nginx/sites-enabled/waypost
+sudo rm /etc/nginx/sites-enabled/hengjiams
+
+# 5. Update /opt/waypost/.env - DJANGO_SETTINGS_MODULE=waypost.settings,
+#    DATABASE_NAME=waypost_db, DATABASE_USER=waypost_django.
+
+# 6. Pull the rebranded code, reinstall, recompile translations, restart.
+cd /opt/waypost && git pull
+sudo -u waypost /opt/waypost/.venv/bin/pip install -r requirements.txt
+sudo -u waypost /opt/waypost/.venv/bin/python compile_translations.py
+sudo -u waypost /opt/waypost/.venv/bin/python manage.py collectstatic --noinput
+sudo systemctl daemon-reload && sudo systemctl enable --now waypost
+sudo nginx -t && sudo systemctl reload nginx
+
+# 7. Update the cron/systemd timer that calls the backup script (new path).
+```
+
+Each developer machine needs the same three things: pull the branch (the
+`hengjiams/` package is now `waypost/`), update the local `.env`
+`DJANGO_SETTINGS_MODULE`, and recreate the venv if it was built with an editable
+install. Local SQLite needs no rename - `db.sqlite3` is path-independent.
+
+> ℹ️ **Repository:** the GitHub repository has been renamed to
+> `sean7084/Waypost`. GitHub redirects the old URL, but every clone should still
+> run `git remote set-url origin https://github.com/sean7084/Waypost.git` so
+> pushes do not depend on the redirect.
+>
+> The old **conda** environment (`HengjiAMS1`) has been removed - development now
+> runs entirely on the repo-local `.venv` (`python -m venv .venv`). The only
+> lingering conda awareness is `CONDA_PREFIX`, which `waypost/runtime_setup.py`
+> still probes as one optional candidate location for the WeasyPrint GTK DLLs;
+> it is simply skipped when that variable is unset.
 
 ---
 
@@ -48,7 +112,7 @@ sudo apt install -y \
     git curl wget build-essential libpq-dev
 
 # Create system user for application
-sudo adduser --system --no-create-home hengjiams
+sudo adduser --system --no-create-home waypost
 ```
 
 ### Step 2: PostgreSQL Database Setup
@@ -58,10 +122,10 @@ sudo adduser --system --no-create-home hengjiams
 sudo -u postgres psql
 
 -- Create database and user
-CREATE DATABASE hengjiams_db;
-CREATE USER hengjiams_django WITH PASSWORD 'your_secure_password_here';
-GRANT ALL PRIVILEGES ON DATABASE hengjiams_db TO hengjiams_django;
-ALTER DATABASE hengjiams_db OWNER TO hengjiams_django;
+CREATE DATABASE waypost_db;
+CREATE USER waypost_django WITH PASSWORD 'your_secure_password_here';
+GRANT ALL PRIVILEGES ON DATABASE waypost_db TO waypost_django;
+ALTER DATABASE waypost_db OWNER TO waypost_django;
 \q
 ```
 
@@ -69,9 +133,9 @@ ALTER DATABASE hengjiams_db OWNER TO hengjiams_django;
 
 ```bash
 cd /opt
-sudo git clone https://github.com/your-org/hengji-ams.git
-sudo chown -R hengjiams:hengjiams /opt/hengji-ams
-cd /opt/hengji-ams
+sudo git clone https://github.com/your-org/waypost.git
+sudo chown -R waypost:waypost /opt/waypost
+cd /opt/waypost
 
 # Install Python dependencies
 python3.12 -m venv .venv
@@ -82,11 +146,11 @@ pip install -r requirements.txt
 
 ### Step 4: Configure Environment Variables
 
-The app loads a repo-local **`.env`** file automatically (`hengjiams/runtime_setup.py::load_local_env`, called by `manage.py`, `wsgi.py`, and `asgi.py`). Create it with the variables that `settings.py` **actually reads**:
+The app loads a repo-local **`.env`** file automatically (`waypost/runtime_setup.py::load_local_env`, called by `manage.py`, `wsgi.py`, and `asgi.py`). Create it with the variables that `settings.py` **actually reads**:
 
 ```bash
-cat > /opt/hengji-ams/.env << EOF
-DJANGO_SETTINGS_MODULE=hengjiams.settings
+cat > /opt/waypost/.env << EOF
+DJANGO_SETTINGS_MODULE=waypost.settings
 
 # Django core (REQUIRED in production)
 DJANGO_SECRET_KEY=${RANDOM_SECRET_KEY_GENERATED_HERE}
@@ -97,8 +161,8 @@ DJANGO_FIELD_ENCRYPTION_KEY=${FERNET_KEY_GENERATED_HERE}
 
 # Database (defaults to SQLite if omitted; set these for PostgreSQL)
 DATABASE_ENGINE=django.db.backends.postgresql
-DATABASE_NAME=hengjiams_db
-DATABASE_USER=hengjiams_django
+DATABASE_NAME=waypost_db
+DATABASE_USER=waypost_django
 DATABASE_PASSWORD=your_secure_password_here
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
@@ -144,7 +208,7 @@ The `template_files/` directory is **excluded from Git** (`.gitignore`), but doc
 | `template_files/签收单 template.xlsx` | Delivery (sign-off sheet) generation |
 | `template_files/invoice information template.xlsx` | Invoice information sheet |
 
-Copy these templates from a secure internal source into `/opt/hengji-ams/template_files/` before first run. They are **not** distributed with the repository.
+Copy these templates from a secure internal source into `/opt/waypost/template_files/` before first run. They are **not** distributed with the repository.
 
 ### Step 5: Run Migrations
 
@@ -168,28 +232,28 @@ python manage.py createsuperuser
 Create systemd service file:
 
 ```bash
-sudo nano /etc/systemd/system/hengjiams.service
+sudo nano /etc/systemd/system/waypost.service
 ```
 
 Add content:
 
 ```ini
 [Unit]
-Description=HengJi AMS Gunicorn daemon
+Description=Waypost Gunicorn daemon
 After=network.target postgresql.service
 
 [Service]
-User=hengjiams
-Group=hengjiams
-WorkingDirectory=/opt/hengji-ams
-ExecStart=/opt/hengji-ams/.venv/bin/gunicorn \
+User=waypost
+Group=waypost
+WorkingDirectory=/opt/waypost
+ExecStart=/opt/waypost/.venv/bin/gunicorn \
     --access-logfile - \
-    --error-logfile /var/log/hengjiams/gunicorn-error.log \
+    --error-logfile /var/log/waypost/gunicorn-error.log \
     --capture-output \
     --timeout 120 \
     --workers 4 \
     --bind 127.0.0.1:8000 \
-    hengjiams.wsgi:application
+    waypost.wsgi:application
 
 Restart=on-failure
 
@@ -201,9 +265,9 @@ Enable and start service:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable hengjiams
-sudo systemctl start hengjiams
-sudo systemctl status hengjiams
+sudo systemctl enable waypost
+sudo systemctl start waypost
+sudo systemctl status waypost
 ```
 
 ### Step 8: Configure Nginx
@@ -211,7 +275,7 @@ sudo systemctl status hengjiams
 Create Nginx config:
 
 ```bash
-sudo nano /etc/nginx/sites-available/hengjiams
+sudo nano /etc/nginx/sites-available/waypost
 ```
 
 Add content:
@@ -224,7 +288,7 @@ server {
     # Static files (from `manage.py collectstatic`). WhiteNoise gives hashed
     # filenames, so they can be cached immutably for a year.
     location /static/ {
-        alias /opt/hengji-ams/staticfiles/;
+        alias /opt/waypost/staticfiles/;
         access_log off;
         expires 1y;
         add_header Cache-Control "public, immutable";
@@ -232,7 +296,7 @@ server {
     
     # Media files
     location /media/ {
-        alias /opt/hengji-ams/media/;
+        alias /opt/waypost/media/;
         expires 30d;
     }
     
@@ -272,7 +336,7 @@ server {
 Enable site and restart Nginx:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/hengjiams /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/waypost /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
@@ -315,12 +379,12 @@ Mailbox synchronization runs as an **in-process background thread**, started aut
 
 ```bash
 # Requires a docker/ directory + compose file that do not exist yet
-cd /path/to/hengji-ams/docker
+cd /path/to/waypost/docker
 docker-compose build
 docker-compose up -d
-docker-compose exec hengjiams python manage.py migrate
-docker-compose exec hengjiams python manage.py collectstatic --noinput
-docker-compose exec hengjiams python manage.py createsuperuser
+docker-compose exec waypost python manage.py migrate
+docker-compose exec waypost python manage.py collectstatic --noinput
+docker-compose exec waypost python manage.py createsuperuser
 ```
 
 ---
@@ -373,12 +437,12 @@ docker-compose exec hengjiams python manage.py createsuperuser
 #!/bin/bash
 # /opt/scripts/db-backup.sh
 
-BACKUP_DIR="/backups/hengjiams-db"
+BACKUP_DIR="/backups/waypost-db"
 DATE=$(date +%Y%m%d_%H%M%S)
-DB_NAME="hengjiams_db"
+DB_NAME="waypost_db"
 
 mkdir -p "$BACKUP_DIR"
-pg_dump -U hengjiams_django "$DB_NAME" > "$BACKUP_DIR/$DB_NAME_$DATE.sql.gz"
+pg_dump -U waypost_django "$DB_NAME" > "$BACKUP_DIR/$DB_NAME_$DATE.sql.gz"
 gzip -9 "$BACKUP_DIR/$DB_NAME_$DATE.sql"
 
 # Keep last 30 days
@@ -391,9 +455,9 @@ Add to cron: `0 2 * * * /opt/scripts/db-backup.sh`
 
 ```bash
 # Backup static/media files
-tar czf "/backups/hengjiams-files_$DATE.tar.gz" \
-    /opt/hengji-ams/staticfiles \
-    /opt/hengji-ams/media
+tar czf "/backups/waypost-files_$DATE.tar.gz" \
+    /opt/waypost/staticfiles \
+    /opt/waypost/media
 ```
 
 ---
@@ -418,13 +482,13 @@ python3.12 -c "import weasyprint; weasyprint.HTML(string='<div>Hello</div>').wri
 
 ### Database Connection Pool Exhaustion
 
-**Symptom**: `too many connections for role hengjiams_django`
+**Symptom**: `too many connections for role waypost_django`
 
 **Solution**: Adjust PostgreSQL settings:
 
 ```sql
 -- Check current connection limit
-SELECT datname, numbackends, maxconn FROM pg_database WHERE datname='hengjiams_db';
+SELECT datname, numbackends, maxconn FROM pg_database WHERE datname='waypost_db';
 
 -- Increase limit (restart PostgreSQL required)
 # postgresql.conf
@@ -478,9 +542,9 @@ MIDDLEWARE += ['django.middleware.gzip.GZipMiddleware']
 
 ```bash
 # 0. BACK UP FIRST - the only reliable rollback path (see BACKUP_RESTORE.md §2)
-/opt/scripts/hengjiams-backup.sh
+/opt/scripts/waypost-backup.sh
 
-cd /opt/hengji-ams
+cd /opt/waypost
 git fetch --tags origin
 git checkout v0.1.8                      # deploy the released TAG, not main
 
@@ -488,7 +552,7 @@ source .venv/bin/activate
 pip install -r requirements.txt          # deps before migrate: migrations may import new packages
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput --clear   # before restart: WhiteNoise manifest storage
-sudo systemctl restart hengjiams
+sudo systemctl restart waypost
 ```
 
 > 🚫 **Never run `makemigrations` on the server.** Migrations are source code — they must be generated on a workstation, committed, reviewed, and released. Generating them in production creates untracked schema drift that no tag can reproduce and that silently breaks rollback. Verify instead that the release contains no uncommitted model changes:
@@ -505,9 +569,9 @@ See `CHANGELOG.md` for per-version migration notes, and [`RELEASE_PROCEDURE.md`]
 
 ## Support & Contact
 
-**Technical Support**: support@hengji.com  
+**Technical Support**: support@istore-tech.com  
 **Emergency Escalation**: +86 XXX-XXXX-XXXX  
-**Documentation**: https://docs.hengji.com  
+**Documentation**: https://docs.istore-tech.com  
 
 ---
 
