@@ -262,7 +262,7 @@ def render_quotation_pdf_html(quotation, template_code=None):
         'logo_path': (Path(settings.BASE_DIR) / 'static' / 'images' / 'quotation_template_logo.png').resolve().as_uri(),
         'header_rule_path': (Path(settings.BASE_DIR) / 'static' / 'images' / 'quotation_header_rule.png').resolve().as_uri(),
         'seal_path': (Path(settings.BASE_DIR) / 'static' / 'images' / 'sample_contact_seal.png').resolve().as_uri(),
-        'prepared_by_company': '上海珩际信息科技有限公司',
+        'prepared_by_company': settings.COMPANY_NAME_ZH,
     }
     context.update(pdf_sections)
     html = render_to_string(template_definition['template_path'], context)

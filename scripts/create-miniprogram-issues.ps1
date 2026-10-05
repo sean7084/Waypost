@@ -13,7 +13,7 @@
 param([switch]$WhatIf)
 
 $repoOwner = "sean7084"
-$repoName  = "HengjiAMS1"
+$repoName  = "Waypost"
 $envFile = @('.env', '.env.local') | Where-Object { Test-Path $_ } | Select-Object -First 1
 $tokenLine = if ($envFile) { (Get-Content $envFile | Select-String '^GITHUB_CLASSIC_TOKEN=') } else { $null }
 if (-not $tokenLine -and -not $WhatIf) { throw "GITHUB_CLASSIC_TOKEN not found in .env (or .env.local)" }
@@ -24,7 +24,7 @@ $baseUrl = "https://api.github.com/repos/$repoOwner/$repoName"
 # Prerequisite: labels must exist (run setup-github-labels.ps1 first).
 $epicBody = @"
 Epic: WeChat mini program that replaces the Feishu questionnaire for the Kering EUS
-store health-check. Backend in HengjiAMS1 (inspections app), offline-first native
+store health-check. Backend in Waypost (inspections app), offline-first native
 mini program, server-generated 'Report Per Store.xlsx' + Photo archive.
 
 Spec: docs/MINIPROGRAM_SPEC.md  |  ADR-0011  |  Plan: WeChat_Audit_Mini_Program_task-efd.md

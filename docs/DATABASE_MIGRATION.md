@@ -1,6 +1,6 @@
 # Database Migration Guide: SQLite → PostgreSQL
 
-**Applies to:** HengJi AMS (Django 5.2.8)
+**Applies to:** Waypost (Django 5.2.8)
 **Scenario:** Moving existing data from the local development database (`db.sqlite3`) to a production PostgreSQL server (Ubuntu 24.04 LTS).
 **Last Updated:** September 6, 2026
 
@@ -42,10 +42,10 @@ sudo -u postgres psql
 ```
 
 ```sql
-CREATE DATABASE hengjiams_db WITH ENCODING 'UTF8';
-CREATE USER hengjiams_django WITH PASSWORD 'your_secure_password_here';
-GRANT ALL PRIVILEGES ON DATABASE hengjiams_db TO hengjiams_django;
-ALTER DATABASE hengjiams_db OWNER TO hengjiams_django;
+CREATE DATABASE waypost_db WITH ENCODING 'UTF8';
+CREATE USER waypost_django WITH PASSWORD 'your_secure_password_here';
+GRANT ALL PRIVILEGES ON DATABASE waypost_db TO waypost_django;
+ALTER DATABASE waypost_db OWNER TO waypost_django;
 \q
 ```
 
@@ -54,8 +54,8 @@ ALTER DATABASE hengjiams_db OWNER TO hengjiams_django;
 On PostgreSQL 15+, also grant schema privileges (the `public` schema is no longer writable by default):
 
 ```sql
-\c hengjiams_db
-GRANT ALL ON SCHEMA public TO hengjiams_django;
+\c waypost_db
+GRANT ALL ON SCHEMA public TO waypost_django;
 ```
 
 ---
@@ -86,12 +86,12 @@ python manage.py dumpdata \
 
 ## Step 3 — Point Django at PostgreSQL
 
-Set the database variables in the production `.env` (loaded automatically by `hengjiams/runtime_setup.py`):
+Set the database variables in the production `.env` (loaded automatically by `waypost/runtime_setup.py`):
 
 ```bash
 DATABASE_ENGINE=django.db.backends.postgresql
-DATABASE_NAME=hengjiams_db
-DATABASE_USER=hengjiams_django
+DATABASE_NAME=waypost_db
+DATABASE_USER=waypost_django
 DATABASE_PASSWORD=your_secure_password_here
 DATABASE_HOST=127.0.0.1
 DATABASE_PORT=5432
@@ -143,7 +143,7 @@ when **creating new** records, reset the sequences for the integer-PK apps:
 python manage.py sqlsequencereset \
   accounts assets companies customers quotations purchases \
   deliveries invoices audit reports products users dashboard \
-  | psql -U hengjiams_django -h 127.0.0.1 -d hengjiams_db
+  | psql -U waypost_django -h 127.0.0.1 -d waypost_db
 ```
 
 > Models with **UUID** primary keys (e.g., assets, companies) do not need sequence resets — only `BigAutoField`/integer-PK tables do. Running the command for all apps is harmless.
@@ -172,7 +172,7 @@ Then log in to the app and spot-check:
 |---------|-------|-----|
 | `duplicate key ... contenttypes_pkey` | Contenttypes loaded from fixture | Re-dump with `--exclude contenttypes` (Step 2) |
 | `duplicate key ... <table>_pkey` on new inserts | Sequences not advanced | Run `sqlsequencereset` (Step 6) |
-| `permission denied for schema public` | PostgreSQL 15+ default | `GRANT ALL ON SCHEMA public TO hengjiams_django;` |
+| `permission denied for schema public` | PostgreSQL 15+ default | `GRANT ALL ON SCHEMA public TO waypost_django;` |
 | Garbled Chinese characters | Non-UTF-8 database/connection | Recreate DB with `ENCODING 'UTF8'`; ensure client encoding UTF-8 |
 | `loaddata` integrity error on a FK | Dump order / missing natural keys | Re-dump adding `--natural-foreign --natural-primary` |
 | Numeric/date field rejected | SQLite loose typing hid bad data | Clean the offending rows in SQLite, re-dump |

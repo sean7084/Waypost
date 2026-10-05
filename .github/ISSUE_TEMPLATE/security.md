@@ -31,4 +31,4 @@ Have you identified how to fix this? Or any workarounds?
 ---
 
 **CONFIDENTIAL**: Please treat this as private. Do not publish details until remediated.
-For urgent matters, also email: security@hengji.com
+For urgent matters, also email: security@istore-tech.com

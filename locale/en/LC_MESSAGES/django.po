@@ -1,5 +1,5 @@
 # LANGUAGE translation of Django.
-# Copyright (C) 2025 HengJi AMS
+# Copyright (C) 2026 iStore Tech (Waypost)
 # This file is distributed under the same license as the Django package.
 
 msgid ""

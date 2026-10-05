@@ -1,5 +1,5 @@
 """
-Models for HengJi Asset Management System - Accounts App.
+Models for Waypost - Accounts App.
 This module defines the custom user model and related authentication models.
 """
 
@@ -60,7 +60,7 @@ class ServiceCity(models.Model):
 
 class User(AbstractUser):
     """
-    Custom user model for HengJi AMS with additional fields.
+    Custom user model for Waypost with additional fields.
     """
     
     # Administrator role choices

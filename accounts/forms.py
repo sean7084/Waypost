@@ -1,5 +1,5 @@
 """
-Forms for HengJi Asset Management System - Accounts App.
+Forms for Waypost - Accounts App.
 This module defines forms for authentication, user management, and profile handling.
 Includes 2FA forms, multi-language support, and validation.
 """

@@ -1,4 +1,4 @@
-# API Documentation - HengJi AMS
+# API Documentation - Waypost
 
 **Base URL:** `http://127.0.0.1:8000/api/v1/` (development)
 **Framework:** Django REST Framework (DRF)

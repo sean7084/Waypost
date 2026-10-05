@@ -40,7 +40,7 @@ def configure_windows_fontconfig() -> None:
         return
 
     local_app_data = Path(os.environ.get("LOCALAPPDATA", str(project_root)))
-    cache_home = local_app_data / "hengjiams-fontconfig-cache"
+    cache_home = local_app_data / "waypost-fontconfig-cache"
     cache_home.mkdir(parents=True, exist_ok=True)
 
     os.environ.setdefault("XDG_CACHE_HOME", str(cache_home))

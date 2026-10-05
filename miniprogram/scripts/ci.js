@@ -25,7 +25,7 @@ const MINIPROGRAM_ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.resolve(MINIPROGRAM_ROOT, '..');
 const ENV_PATH = path.join(REPO_ROOT, '.env');
 
-// Parse a repo-root .env the same way hengjiams/runtime_setup.load_local_env does:
+// Parse a repo-root .env the same way waypost/runtime_setup.load_local_env does:
 // split on the first '=', skip blanks/comments, strip one layer of surrounding quotes.
 function loadDotEnv(file) {
   const out = {};

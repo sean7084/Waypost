@@ -1,6 +1,6 @@
-# System Architecture - HengJi AMS
+# System Architecture - Waypost
 
-**Purpose:** the single high-level view of how HengJi AMS fits together — external actors and
+**Purpose:** the single high-level view of how Waypost fits together — external actors and
 systems, the bounded contexts and their dependencies, and the end-to-end data flows. Individual
 decisions live in [`ARCHITECTURAL_DECISION_RECORDS.md`](ARCHITECTURAL_DECISION_RECORDS.md);
 routes in [`WEB_ROUTES.md`](WEB_ROUTES.md); tables in
@@ -29,7 +29,7 @@ flowchart LR
         ESK["Esker<br/>accounts-payable"]
     end
 
-    subgraph Platform["HengjiAMS1 platform"]
+    subgraph Platform["Waypost platform"]
         NG["Nginx<br/>TLS, /static/, /media/"]
         GU["Gunicorn<br/>WSGI workers"]
         DJ["Django 5.2 monolith<br/>15 apps + DRF"]
@@ -76,7 +76,7 @@ Notes:
 
 ```mermaid
 flowchart TB
-    U["URL layer<br/>hengjiams/urls.py -> per-app urls.py (+ i18n prefix, DRF router)"]
+    U["URL layer<br/>waypost/urls.py -> per-app urls.py (+ i18n prefix, DRF router)"]
     V["Presentation<br/>CBVs / FBVs in &lt;app&gt;/views.py + forms.py<br/>api/views*.py + api/serializers.py (DRF)"]
     S["Domain services<br/>quotations/services.py, deliveries/services.py,<br/>invoices/services.py, inspections/services/*,<br/>accounts/rfq_ai.py, accounts/mailbox_sync.py"]
     M["Models<br/>&lt;app&gt;/models.py (52 models)"]

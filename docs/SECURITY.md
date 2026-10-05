@@ -1,7 +1,7 @@
-# Security Policy & Architecture — HengJi AMS
+# Security Policy & Architecture — Waypost
 
 **Last Updated:** September 7, 2026
-**Applies to:** HengJi AMS (Django 5.2.8)
+**Applies to:** Waypost (Django 5.2.8)
 **Audience:** Maintainers, contributors, and security reviewers
 
 This document describes the security controls **actually implemented** in the codebase, how to report vulnerabilities, and the known gaps that remain. Where a control is aspirational rather than implemented, it is explicitly marked ⚠️.
@@ -13,7 +13,7 @@ This document describes the security controls **actually implemented** in the co
 **Please do NOT open a public GitHub issue for security vulnerabilities.**
 
 - Use the confidential template: [`.github/ISSUE_TEMPLATE/security.md`](../.github/ISSUE_TEMPLATE/security.md) (labels `security`, `confidential`), **or**
-- Email: **security@hengji.com**
+- Email: **security@istore-tech.com**
 
 Include: vulnerability type, impact assessment, reproduction steps, and a minimal proof of concept.
 
@@ -57,7 +57,7 @@ Include: vulnerability type, impact assessment, reproduction steps, and a minima
 ### Two-Factor Authentication (2FA)
 - Provided by **`django-otp`** with the TOTP and static-device plugins; `OTPMiddleware` is enabled.
 - `User.two_factor_enabled` tracks enrollment; `User.force_2fa_setup` forces enrollment at next login; `User.backup_tokens` stores static recovery codes.
-- Issuer name: `OTP_TOTP_ISSUER = 'HengJi AMS'`.
+- Issuer name: `OTP_TOTP_ISSUER = 'Waypost'`.
 
 ---
 
@@ -109,7 +109,7 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 ## 6. Secrets Management
 
-- Secrets are read from a **repo-local `.env`** file (loaded by `hengjiams/runtime_setup.py`), which is **not committed** (`.gitignore`). See `.env.example`.
+- Secrets are read from a **repo-local `.env`** file (loaded by `waypost/runtime_setup.py`), which is **not committed** (`.gitignore`). See `.env.example`.
 - Key secrets: `DJANGO_SECRET_KEY`, `DJANGO_FIELD_ENCRYPTION_KEY`, `DATABASE_PASSWORD`, `minimax_token_plan_key`.
 - **Fail-fast guards** (`settings.py`) refuse to start when `DEBUG=False` and:
   - `DJANGO_SECRET_KEY` is unset (still the insecure dev fallback), or

@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 """
 Manual compilation of translation files without gettext tools
+
+Deliberately does NOT call django.setup(): compiling .po -> .mo only needs
+polib, and pulling in the app registry imports quotations.services -> WeasyPrint,
+which requires the native GTK runtime. Translation compilation should work on a
+plain venv without any DLL setup.
 """
 import os
-import django
-from django.core.management.utils import find_command
-from django.core.management.commands.compilemessages import Command
-
-# Setup Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hengjiams.settings')
-django.setup()
 
 # Simple manual compilation
 import polib

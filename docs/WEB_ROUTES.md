@@ -1,4 +1,4 @@
-# Web Routes Reference - HengJi AMS (non-DRF surface)
+# Web Routes Reference - Waypost (non-DRF surface)
 
 **Scope:** the server-rendered HTML application — **164 routes across 12 apps** — plus the admin
 and utility surfaces. The REST API (`/api/v1/`, 71 routes) is documented in
@@ -15,7 +15,7 @@ every pattern, route name and view below is what Django actually resolves — 49
 ## 1. How routing is composed
 
 ```
-hengjiams/urls.py                     root urlconf
+waypost/urls.py                     root urlconf
 ├── admin/                            django.contrib.admin  (245 routes)
 ├── api/v1/                           api.urls -> DRF DefaultRouter + WeChat auth  (71 routes)
 ├── docs/                             APIDocumentationView

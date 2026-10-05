@@ -1,5 +1,5 @@
 """
-Models for HengJi AMS Quotations App.
+Models for Waypost Quotations App.
 Quotation management with line items for the quotation-to-invoice workflow.
 """
 from django.db import models

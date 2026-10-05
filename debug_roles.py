@@ -6,7 +6,7 @@ import os
 import django
 
 # Setup Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hengjiams.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'waypost.settings')
 django.setup()
 
 from accounts.models import User

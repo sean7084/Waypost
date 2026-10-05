@@ -7,12 +7,12 @@
 # See docs/TESTING.md.
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "hengjiams.settings"
+DJANGO_SETTINGS_MODULE = "waypost.settings"
 # Django projects name their modules `tests.py`, which pytest does not match by default.
 python_files = ["tests.py", "test_*.py", "tests_*.py"]
-# `-p hengjiams.pytest_bootstrap` must stay first: it performs the WeasyPrint /
+# `-p waypost.pytest_bootstrap` must stay first: it performs the WeasyPrint /
 # fontconfig / .env bootstrap before pytest-django calls django.setup().
-addopts = "-p hengjiams.pytest_bootstrap -ra --strict-markers"
+addopts = "-p waypost.pytest_bootstrap -ra --strict-markers"
 norecursedirs = [
     ".git",
     ".venv",
@@ -47,8 +47,8 @@ omit = [
     "compile_translations.py",
     "debug_roles.py",
     "tmp_*",
-    "hengjiams/asgi.py",
-    "hengjiams/wsgi.py",
+    "waypost/asgi.py",
+    "waypost/wsgi.py",
     "*/apps.py",
 ]
 

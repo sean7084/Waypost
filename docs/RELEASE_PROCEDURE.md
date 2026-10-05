@@ -1,6 +1,6 @@
-# Release Procedure — HengJi AMS
+# Release Procedure — Waypost
 
-**Applies to:** HengJi AMS (Django 5.2.8) on Ubuntu 24.04 LTS · Gunicorn + Nginx + PostgreSQL + Redis
+**Applies to:** Waypost (Django 5.2.8) on Ubuntu 24.04 LTS · Gunicorn + Nginx + PostgreSQL + Redis
 **Current released version:** v0.1.7 (May 11, 2026)
 **Last Updated:** September 7, 2026
 
@@ -29,7 +29,7 @@ This procedure is written against what actually exists in the repository today, 
 
 ## 2. Versioning Policy
 
-HengJi AMS follows [Semantic Versioning](https://semver.org/) in the `MAJOR.MINOR.PATCH` form, prefixed with `v` in tags and headings.
+Waypost follows [Semantic Versioning](https://semver.org/) in the `MAJOR.MINOR.PATCH` form, prefixed with `v` in tags and headings.
 
 The project is **pre-1.0** (`0.1.x`). Under SemVer §4, a `0.y.z` version makes **no stability guarantee** — anything may change at any time. This project therefore adds its own binding rules so that version numbers stay meaningful:
 
@@ -123,15 +123,15 @@ Any output ⇒ MINOR bump. No output ⇒ PATCH is permitted.
 
 ```
 ## Release Notes v0.1.7                                  ← modern, use this
-## HengJi Asset Management System (AMS) - Release Note v0.0.1
+## Waypost - Release Note v0.0.1
 ## Release Notes and Progress Report for Version 0.0.2
-## HengJi Asset Management System (AMS) - Changelog v0.0.3
+## Waypost - Changelog v0.0.3
 ## Version 0.0.4
 ```
 
 Entries are also **not consistently ordered** (v0.1.7 and v0.1.6 sit at the top, followed by v0.0.1 ascending through v0.1.5).
 
-**Mandated format for all new entries** — prepend at the top of the file, directly under the `# HengJi Asset Management System (AMS) - Changelog` title:
+**Mandated format for all new entries** — prepend at the top of the file, directly under the `# Waypost - Changelog` title:
 
 ```markdown
 ## Release Notes v0.1.8
@@ -216,7 +216,7 @@ Optionally publish a GitHub Release from the tag, using the CHANGELOG entry as t
 ### 6.1 Before you touch the server
 
 - [ ] **Take a backup.** This is non-negotiable and is the *only* reliable rollback path (§9 Tier 3).
-      Run `/opt/scripts/hengjiams-backup.sh` per [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md) §2.
+      Run `/opt/scripts/waypost-backup.sh` per [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md) §2.
 - [ ] Confirm the backup succeeded and note its `<STAMP>` — you will need it if you roll back.
 - [ ] Read the release's **Migration Files Added** section. Are any of them in the `noop`-reverse list (§9.2)? If so, this release is a **one-way door** — decide *now* that rollback means DB restore, not migration reversal.
 - [ ] Confirm `template_files/` is present on the server (gitignored, but document generation raises `FileNotFoundError` without it — `DEPLOYMENT.md` Step 4b).
@@ -226,7 +226,7 @@ Optionally publish a GitHub Release from the tag, using the CHANGELOG entry as t
 Order matters. Deviating causes avoidable outages.
 
 ```bash
-cd /opt/hengji-ams
+cd /opt/waypost
 
 # 1. Fetch the release tag (NOT "git pull origin main" — deploy the tag you released)
 git fetch --tags origin
@@ -245,10 +245,10 @@ python manage.py migrate --noinput
 python manage.py collectstatic --noinput --clear
 
 # 5. Restart the application
-sudo systemctl restart hengjiams
+sudo systemctl restart waypost
 
 # 6. Verify
-sudo systemctl status hengjiams --no-pager
+sudo systemctl status waypost --no-pager
 ```
 
 ### 6.3 Two anti-patterns to avoid
@@ -272,9 +272,9 @@ Run immediately after deploy. Everything here is manual until CI exists (issue #
 
 **Boot & config**
 
-- [ ] `sudo systemctl status hengjiams` → `active (running)`, no restart loop
-- [ ] `tail -n 50 /var/log/hengjiams/gunicorn-error.log` → no tracebacks
-- [ ] `tail -n 50 logs/hengjiams.log` → no unexpected errors
+- [ ] `sudo systemctl status waypost` → `active (running)`, no restart loop
+- [ ] `tail -n 50 /var/log/waypost/gunicorn-error.log` → no tracebacks
+- [ ] `tail -n 50 logs/waypost.log` → no unexpected errors
 - [ ] `python manage.py showmigrations` → all boxes ticked `[X]`
 
 **HTTP**
@@ -312,7 +312,7 @@ Record the verification result (who, when, outcome) in the release PR or the CHA
 
 ```
 Is production actively harming data or users?
-├─ YES → take the site down first:  sudo systemctl stop hengjiams
+├─ YES → take the site down first:  sudo systemctl stop waypost
 │        (a clean outage beats silent corruption), then work Tier 2/3
 └─ NO  → proceed to classify
 
@@ -328,14 +328,14 @@ Did the release add migration files?  (§5.2 / CHANGELOG "Migration Files Added"
 Applies to any PATCH release, and to a MINOR release whose migrations are reversible *and* already judged unnecessary to undo.
 
 ```bash
-cd /opt/hengji-ams
+cd /opt/waypost
 source .venv/bin/activate
 
 git fetch --tags origin
 git checkout v0.1.7                      # previous known-good tag
 pip install -r requirements.txt          # in case deps changed
 python manage.py collectstatic --noinput --clear
-sudo systemctl restart hengjiams
+sudo systemctl restart waypost
 ```
 
 Then re-run the §7 checklist. No database action is required.
@@ -346,7 +346,7 @@ Only when **every** migration being reversed has a real reverse function (§9.1)
 
 ```bash
 # 1. BACK UP AGAIN — reversing migrations is itself a destructive operation
-/opt/scripts/hengjiams-backup.sh
+/opt/scripts/waypost-backup.sh
 
 # 2. Check out the previous tag first, so the OLD migration graph is what runs
 git checkout v0.1.7
@@ -375,7 +375,7 @@ git checkout v0.1.7
 pip install -r requirements.txt
 python manage.py migrate --noinput        # reconciles any migrations newer than the backup
 python manage.py collectstatic --noinput --clear
-sudo systemctl restart hengjiams
+sudo systemctl restart waypost
 ```
 
 Restore `.env` from its encrypted backup **only if** the encryption key changed — see the warning below.
@@ -436,7 +436,7 @@ Silently omitting the second argument is the worst option: `migrate` raises `Not
 
 When production is broken and cannot wait for a normal cycle:
 
-1. **Stabilise first.** If data is being corrupted, `sudo systemctl stop hengjiams`. Decide between rolling back (§8) and fixing forward — a rollback is usually faster and safer than a hotfix written under pressure.
+1. **Stabilise first.** If data is being corrupted, `sudo systemctl stop waypost`. Decide between rolling back (§8) and fixing forward — a rollback is usually faster and safer than a hotfix written under pressure.
 2. Branch from the **deployed tag**, not from `main`:
    ```bash
    git checkout -b fix/NN-short-slug v0.1.8

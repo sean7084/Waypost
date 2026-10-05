@@ -1,1 +1,1 @@
-# API module for HengJi AMS REST API
+# API module for Waypost REST API

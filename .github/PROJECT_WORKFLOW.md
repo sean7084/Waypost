@@ -1,8 +1,8 @@
-# GitHub Projects Workflow Setup for HengJi AMS
+# GitHub Projects Workflow Setup for Waypost
 
 ## Overview
 
-This document describes how to configure and use GitHub Projects for managing the HengJi AMS development lifecycle.
+This document describes how to configure and use GitHub Projects for managing the Waypost development lifecycle.
 
 ---
 

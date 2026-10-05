@@ -1,9 +1,9 @@
 # Inspections Web Frontend — Verification Report
 
 Browser-verification evidence for the inspections web frontend delivered in
-[PR #80](https://github.com/sean7084/HengjiAMS1/pull/80)
-(closes [#78](https://github.com/sean7084/HengjiAMS1/issues/78) and
-[#79](https://github.com/sean7084/HengjiAMS1/issues/79)).
+[PR #80](https://github.com/sean7084/Waypost/pull/80)
+(closes [#78](https://github.com/sean7084/Waypost/issues/78) and
+[#79](https://github.com/sean7084/Waypost/issues/79)).
 
 ## How verification was performed
 
