@@ -18,7 +18,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -53,6 +53,7 @@ from inspections.scoping import (
 )
 from inspections.services.asset_list_export import export_asset_list
 from inspections.services.kering_import import import_kering_master
+from inspections.services.sample_files import SAMPLES
 
 # FullCalendar event colors keyed by StoreInspection.Status.
 _STATUS_COLORS = {
@@ -78,31 +79,52 @@ class InspectionManageMixin(LoginRequiredMixin, UserPassesTestMixin):
         return self.request.user.can_manage_inspections()
 
 
-def _month_bounds(value):
-    """Parse a ``YYYY-MM`` (or ``YYYY-MM-DD``) selector into (first_day, last_day).
+def _parse_anchor(date_value, month_value):
+    """Parse a dashboard anchor date from ``?date=YYYY-MM-DD`` or ``?month=YYYY-MM``.
 
-    Returns ``None`` when the value is missing or malformed so the caller can
-    fall back to its default window.
+    Returns ``None`` when neither is present or parseable so the caller can fall
+    back to today.
     """
-    text = (value or '').strip()
-    if not text:
-        return None
-    try:
-        if len(text) == 7:
-            text += '-01'
-        parsed = date.fromisoformat(text)
-    except ValueError:
-        return None
-    start = parsed.replace(day=1)
-    end = (start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-    return start, end
+    for value in (date_value, month_value):
+        text = (value or '').strip()
+        if not text:
+            continue
+        try:
+            if len(text) == 7:  # YYYY-MM
+                text += '-01'
+            return date.fromisoformat(text)
+        except ValueError:
+            continue
+    return None
+
+
+def _window_for(view, anchor):
+    """Return the (start, end) dates of the month / week / day window at anchor."""
+    if view == 'day':
+        return anchor, anchor
+    if view == 'week':
+        start = anchor - timedelta(days=anchor.weekday())  # Monday
+        return start, start + timedelta(days=6)
+    start = anchor.replace(day=1)
+    return start, (start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+
+def _shift_anchor(view, anchor, direction):
+    """Move the anchor one whole view period forwards (+1) or backwards (-1)."""
+    if view == 'day':
+        return anchor + timedelta(days=direction)
+    if view == 'week':
+        return anchor + timedelta(days=7 * direction)
+    month_index = anchor.year * 12 + anchor.month - 1 + direction
+    return date(month_index // 12, month_index % 12 + 1, 1)
 
 
 # -- dashboard ---------------------------------------------------------------
 class InspectionDashboardView(InspectionAccessMixin, TemplateView):
-    """Monthly FullCalendar view of the user's inspections."""
+    """AM/PM scheduling board over a month, week or day window."""
 
     template_name = 'inspections/dashboard.html'
+    VIEWS = ('month', 'week', 'day')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -127,20 +149,23 @@ class InspectionDashboardView(InspectionAccessMixin, TemplateView):
             ),
         )
 
-        # Window: an explicit ?month=YYYY-MM wins (calendar-style navigation),
-        # then the batch's own date range, then the current month.
+        # Window: ?view=month|week|day with an optional ?date (or legacy ?month)
+        # anchor. A selected batch with no explicit anchor shows that batch's
+        # whole planning range instead.
         today = timezone.localdate()
-        bounds = _month_bounds(self.request.GET.get('month'))
-        if bounds:
-            month_start, month_end = bounds
-        elif batch:
-            month_start, month_end = batch.start_date, batch.end_date
+        requested_view = (self.request.GET.get('view') or '').strip().lower()
+        anchor = _parse_anchor(self.request.GET.get('date'), self.request.GET.get('month'))
+        if requested_view in self.VIEWS or anchor is not None or batch is None:
+            view = requested_view if requested_view in self.VIEWS else 'month'
+            anchor = anchor or today
+            window_start, window_end = _window_for(view, anchor)
         else:
-            month_start = today.replace(day=1)
-            month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            view = 'batch'
+            anchor = batch.start_date
+            window_start, window_end = batch.start_date, batch.end_date
 
         in_range = inspections.filter(
-            inspection_date__gte=month_start, inspection_date__lte=month_end
+            inspection_date__gte=window_start, inspection_date__lte=window_end
         )
 
         by_key = {}
@@ -154,16 +179,20 @@ class InspectionDashboardView(InspectionAccessMixin, TemplateView):
                 'status_display': inspection.get_status_display(),
                 'collected': inspection.device_collected,
                 'total': inspection.device_total,
+                'jda': inspection.jda_code,
+                'arriving': inspection.arriving_time.strftime('%H:%M') if inspection.arriving_time else '',
+                'leaving': inspection.leaving_time.strftime('%H:%M') if inspection.leaving_time else '',
                 'url': reverse('inspections:inspection_detail', args=[inspection.id]),
                 'color': _STATUS_COLORS.get(inspection.status, '#6c757d'),
             }
             by_key.setdefault((inspection.inspection_date, inspection.slot), []).append(card)
 
         days = []
-        cursor = month_start
-        while cursor <= month_end:
+        cursor = window_start
+        while cursor <= window_end:
             days.append({
                 'date': cursor.isoformat(),
+                'weekday': cursor.strftime('%a'),
                 'am': by_key.get((cursor, StoreInspection.Slot.AM), []),
                 'pm': by_key.get((cursor, StoreInspection.Slot.PM), []),
             })
@@ -171,14 +200,23 @@ class InspectionDashboardView(InspectionAccessMixin, TemplateView):
 
         context.update({
             'days_json': json.dumps(days),
+            'view': view,
+            'views': self.VIEWS,
+            # Only echo back a window the user actually asked for: the batch
+            # selector then keeps your place, while a bare ?batch= link (e.g.
+            # from the batch detail page) still shows that batch's whole range.
+            'requested_view': requested_view if requested_view in self.VIEWS else '',
+            'requested_anchor': (self.request.GET.get('date')
+                                 or self.request.GET.get('month') or ''),
             'batch': batch,
             'batches': scoped_batches(user).order_by('-start_date')[:50],
-            'month_start': month_start,
-            'month_end': month_end,
-            'current_month': month_start.strftime('%Y-%m'),
-            'prev_month': (month_start - timedelta(days=1)).replace(day=1).strftime('%Y-%m'),
-            'next_month': (month_end + timedelta(days=1)).strftime('%Y-%m'),
-            'is_current_month': month_start == today.replace(day=1),
+            'window_start': window_start,
+            'window_end': window_end,
+            'anchor': anchor.isoformat(),
+            'prev_anchor': _shift_anchor(view, anchor, -1).isoformat() if view in self.VIEWS else '',
+            'next_anchor': _shift_anchor(view, anchor, 1).isoformat() if view in self.VIEWS else '',
+            'today': today.isoformat(),
+            'is_current_period': window_start <= today <= window_end,
             'total_count': in_range.count(),
             'planned_count': in_range.filter(status=StoreInspection.Status.PLANNED).count(),
             'in_progress_count': in_range.filter(status=StoreInspection.Status.IN_PROGRESS).count(),
@@ -346,6 +384,24 @@ class InspectionBatchCreateByBrandView(InspectionManageMixin, CreateView):
             if was_created:
                 created += 1
         return created
+
+
+class ImportSampleFileView(InspectionAccessMixin, View):
+    """Download a sample schedule / master asset list for the import form.
+
+    The files are generated from the importer's own column maps (see
+    ``services/sample_files.py``), so a sample always matches what the parser
+    accepts instead of being a hand-maintained file that silently drifts.
+    """
+
+    def get(self, request, kind):
+        generator = SAMPLES.get(kind)
+        if generator is None:
+            raise Http404(f'Unknown sample file: {kind}')
+        content, filename = generator()
+        response = HttpResponse(content, content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
 
 
 class InspectionBatchImportView(InspectionManageMixin, View):

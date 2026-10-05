@@ -27,7 +27,12 @@ from inspections.constants import (
     normalize_device_category,
 )
 from inspections.models import InspectionBatch, InspectionDevice, StoreInspection
-from inspections.services.schedule_arranger import ScheduleCapacityError, arrange
+from inspections.services.schedule_arranger import (
+    ScheduleCapacityError,
+    arrange,
+    as_int,
+    assign_slots_by_date,
+)
 from utils.import_rollback import finalize_import_run, record_import_change, start_import_run
 
 SCHEDULE_COLUMNS = {
@@ -38,6 +43,8 @@ SCHEDULE_COLUMNS = {
     'address': ['Address', 'address', '地址'],
     'city': ['City', 'city', '城市'],
     'phone': ['Store Dir. Phone', 'phone', 'Store Dir Phone', '电话'],
+    'slot': ['AM/PM', 'slot', 'Slot', 'am_pm', 'AMPM', '时段', '上午/下午'],
+    'device_count': ['Device Count', 'device_count', 'Devices', '设备数量'],
 }
 ASSET_COLUMNS = {
     'store': ['STORE', 'Store', 'store'],
@@ -66,6 +73,21 @@ def _clean(value):
 def _has_cjk(text):
     """True when the string contains CJK ideographs (used to pick chinese_address)."""
     return any('\u4e00' <= ch <= '\u9fff' for ch in str(text or ''))
+
+
+def _device_counts_by_jda(asset_rows):
+    """Count master-asset-list rows per store, keyed by normalized JDA code.
+
+    One asset row is one expected device, so this is the authoritative per-store
+    device count whenever the asset list is uploaded; it decides which store of a
+    day gets the morning slot.
+    """
+    counts = {}
+    for row in asset_rows:
+        jda = _normalize_jda(_get(row, ASSET_COLUMNS['jda']))
+        if jda:
+            counts[jda] = counts.get(jda, 0) + 1
+    return counts
 
 
 def _clean_identifier(value):
@@ -286,12 +308,28 @@ def import_kering_master(schedule_file, assets_file=None, *,
             address consecutive AM/PM) over [arrange_start, arrange_end].
         arrange_start / arrange_end: the scheduling window for auto_arrange.
 
+    Slot assignment: rows that DO carry a date but no slot are balanced across
+    AM/PM per date with the busiest stores in the morning; an explicit
+    ``slot``/``AM/PM`` column always wins. Device counts come from the master
+    asset list when present, otherwise from the schedule's ``device_count``
+    column.
+
     Returns:
         dict with keys: ``stats`` (counters), ``per_store`` (jda -> summary),
         ``import_run`` (ImportRun or None), ``batch`` (InspectionBatch or None).
     """
     schedule_rows = _read_rows(schedule_file)
     asset_rows = _read_rows(assets_file) if assets_file is not None else []
+
+    # Device counts decide which store of a day gets the morning slot: the master
+    # asset list is authoritative when uploaded, the schedule's own device_count
+    # column is the fallback for schedule-only imports.
+    asset_counts = _device_counts_by_jda(asset_rows)
+
+    def _device_count_for(row, jda):
+        if jda in asset_counts:
+            return asset_counts[jda]
+        return as_int(_get(row, SCHEDULE_COLUMNS['device_count']))
 
     # Pre-compute auto-arranged (date, slot) for rows missing an inspection_date.
     arranged_by_index = {}
@@ -306,12 +344,35 @@ def import_kering_master(schedule_file, assets_file=None, *,
                 {
                     'city': _clean(_get(schedule_rows[i], SCHEDULE_COLUMNS['city'])),
                     'address': _clean(_get(schedule_rows[i], SCHEDULE_COLUMNS['address'])),
+                    'device_count': _device_count_for(
+                        schedule_rows[i],
+                        _normalize_jda(_get(schedule_rows[i], SCHEDULE_COLUMNS['jda'])),
+                    ),
                 }
                 for i in missing
             ]
             arranged = arrange(sub_rows, arrange_start, arrange_end)
             for i, item in zip(missing, arranged):
                 arranged_by_index[i] = (item['inspection_date'], item['slot'])
+
+    # Rows whose date is appointed but whose slot is not: split them evenly across
+    # that day's AM/PM, busiest store first.
+    dated_entries = []
+    for i, row in enumerate(schedule_rows):
+        jda = _normalize_jda(_get(row, SCHEDULE_COLUMNS['jda']))
+        inspection_date = _parse_date(_get(row, SCHEDULE_COLUMNS['date']))
+        if not jda or inspection_date is None:
+            continue
+        dated_entries.append({
+            'row_index': i,
+            'inspection_date': inspection_date,
+            'slot': _get(row, SCHEDULE_COLUMNS['slot']),
+            'device_count': _device_count_for(row, jda),
+        })
+    slot_by_index = {}
+    if dated_entries:
+        for entry, slot in zip(dated_entries, assign_slots_by_date(dated_entries)):
+            slot_by_index[entry['row_index']] = slot
 
     stats = {
         'companies': 0, 'divisions': 0, 'locations': 0, 'inspections': 0,
@@ -355,7 +416,7 @@ def import_kering_master(schedule_file, assets_file=None, *,
             city = _clean(_get(row, SCHEDULE_COLUMNS['city']))
             phone = _clean(_get(row, SCHEDULE_COLUMNS['phone']))
             inspection_date = _parse_date(_get(row, SCHEDULE_COLUMNS['date']))
-            slot = StoreInspection.Slot.AM
+            slot = slot_by_index.get(row_index, StoreInspection.Slot.AM)
             if inspection_date is None and row_index in arranged_by_index:
                 inspection_date, slot = arranged_by_index[row_index]
 

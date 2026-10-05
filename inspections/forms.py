@@ -141,8 +141,10 @@ class ScheduleImportForm(forms.Form):
         required=False,
         initial=True,
         label=_('Auto-arrange dates'),
-        help_text=_('If the schedule has no inspection_date, cluster sites by city and '
-                    'assign consecutive AM/PM slots (same address/mall back-to-back).'),
+        help_text=_('If the schedule has no inspection_date, cluster sites by city and assign '
+                    'consecutive AM/PM slots (same address/mall back-to-back). Sites whose date '
+                    'is given but whose AM/PM is not are split evenly across that day, with the '
+                    'stores holding more devices in the morning.'),
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
     arrange_start = forms.DateField(
