@@ -9,21 +9,25 @@
 
 ---
 
-## 1. Current Reality (verified September 7, 2026)
+## 1. Current Reality (verified October 7, 2026)
 
 This procedure is written against what actually exists in the repository today, not against an idealised pipeline.
 
 | Aspect | Verified state | Implication for releases |
 |--------|----------------|--------------------------|
 | **Version source of truth** | No `__version__` anywhere in Python code. Version appears only in `CHANGELOG.md` headings and `README.md` (Project Progress table + "Current Status") | A release is a **manual, two-file** update. Easy to miss one — see §5.3 |
-| **Git tags** | **Zero tags** exist in the repository | No tag-based deploy target yet. This document establishes the convention (§4) |
-| **CI** | No `.github/workflows/` directory | No automated gate. Pre-release verification is **manual** (§7) until issue #17 lands |
-| **Automated tests** | 28 test methods across 4 of 14 apps; `assets`/`deliveries`/`purchases`/`customers` effectively untested | Test suite passing is **necessary but not sufficient**. Smoke-test the workflow manually (§8) |
-| **Branch protection on `main`** | PR required · 1 approval · CODEOWNERS enforced · dismiss stale reviews · `enforce_admins=false` · `required_status_checks=null` | Owner can merge own PR; no status checks block a merge |
-| **Merge style** | Squash preferred (`CONTRIBUTING.md`) | One commit per PR on `main` |
+| **Git tags** | **Zero tags** exist in the repository | `deploy-ecs.yml` deploys on `v*` tags, so **nothing reaches production until the first tag is pushed** (§4). `git describe` and Tier-1 rollback both need tags to exist |
+| **CI** | `.github/workflows/backend-ci.yml` (Django checks, `makemigrations --check`, tests + coverage floor, ruff) and `miniprogram-ci.yml`; `deploy-ecs.yml` builds the image on PRs and deploys on tags | Merging is gated. Deployment is automated **from a tag**, not from `main` |
+| **Automated tests** | 205 tests (measured 2026-10-07, `manage.py test`), coverage floor 40% enforced in `pyproject.toml`; `assets`/`deliveries`/`purchases` still thinly covered | Test suite passing is **necessary but not sufficient**. Smoke-test the workflow manually (§8) |
+| **Branch protection on `main`** | PR required · 1 approval · CODEOWNERS enforced · dismiss stale reviews · `enforce_admins=false` · required status checks: `Django checks + tests`, `Python lint (ruff)` (strict) | A red build blocks the merge. `enforce_admins=false` still lets the owner bypass, so the bypass is a deliberate act |
+| **Production runtime** | Rootless Docker Compose on a shared ECS (`app` + `postgres:16` + `redis:7`), Nginx terminating TLS on the host | Deploy = build image + recreate container; the entrypoint runs `migrate` and `collectstatic` (§6.2) |
+| **Merge style** | Squash preferred (`CONTRIBUTING.md`), though merge commits also appear in history | One commit per PR on `main` is the intent; tags make the deployed state unambiguous either way |
 | **Maintainers** | Single maintainer (`@sean7084`) | No separate release manager; the author deploys |
 
-> ⚠️ **Because there is no CI and no required status checks, nothing prevents merging a broken release.** The checklists in §7 and §8 are the only quality gate. Do not skip them.
+> ⚠️ **CI gates the merge, not the deploy.** A green build on `main` says nothing
+> about whether a tag was cut, and the deploy pipeline will happily ship whatever
+> tag you push. The checklists in §7 and §8 remain the quality gate for *release
+> content*, and there is still no staging environment (§11).
 
 ---
 
@@ -223,6 +227,38 @@ Optionally publish a GitHub Release from the tag, using the CHANGELOG entry as t
 
 ### 6.2 Deploy sequence
 
+Pushing the tag **is** the deploy: `deploy-ecs.yml` runs `preflight` and then
+SSHes to the host to run `docker/bin/ci-deploy.sh <tag>`. Watch the run, then
+verify (§7).
+
+```bash
+git checkout main && git pull --ff-only origin main
+git tag -a v0.1.8 -m "<Focus line from CHANGELOG>"
+git push origin v0.1.8            # <- this triggers the production deploy
+gh run watch                      # or: the Actions tab
+```
+
+What the host-side script does, in order — knowing this is what makes a failed
+run diagnosable:
+
+1. Alias the running image as `waypost-app:rollback` (the rollback target).
+2. `pg_dump -Fc` checkpoint into `/srv/waypost/backups/pg/` (§6.1, automated).
+3. `git fetch --tags && git checkout -f <tag> && git clean -ffd` — **never
+   `-x`**, because `.env` is gitignored and must survive.
+4. `docker compose build --pull app && docker compose up -d`. The container
+   entrypoint then runs `migrate --noinput` and `collectstatic --noinput --clear`
+   before exec'ing Gunicorn, which preserves the ordering this section used to
+   spell out by hand: dependencies and schema first, static files before traffic.
+5. Health gate on `http://127.0.0.1:8000/healthz/`, then on the public URL.
+
+A failed loopback gate rolls the image back automatically and exits non-zero. A
+failed *public* gate does not roll back — the app is healthy and the edge
+(Nginx/certificate/DNS) is not, which a rollback cannot fix — but it still fails
+the run and prints the diagnostics.
+
+<details>
+<summary>Option 1 (bare-metal venv + systemd) — the manual equivalent</summary>
+
 Order matters. Deviating causes avoidable outages.
 
 ```bash
@@ -251,6 +287,8 @@ sudo systemctl restart waypost
 sudo systemctl status waypost --no-pager
 ```
 
+</details>
+
 ### 6.3 Two anti-patterns to avoid
 
 > 🚫 **Never run `makemigrations` on the server.**
@@ -272,10 +310,14 @@ Run immediately after deploy. Everything here is manual until CI exists (issue #
 
 **Boot & config**
 
-- [ ] `sudo systemctl status waypost` → `active (running)`, no restart loop
-- [ ] `tail -n 50 /var/log/waypost/gunicorn-error.log` → no tracebacks
-- [ ] `tail -n 50 logs/waypost.log` → no unexpected errors
-- [ ] `python manage.py showmigrations` → all boxes ticked `[X]`
+- [ ] `docker compose ps` → `app`, `db`, `redis` all `Up`/`healthy`, no restart loop
+      *(Option 1: `sudo systemctl status waypost` → `active (running)`)*
+- [ ] `docker compose logs --tail=80 app` → entrypoint ran `migrate` and
+      `collectstatic`, Gunicorn booted, no tracebacks
+      *(Option 1: `tail -n 50 /var/log/waypost/gunicorn-error.log`)*
+- [ ] `curl -s https://<host>/healthz/` → `200` with `database` and `cache` both
+      `"ok"`, and `version` equal to the tag just deployed
+- [ ] `docker compose exec -T app python manage.py showmigrations` → all boxes ticked `[X]`
 
 **HTTP**
 
@@ -294,7 +336,10 @@ Run immediately after deploy. Everything here is manual until CI exists (issue #
 - [ ] Dashboard shows the workflow board and the pending-tasks badge
 - [ ] Open an existing **quotation** → generate/download its **PDF** (exercises WeasyPrint + `template_files/`)
 - [ ] Open an existing **delivery order** → generate/download its **PDF**
-- [ ] **Mailbox sync** runs without error for at least one active mailbox (see the Gunicorn multi-worker caveat in `DEPLOYMENT.md` Step 10 — tracked as issue #24)
+- [ ] **Mailbox sync**: opening a user's mailbox view triggers
+      `maybe_auto_sync_mailbox` and completes without error. Note that the
+      background polling thread is `runserver`-only, so in production nothing
+      syncs unattended (see `DEPLOYMENT.md` Step 10)
 - [ ] Create a throwaway quotation, then delete it — confirms write paths and permissions
 
 **Rollback readiness**
@@ -456,14 +501,18 @@ These are tracked as open issues and are **not** solved by this document:
 
 | Gap | Issue | Effect today |
 |-----|-------|--------------|
-| No CI pipeline; `required_status_checks=null` | #17 | Every check in §7 and §8 is manual |
-| No pytest/coverage tooling; 28 tests across 4/14 apps | #16 | `manage.py test` gives little assurance, especially for `assets` (2,230-line `views.py`, zero tests) and `deliveries` |
-| No linter/formatter configured | #21 | No enforced code standard at merge time |
-| Mailbox sync runs as an in-process thread | #24 | Under multi-worker Gunicorn each worker may sync independently — verify sync behaviour after every deploy |
-| No health-check endpoint | #22 | §7 verification relies on loading real pages rather than a cheap probe |
+| No pytest/coverage tooling; thin coverage of `assets`/`deliveries`/`purchases` | #16 | Resolved in part: pytest + coverage are configured and CI enforces a 40% floor, but a low floor still gives little assurance for `assets` (2,230-line `views.py`) and `deliveries` |
+| No linter/formatter configured | #21 | Resolved in part: ruff runs in CI with a correctness-only rule set and is a required check. `ruff format` is still deliberately not enforced |
+| Mailbox sync never runs unattended in production | #24 | The background thread is `runserver`-only by design (`accounts/apps.py`), so invoice/RFQ mail is only ingested when a user opens their mailbox view. Needs a management command + timer |
 | No staging environment | — | Releases are verified **in production**. This is the single largest risk in the current process |
+| No notification channel for a failed deploy | — | A red `deploy-ecs.yml` run is only seen if someone looks at the Actions tab. The host writes `/srv/waypost/backups/deploy.log`, but nothing pages anyone |
+| First tag not yet cut | — | The CD pipeline is tag-triggered and the repository has no tags, so it has never run against production. The first release must prove it end to end, including a rollback drill |
 
-> ✅ **Resolved alongside this document:** `DEPLOYMENT.md` §"Updates and Upgrades" previously instructed operators to run `makemigrations` on the server and to `git pull origin main`. Both contradicted §6.3, and have been corrected to deploy a tag, back up first, and never generate migrations in production.
+> ✅ **Resolved since this document was first written:** CI now exists and both
+> `Django checks + tests` and `Python lint (ruff)` are required status checks on
+> `main`; a `/healthz/` endpoint gives the deploy pipeline and monitoring a cheap
+> probe instead of loading real pages; `DEPLOYMENT.md` no longer instructs
+> operators to run `makemigrations` on the server or to `git pull origin main`.
 
 ---
 

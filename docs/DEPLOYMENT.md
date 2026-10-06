@@ -86,13 +86,20 @@ install. Local SQLite needs no rename - `db.sqlite3` is path-independent.
 
 ## Environment Options
 
+### Option 2: Docker Compose — the production path
+
+`docker/Dockerfile` + `docker-compose.yml` package Gunicorn, the WeasyPrint native
+libraries, LibreOffice and the CJK fonts into one image, with PostgreSQL 16 and
+Redis 7 as sibling services. This is how the production ECS runs Waypost, and it
+is what [`RELEASE_PROCEDURE.md`](RELEASE_PROCEDURE.md) §6 deploys. See the
+"Option 2" section below.
+
 ### Option 1: Manual Installation
 
-Best for custom deployments, learning, or small-scale deployments. **This is the only currently supported path.**
-
-### Option 2: Docker Containerization (Not Yet Available)
-
-> ⚠️ **No Docker assets exist in this repository yet.** There is no `docker/` directory, `docker-compose.yml`, or `scripts/generate-secrets.sh`. The section below is a **future plan**, not a working procedure. Use Option 1 until containerization is added.
+Bare-metal venv + systemd + host PostgreSQL. Still supported, and still the right
+choice where Docker is unavailable or where you want the app to run as its own
+system service. Note that the two options use **different paths** (`/opt/waypost`
+vs `/srv/waypost/app`), so pick one and keep the runbooks consistent with it.
 
 ---
 
@@ -200,15 +207,20 @@ python3.12 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key
 
 ### Step 4b: Provision Document Templates (Required)
 
-The `template_files/` directory is **excluded from Git** (`.gitignore`), but document generation **fails without it** — `quotations/services.py`, `deliveries/services.py`, and `invoices/services.py` raise `FileNotFoundError` when these templates are missing:
+The `template_files/` directory is **excluded from Git** (`.gitignore`), so it must
+be copied to the server separately. What each file is actually used for, verified
+against the code rather than assumed:
 
-| Expected file | Used by |
-|---------------|---------|
-| `template_files/quotation_template.xlsx` | Quotation Excel/PDF generation |
-| `template_files/签收单 template.xlsx` | Delivery (sign-off sheet) generation |
-| `template_files/invoice information template.xlsx` | Invoice information sheet |
+| Expected file | Used by | Behaviour when missing |
+|---------------|---------|------------------------|
+| `template_files/quotation_template.xlsx` | `quotations/services.py::fill_quotation_template` | Raises `FileNotFoundError`. **That function currently has no callers** — quotation PDFs are rendered from HTML by WeasyPrint (`quotations/views.py::generate_quotation_pdf`), so nothing breaks today. |
+| `template_files/签收单 template.xlsx` | `deliveries/services.py::fill_delivery_template`, called from `invoices/services.py::collect_email_attachments` | The delivery Excel/PDF attachments are **silently omitted** from the invoice dispatch email. As of 2026-10 this file is not present in the development copy either — only `签收单 template.pdf` is. Obtain the `.xlsx` from the business owner before relying on invoice dispatch attachments; the omission is now logged as a warning rather than swallowed. |
+| `template_files/invoice information template.xlsx` | `invoices/services.py::fill_invoice_template` | Raises `FileNotFoundError`. |
 
-Copy these templates from a secure internal source into `/opt/waypost/template_files/` before first run. They are **not** distributed with the repository.
+Copy the templates from a secure internal source into the deployment's
+`template_files/` directory before first run (`/opt/waypost/template_files/` for
+Option 1, `${WAYPOST_DATA_DIR}/template_files/` for Option 2 — the compose file
+bind-mounts it read-only). They are **not** distributed with the repository.
 
 ### Step 5: Run Migrations
 
@@ -356,36 +368,340 @@ sudo certbot renew --dry-run
 
 ### Step 10: Mailbox Sync (In-Process Thread)
 
-Mailbox synchronization runs as an **in-process background thread**, started automatically with the app — there is **no `run_mailbox_sync` management command** and no cron job is required.
+Mailbox synchronization runs as an **in-process background thread** — but only
+under `runserver`. `accounts/apps.py::AccountsConfig.ready` returns early unless
+`sys.argv[1] == 'runserver'` **and** `RUN_MAIN == 'true'`, so:
 
 - Implementation: `accounts/mailbox_sync.py` (`start_mailbox_sync_thread`, `maybe_auto_sync_mailbox`).
-- Cadence: every `SYNC_INTERVAL_SECONDS` (≈5 minutes) while the server process runs.
-- Scope: only mailboxes with `is_active = true` **and** `auto_sync_enabled = true` (`accounts.models.UserMailboxSettings`).
+- Development (`runserver`): the thread starts once and polls every
+  `SYNC_INTERVAL_SECONDS` (≈5 minutes).
+- **Production (Gunicorn, with or without Docker): the thread never starts.**
+  There is no `run_mailbox_sync` management command either, so nothing polls
+  unattended.
+- Scope when it does run: only mailboxes with `is_active = true` **and**
+  `auto_sync_enabled = true` (`accounts.models.UserMailboxSettings`).
 
-> ⚠️ **Gunicorn note:** the auto-sync thread is designed for the single-process `runserver` workflow. Under multi-worker Gunicorn, each worker may start its own thread. For production, drive sync from a **single** dedicated process (e.g., a `cron`/systemd timer invoking a custom management command you add, or a one-worker service) to avoid duplicate syncing.
+Sync still happens on demand: `accounts/views.py` calls `maybe_auto_sync_mailbox`
+when a user opens their mailbox view, so an active user keeps their own mailbox
+fresh. What production lacks is *unattended* polling — if the invoice/RFQ flow
+must ingest mail with nobody logged in, add a management command and drive it
+from cron or a systemd timer. Tracked as a known gap, not a deployment blocker.
+
+> ℹ️ The previous warning about "each Gunicorn worker starting its own thread" no
+> longer applies: the `runserver` guard makes duplicate syncing impossible. The
+> trade-off is that automatic syncing is off in production entirely.
 
 ---
 
-## Option 2: Docker Deployment (PLANNED — NOT IMPLEMENTED)
+## Option 2: Docker Compose Deployment (production)
 
-> ⚠️ **These files do not exist in the repository yet.** The commands below are illustrative of the intended future setup and will fail if run today. Track this as a backlog item; use **Option 1** for real deployments.
+This is how the production ECS runs Waypost. Everything the app needs — Gunicorn,
+WeasyPrint's native libraries, LibreOffice for xlsx→PDF, and CJK fonts — lives in
+the image, so the host needs no Python, no PostgreSQL and no font packages
+installed on Waypost's behalf.
 
-### Intended prerequisites
+| Asset | Purpose |
+|-------|---------|
+| `docker/Dockerfile` | Multi-stage: `deps` builds the venv, `runtime` adds the native libraries. Asserts at build time that `soffice` exists and that a Chinese string actually renders, so a missing font fails the build instead of shipping empty boxes. |
+| `docker-compose.yml` | `app` + `db` (postgres:16) + `redis` (redis:7). At the repository root on purpose — the header comment explains why. |
+| `docker/entrypoint.sh` | `migrate` → `collectstatic` → `exec gunicorn`. |
+| `docker/nginx/waypost.conf` | Host Nginx site: ACME webroot, `/media/` aliases, proxy headers. |
+| `docker/bin/ci-deploy.sh` | The tag-promoted deploy script CI runs over SSH. |
+| `.dockerignore` | Keeps `.env`, `media/`, `db.sqlite3` and QA screenshots out of the image. |
 
-- Docker Engine 20.10+
-- Docker Compose 2.0+
+### 2.1 Co-hosting on a shared machine
 
-### Intended quick start (future)
+Waypost shares the ECS with another application (Helpdesk). Two properties make
+that safe:
+
+1. **Nginx multiplexes 443 by SNI.** Each application gets its own `server`
+   block with an exact `server_name`; the public port is not a scarce resource
+   and neither app needs a dedicated one. Waypost serves
+   `ams.istore-tech.cn` → `127.0.0.1:8000`. The pre-existing site keeps its own
+   hostnames and its `default_server` blocks.
+   > ⚠️ Never add `default_server` to `docker/nginx/waypost.conf`. Only one
+   > server block per listen socket may hold it; a second one fails `nginx -t`
+   > with `duplicate default server` and, if it slipped through, would take the
+   > other application down.
+2. **A dedicated Linux user with its own rootless Docker daemon.** Waypost runs
+   under `deploy`, Helpdesk under a different account. Two rootless daemons
+   cannot see each other's containers, images, volumes or networks, so a bad
+   `docker compose down -v` here cannot reach that stack. `deploy` has no `sudo`
+   and is not in any docker group.
+
+### 2.2 Host prerequisites
 
 ```bash
-# Requires a docker/ directory + compose file that do not exist yet
-cd /path/to/waypost/docker
-docker-compose build
-docker-compose up -d
-docker-compose exec waypost python manage.py migrate
-docker-compose exec waypost python manage.py collectstatic --noinput
-docker-compose exec waypost python manage.py createsuperuser
+# As an administrator, once.
+sudo adduser --disabled-password --gecos "" deploy     # NOT in sudo, NOT in docker
+grep deploy /etc/subuid /etc/subgid || \
+  sudo usermod --add-subuids 165536-231071 --add-subgids 165536-231071 deploy
+sudo loginctl enable-linger deploy                     # daemon must survive reboot
+
+# Directories. Code and compose under /srv, runtime data under the home of the
+# user whose daemon runs the stack (see 2.3).
+sudo mkdir -p /srv/waypost/{app,bin,backups/pg}
+sudo chown -R deploy:deploy /srv/waypost
 ```
+
+Then, **as `deploy`**, install the rootless daemon and configure it *before* the
+first start so the log rotation and registry mirrors are in place from the outset:
+
+```bash
+mkdir -p ~/.config/docker
+cat > ~/.config/docker/daemon.json <<'EOF'
+{
+  "registry-mirrors": ["https://docker.1panel.live"],
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "20m", "max-file": "5" }
+}
+EOF
+
+dockerd-rootless-setuptool.sh install
+systemctl --user enable --now docker
+docker info | grep -i rootless        # must say rootless: true
+docker compose version                # the CLI plugin is system-wide
+mkdir -p ~/waypost-data/{media,template_files}
+```
+
+If the setup tool complains about cgroup delegation, add
+`/etc/systemd/system/user@.service.d/delegate.conf` with
+`[Service] Delegate=cpu cpuset io memory pids` and `sudo systemctl daemon-reload`.
+
+### 2.3 File ownership under rootless Docker (the trap)
+
+The container runs as **root inside itself**. Under rootless Docker, container
+root maps to the host user that owns the daemon — `deploy` — so files written to
+the bind-mounted `media/` appear on the host as `deploy:deploy` and everything
+just works.
+
+Running the container as an arbitrary non-zero UID instead is what breaks: that
+UID lands in the host's subordinate-ID range, the bind mount shows up inside the
+container as `nobody:nogroup`, and uploads fail with permission errors that look
+like an application bug. Do not "fix" this by `chown`-ing the host directories to
+a UID like `10001`.
+
+```bash
+# Nginx (www-data) must be able to read media/ without /home/deploy becoming
+# world-readable: traverse permission on the home directory, read on the data.
+sudo setfacl -m g:www-data:x /home/deploy
+setfacl -R -m g:www-data:rX -m d:g:www-data:rX ~/waypost-data/media
+```
+
+### 2.4 Production `.env`
+
+Create `/srv/waypost/app/.env` (mode `600`, owner `deploy`). Compose reads this
+one file twice: for `${...}` interpolation and as the container's `env_file`.
+
+```bash
+DJANGO_SETTINGS_MODULE=waypost.settings
+DJANGO_DEBUG=False
+
+# Fail-fast: the app refuses to boot without these three groups.
+DJANGO_SECRET_KEY=<python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())">
+DJANGO_FIELD_ENCRYPTION_KEY=<python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())">
+WECHAT_MINI_APPID=wx________________
+WECHAT_MINI_APPSECRET=________________________________
+JWT_SIGNING_KEY=<openssl rand -base64 48>
+
+DJANGO_ALLOWED_HOSTS=ams.istore-tech.cn
+# Required behind Nginx, otherwise every POST fails CSRF with 403.
+DJANGO_SECURE_PROXY_SSL_HEADER=1
+DJANGO_CSRF_TRUSTED_ORIGINS=https://ams.istore-tech.cn
+
+POSTGRES_DB=waypost_db
+POSTGRES_USER=waypost_django
+POSTGRES_PASSWORD=<openssl rand -base64 24>
+WAYPOST_DATA_DIR=/home/deploy/waypost-data
+
+minimax_token_plan_key=<key>
+TEST_OUTBOUND_EMAIL_OVERRIDE=
+
+# Internal mirrors: same packages, no public bandwidth cost.
+APT_MIRROR=mirrors.cloud.aliyuncs.com
+PIP_INDEX_URL=http://mirrors.cloud.aliyuncs.com/pypi/simple/
+PIP_TRUSTED_HOST=mirrors.cloud.aliyuncs.com
+```
+
+Do **not** set `DATABASE_*` or `DJANGO_REDIS_CACHE_URL`: `docker-compose.yml`
+derives the DSN from `POSTGRES_*` and hardcodes the cache URL to the `redis`
+service name, so the app and the database container cannot disagree.
+
+> 🔐 `DJANGO_FIELD_ENCRYPTION_KEY` encrypts stored mailbox/SMTP credentials
+> (`accounts/crypto.py`). Losing it makes them unrecoverable even from a good
+> database backup; changing it invalidates every stored credential. Back it up
+> separately per [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md) §6.
+
+### 2.5 Build and start
+
+```bash
+sudo -u deploy git clone https://github.com/sean7084/Waypost.git /srv/waypost/app
+# .env, template_files/ and media/ are provisioned separately (2.4, Step 4b).
+
+cd /srv/waypost/app
+docker compose build --pull app
+docker compose up -d
+docker compose ps                      # db + redis healthy, app healthy
+docker compose logs --tail=100 app     # entrypoint: migrate, collectstatic, gunicorn
+curl -s http://127.0.0.1:8000/healthz/ # {"status":"ok","database":"ok","cache":"ok",...}
+```
+
+The image is tagged `waypost-app:${TAG:-latest}`; passing `TAG=v0.2.0` makes
+`docker image ls` a deploy history and a rollback a re-tag rather than a rebuild.
+
+### 2.6 Nginx and TLS
+
+**Order matters: issue the certificate first.** `nginx -t` fails when
+`ssl_certificate` points at a missing file, and this Nginx is shared — a broken
+config takes the other application down with it.
+
+1. Decide the validation method by testing it, not by guessing. Create
+   `/var/www/letsencrypt-ams/.well-known/acme-challenge/probe`, install the
+   `:80` half of the site, and fetch
+   `http://ams.istore-tech.cn/.well-known/acme-challenge/probe` from outside.
+   - **200 with the probe text** → HTTP-01 with the system certbot into
+     `/etc/letsencrypt`, which `certbot.timer` then renews automatically:
+     ```bash
+     sudo certbot certonly --webroot -w /var/www/letsencrypt-ams \
+       -d ams.istore-tech.cn -m <ops-email> --agree-tos --no-eff-email \
+       --deploy-hook "systemctl reload nginx"
+     ```
+   - **403 / 301 / timeout** (this host has a documented history of HTTP-01
+     interception on domain names) → DNS-01 instead, and switch the two
+     `ssl_certificate*` lines in `docker/nginx/waypost.conf` to the commented
+     DNS-01 paths. Renewal is then manual or via AliDNS hooks.
+2. Install the site and reload:
+   ```bash
+   sudo install -m 644 docker/nginx/waypost.conf /etc/nginx/sites-available/waypost
+   sudo ln -s /etc/nginx/sites-available/waypost /etc/nginx/sites-enabled/waypost
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+3. **Prove the other application still works** — this is a shared Nginx:
+   ```bash
+   curl -s -o /dev/null -w '%{http_code}\n' https://ams.istore-tech.cn/healthz/
+   curl -s -o /dev/null -w '%{http_code}\n' https://<the-other-hostname>/   # unchanged
+   ```
+
+Static files are served by WhiteNoise inside the container, not by Nginx;
+`/media/` is served by Nginx from the bind mount, because Django's `static()`
+helper returns nothing when `DEBUG=False`.
+
+### 2.7 Data migration
+
+Follow [`DATABASE_MIGRATION.md`](DATABASE_MIGRATION.md); under Compose the
+server-side commands run through the container:
+
+```bash
+docker compose up -d db && sleep 5
+docker compose cp waypost_data.json app:/tmp/
+docker compose exec -T app python manage.py loaddata /tmp/waypost_data.json
+docker compose exec -T app python manage.py sqlsequencereset \
+  accounts assets companies quotations purchases deliveries invoices \
+  inspections products users reports \
+  | docker compose exec -T db psql -U waypost_django -d waypost_db
+```
+
+Stage the fixture outside the checkout (e.g. `/srv/waypost/incoming/`), not in
+`/srv/waypost/app/`: `ci-deploy.sh` runs `git clean -ffd` there on every deploy.
+
+> ⚠️ **Fernet keys do not travel.** A development database encrypts mailbox/SMTP
+> credentials with a key derived from `SECRET_KEY` (`accounts/crypto.py::_resolve_key`)
+> — and in development that is the public `django-insecure-` fallback committed to
+> this repository. Production must use a freshly generated
+> `DJANGO_FIELD_ENCRYPTION_KEY`, which means those rows will not decrypt after a
+> migration (`decrypt_secret` returns `''` silently, so it looks like a
+> mail-server fault). Re-enter the credentials through the UI after cutover, or
+> write a one-off re-encryption step. Never ship the development-derived key to
+> production: anyone with the repository can compute it.
+
+### 2.8 CI/CD (tag-promoted)
+
+`.github/workflows/deploy-ecs.yml` implements the promotion model from
+[`RELEASE_PROCEDURE.md`](RELEASE_PROCEDURE.md): merging to `main` only proves the
+image still builds; **production deploys when an annotated tag `v*` is pushed.**
+
+| Trigger | Jobs |
+|---------|------|
+| `pull_request` | `image-validate` — builds the `deps` stage only (upstream mirrors, not Aliyun: the runners are nowhere near cn-heyuan) |
+| `push: tags: v*` | `preflight` (Django checks, `makemigrations --check`, ruff) → `deploy` |
+| `workflow_dispatch` | same as a tag push, for redeploys and rollback drills |
+
+The `deploy` job opens an SSH session and runs `/srv/waypost/bin/ci-deploy.sh <tag>`.
+The script snapshots the running image as `waypost-app:rollback`, takes a
+`pg_dump` checkpoint, checks out the tag, builds, restarts, and gates on
+`/healthz/` — first on loopback, then through Nginx. A failed loopback gate
+rolls the image back automatically; a failed public gate does **not** (the app is
+healthy, the edge is not, and rolling back cannot fix that) but still fails the
+run. The database is never restored automatically: see §8/§9 of
+`RELEASE_PROCEDURE.md` for why that decision belongs to a human.
+
+**Credentials.** Generate the keypair outside the repository:
+
+```powershell
+ssh-keygen -t ed25519 -C waypost-ci-deploy -f "$env:TEMP\waypost_deploy_key" -N '""'
+ssh-keyscan -p 49153 <host> > "$env:TEMP\waypost_known_hosts"
+```
+
+Install the public half as the *only* entry in `/home/deploy/.ssh/authorized_keys`,
+prefixed with `restrict` (no pty, no agent or port forwarding, no user rc):
+
+```bash
+sudo install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
+sudo install -m 600 -o deploy -g deploy /dev/stdin /home/deploy/.ssh/authorized_keys <<'EOF'
+restrict ssh-ed25519 AAAA... waypost-ci-deploy
+EOF
+```
+
+Then set the repository secrets (`gh secret set <name> --repo sean7084/Waypost`):
+`ECS_DEPLOY_HOST`, `ECS_DEPLOY_PORT`, `ECS_DEPLOY_USER`, `ECS_DEPLOY_SSH_KEY`,
+`ECS_DEPLOY_KNOWN_HOSTS`. Delete the local private key afterwards.
+
+Finally install the script **outside** the git checkout, so that a broken script
+version cannot be shipped by the pipeline that depends on it:
+
+```bash
+sudo install -d -m 755 -o deploy -g deploy /srv/waypost/bin
+sudo install -m 755 -o deploy -g deploy /srv/waypost/app/docker/bin/ci-deploy.sh /srv/waypost/bin/
+```
+
+Re-install it by hand whenever `docker/bin/ci-deploy.sh` changes.
+
+> ⚠️ **Firewall interaction.** GitHub-hosted runners use dynamic IPs. If SSH is
+> ever restricted to known source addresses at the security-group or `ufw` level,
+> this pipeline stops working — move to a self-hosted runner in that case rather
+> than widening the rule.
+
+### 2.9 Backups, logs and rollback
+
+- **Logs:** `docker compose logs -f app` (Gunicorn logs to stdout/stderr; the
+  daemon's `json-file` driver rotates at 20 MB × 5). Django's own file handler
+  writes to `logs/waypost.log` inside the container and rotates at 10 MB × 5.
+- **Backups:** see [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md). Nightly
+  `pg_dump` from the `db` container plus the `media/` and `template_files/`
+  bind mounts, run as `deploy`.
+- **Rollback, fastest first:**
+  ```bash
+  cd /srv/waypost/app
+  docker tag waypost-app:rollback waypost-app:rollback-use   # only if you need to keep it
+  git checkout -f <previous-tag>
+  TAG=<previous-tag> docker compose up -d --no-build app
+  ```
+  Schema reversibility decides whether that is enough — `RELEASE_PROCEDURE.md` §8
+  classifies it into three tiers.
+
+### 2.10 Post-deploy verification
+
+```bash
+curl -s https://ams.istore-tech.cn/healthz/          # 200, database/cache "ok"
+curl -sI https://ams.istore-tech.cn/login/           # 302 -> /accounts/login/
+curl -s -o /dev/null -w '%{http_code}\n' https://ams.istore-tech.cn/accounts/login/   # 200
+```
+
+Then in a browser: static assets render (an unstyled page means `collectstatic`
+did not run or the manifest is stale), **log in and submit any form** — a 403
+here means `DJANGO_SECURE_PROXY_SSL_HEADER` or `DJANGO_CSRF_TRUSTED_ORIGINS` is
+missing, `/en-us/` and `/zh-cn/` both render, and generating a quotation PDF
+shows Chinese glyphs rather than empty boxes.
 
 ---
 
@@ -479,6 +795,58 @@ sudo apt install -y \
 # Verify installation
 python3.12 -c "import weasyprint; weasyprint.HTML(string='<div>Hello</div>').write_pdf('-')"
 ```
+
+### Every POST returns 403 (CSRF) behind Nginx
+
+**Symptom**: pages render, but submitting any form — starting with login — returns
+`403 Forbidden` with `Origin checking failed` in the response body or logs.
+
+**Cause**: Nginx terminates TLS, so Django sees a plain-HTTP request and rebuilds
+the expected origin as `http://<host>` while the browser sent
+`Origin: https://<host>`.
+
+**Fix**: set `DJANGO_SECURE_PROXY_SSL_HEADER=1` and
+`DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-host>` in `.env`, confirm Nginx sends
+`proxy_set_header X-Forwarded-Proto $scheme;`, and restart. Trusting that header
+is only safe because Gunicorn is bound to the loopback interface.
+
+### Tests fail with "Missing staticfiles manifest entry"
+
+**Symptom**: `manage.py test` produces dozens of errors, each ending in
+`ValueError: Missing staticfiles manifest entry for '...'`.
+
+**Cause**: `DJANGO_DEBUG=False` in the environment (or in a repo-local `.env`)
+switches `STORAGES["staticfiles"]` to WhiteNoise's manifest storage, which needs
+`collectstatic` to have produced `staticfiles.json`.
+
+**Fix**: run tests with `DJANGO_DEBUG=True` — which is exactly why
+`.github/workflows/backend-ci.yml` sets it explicitly — or run
+`manage.py collectstatic` first. Note that request hardening
+(`SECURE_SSL_REDIRECT`, secure cookies) is deliberately disabled under the test
+runner via `settings._RUNNING_TESTS`; without that, every view test would assert
+against a 301 to `https://`.
+
+### xlsx → PDF conversion returns the Excel file instead
+
+**Symptom**: downloading an invoice or delivery document yields `.xlsx`, with a
+"PDF converter not found" warning.
+
+**Cause**: `convert_xlsx_to_pdf` returns `None` when `soffice` is missing, and the
+views fall back to the spreadsheet. On a manual (Option 1) install LibreOffice is
+not pulled in by `requirements.txt`.
+
+**Fix**: `sudo apt install libreoffice-calc-nogui` and confirm `which soffice`.
+The Docker image installs it and fails the build if it is missing. Be aware that
+concurrent conversions share one LibreOffice user profile and can fail
+intermittently; the fallback path keeps the request succeeding.
+
+### A shell script fails with `/bin/bash^M: bad interpreter`
+
+**Cause**: CRLF line endings, typically from a Windows checkout.
+
+**Fix**: `.gitattributes` pins `*.sh` to `eol=lf`, and the Dockerfile strips any
+stray carriage returns as a backstop. For a script already on the host:
+`sed -i 's/\r$//' <file>`.
 
 ### Database Connection Pool Exhaustion
 

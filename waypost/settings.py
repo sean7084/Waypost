@@ -15,6 +15,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -32,6 +33,27 @@ def _env_bool(name, default):
     if raw is None:
         return default
     return raw.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+# True when this process is a test runner rather than a server.
+#
+# `manage.py test` sets DEBUG=False for the duration of the run, and a
+# production-shaped repo-local .env does the same permanently. Either way the
+# request-hardening block below would switch on SECURE_SSL_REDIRECT, and since
+# the test client makes plain-HTTP requests, every single view test would then
+# assert against a 301 instead of the page it asked for.
+#
+# This only ever relaxes hardening, never a fail-fast guard: the SECRET_KEY,
+# FIELD_ENCRYPTION_KEY and WeChat checks above still refuse to boot.
+#
+# Production cannot trip it. `test` is never in a gunicorn argv, and pytest is
+# not installed there - requirements.txt excludes it (requirements-dev.txt has
+# it), and the Docker image installs requirements.txt only.
+_RUNNING_TESTS = (
+    'test' in sys.argv
+    or 'pytest' in sys.modules
+    or _env_bool('WAYPOST_RUNNING_TESTS', False)
+)
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -412,7 +434,7 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
-if not DEBUG:
+if not DEBUG and not _RUNNING_TESTS:
     # Cookie/redirect hardening. Gated on DEBUG so local http://127.0.0.1
     # development is unaffected - a secure cookie over plain HTTP is simply
     # never sent back, which presents as "login does nothing".

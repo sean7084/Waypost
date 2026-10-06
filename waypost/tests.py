@@ -118,13 +118,16 @@ class ProxySecuritySettingTests(SimpleTestCase):
         # plain-HTTP request as secure just because a client said so.
         self.assertFalse(getattr(settings, 'SECURE_PROXY_SSL_HEADER', None))
 
-    def test_secure_cookies_are_not_forced_in_a_development_configuration(self):
-        # settings.py gates the hardening block on `not DEBUG`, evaluated at
-        # import time (the test runner only flips settings.DEBUG to False
-        # afterwards, so DEBUG cannot be asserted here). A developer on
-        # http://127.0.0.1 must not get secure cookies or a forced redirect:
-        # the browser would never send the cookie back and login would silently
-        # appear to do nothing.
+    def test_request_hardening_is_off_under_the_test_runner(self):
+        # `manage.py test` flips settings.DEBUG to False for the run, and a
+        # production-shaped .env does the same permanently. Without the
+        # _RUNNING_TESTS guard in settings.py, SECURE_SSL_REDIRECT would switch
+        # on and every test-client request would assert against a 301 to https
+        # instead of the page it asked for - 57 spurious failures that look like
+        # an application bug.
+        from waypost import settings as settings_module
+
+        self.assertTrue(settings_module._RUNNING_TESTS)
         self.assertFalse(settings.SESSION_COOKIE_SECURE)
         self.assertFalse(settings.CSRF_COOKIE_SECURE)
         self.assertFalse(settings.SECURE_SSL_REDIRECT)
