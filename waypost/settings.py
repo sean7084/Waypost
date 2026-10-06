@@ -63,6 +63,34 @@ if not DEBUG and SECRET_KEY.startswith('django-insecure-'):
         'DJANGO_DEBUG is False.'
     )
 
+# ---------------------------------------------------------------------------
+# Reverse proxy / TLS termination.
+#
+# Production runs Gunicorn behind the host Nginx, which terminates TLS and
+# forwards `X-Forwarded-Proto: https`. Without SECURE_PROXY_SSL_HEADER Django
+# still believes the request is plain HTTP, so `request.is_secure()` is False
+# and CsrfViewMiddleware compares the browser's `https://<host>` Origin against
+# a rebuilt `http://<host>` - every POST (login included) then fails with 403.
+#
+# Trusting the header is safe here only because Gunicorn binds to the loopback
+# interface and Nginx is the only client that can reach it, so an outsider
+# cannot inject `X-Forwarded-Proto` themselves. Off by default: a developer
+# running `runserver` directly, or deploying without a proxy, must not have
+# Django believe a plain-HTTP request is secure.
+# ---------------------------------------------------------------------------
+if _env_bool('DJANGO_SECURE_PROXY_SSL_HEADER', False):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Comma-separated list of origins allowed to make cross-origin POSTs, scheme
+# included, e.g. DJANGO_CSRF_TRUSTED_ORIGINS=https://ams.istore-tech.cn
+# Needed whenever the public origin differs from what Django can derive from
+# the request (proxy, non-standard port, or a subdomain serving the same app).
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+
 # Field-level encryption key for credentials stored in the database
 # (mailbox / SMTP passwords). Used by accounts/crypto.py (Fernet).
 # Production MUST set DJANGO_FIELD_ENCRYPTION_KEY to a Fernet key. Generate one:
@@ -384,6 +412,28 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
+if not DEBUG:
+    # Cookie/redirect hardening. Gated on DEBUG so local http://127.0.0.1
+    # development is unaffected - a secure cookie over plain HTTP is simply
+    # never sent back, which presents as "login does nothing".
+    SESSION_COOKIE_SECURE = _env_bool('DJANGO_SESSION_COOKIE_SECURE', True)
+    CSRF_COOKIE_SECURE = _env_bool('DJANGO_CSRF_COOKIE_SECURE', True)
+    SECURE_SSL_REDIRECT = _env_bool('DJANGO_SECURE_SSL_REDIRECT', True)
+
+    # HSTS is sticky: a browser caches the header for the whole max-age and
+    # cannot be told to forget it, so a mistake here pins the domain to HTTPS
+    # for months. Ships disabled (0) and is raised via the environment only
+    # after HTTPS has been verified in production (31536000 = one year).
+    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_SECURE_HSTS_SECONDS', '0'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool('DJANGO_HSTS_INCLUDE_SUBDOMAINS', False)
+    SECURE_HSTS_PRELOAD = _env_bool('DJANGO_HSTS_PRELOAD', False)
+
+# The health probe must stay reachable over plain HTTP: the container
+# healthcheck and the deploy script's loopback poll talk to Gunicorn directly,
+# with no proxy in front to set X-Forwarded-Proto. Exempting the path keeps
+# SECURE_SSL_REDIRECT on for every real request.
+SECURE_REDIRECT_EXEMPT = [r'^healthz/$']
+
 # Asset management specific settings
 ASSET_PHOTO_UPLOAD_PATH = 'assets/photos/'
 ASSET_BARCODE_UPLOAD_PATH = 'assets/barcodes/'
@@ -406,8 +456,14 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
+            # Rotating rather than plain: under a container the log file lives
+            # in the writable layer, so an unbounded FileHandler grows that
+            # layer forever. 10 MB x 5 caps history at ~50 MB.
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': LOG_DIR / 'waypost.log',
+            'maxBytes': 10 * 1024 * 1024,
+            'backupCount': 5,
+            'encoding': 'utf-8',
         },
         'console': {
             'level': 'DEBUG',

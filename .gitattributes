@@ -1,0 +1,18 @@
+# Shell scripts in this repository run inside Linux containers or on the Ubuntu
+# ECS, where a CRLF line ending makes `/bin/bash^M` the interpreter and the
+# script fails with "No such file or directory". Pin them to LF on checkout
+# regardless of a contributor's core.autocrlf setting.
+*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
+docker/bin/*.sh text eol=lf
+
+# Compose and CI files are parsed by Linux tooling; keep them stable too.
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Binary assets must never be normalised or diffed as text.
+*.png binary
+*.xlsx binary
+*.pdf binary
+*.ico binary
+*.key binary
