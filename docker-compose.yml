@@ -1,0 +1,130 @@
+# Waypost production stack: Django/Gunicorn app + PostgreSQL + Redis.
+#
+# This file lives at the repository root on purpose. `docker compose` treats the
+# directory holding the compose file as the *project directory*, and that is where
+# it looks for `.env` - both for the `${...}` interpolation below and for the
+# app's own environment via `env_file`. Keeping the two side by side means a plain
+# `docker compose up -d` works with no extra flags, which matters when someone is
+# debugging an incident at 2am.
+#
+# Deliberate choices, in the order they tend to bite:
+#
+#   * `name: waypost` pins the project name. Without it Compose derives the name
+#     from the directory - here `app`, which is exactly how the Helpdesk stack on
+#     the same host is named. Identical project names share a namespace for
+#     networks and volumes.
+#   * Only the app publishes a port, and only on the loopback interface. The host
+#     Nginx reverse-proxies 443 to 127.0.0.1:8000 (docker/nginx/waypost.conf).
+#     Postgres and Redis are reachable from the app container alone, so a
+#     compromised web tier is the only route to them.
+#   * Anything that must outlive a container is a bind mount under
+#     ${WAYPOST_DATA_DIR}, owned by the user whose rootless Docker daemon runs
+#     this stack. Code lives in the image; configuration lives in `.env`.
+#
+# Environment variables marked "interpolated" are read from `.env` by Compose
+# itself; everything under `environment:` is what the container sees. Where both
+# could apply, `environment:` wins - that is how DATABASE_* and the cache URL stay
+# consistent with the services defined here.
+
+name: waypost
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        # On the ECS, set these in .env to the internal mirror
+        # (mirrors.cloud.aliyuncs.com): same packages, no public bandwidth cost.
+        APT_MIRROR: ${APT_MIRROR:-mirrors.aliyun.com}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST:-mirrors.aliyun.com}
+    # Tagged per release so `docker image ls` is a deploy history and a rollback
+    # is a re-tag, not a rebuild. ci-deploy.sh passes TAG=<git tag>.
+    image: waypost-app:${TAG:-latest}
+    container_name: waypost_app
+    env_file:
+      - .env
+    environment:
+      # Single source of truth for the DSN: the app and the db service below read
+      # the same POSTGRES_* values, so they cannot drift apart. Do not also set
+      # DATABASE_* in .env - these entries override it, which is confusing to
+      # debug but never wrong.
+      DATABASE_ENGINE: django.db.backends.postgresql
+      DATABASE_NAME: ${POSTGRES_DB:-waypost_db}
+      DATABASE_USER: ${POSTGRES_USER:-waypost_django}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      # Hardcoded to the service name on purpose. `redis://127.0.0.1:6379/1` in
+      # .env is the host-install habit and would point the app at itself.
+      DJANGO_REDIS_CACHE_URL: redis://redis:6379/1
+      # Reported by /healthz/, so "which release is actually live?" is one curl.
+      WAYPOST_VERSION: ${TAG:-dev}
+      WAYPOST_GIT_SHA: ${GIT_SHA:-}
+    ports:
+      # Loopback only. Nginx terminates TLS and proxies to this port; nothing
+      # else on the host, and nothing outside it, can reach Gunicorn directly.
+      - "127.0.0.1:8000:8000"
+    volumes:
+      # MEDIA_ROOT: delivery signatures, invoice files, asset photos, inspection
+      # reports. Nginx serves these directly (Django's static() helper returns
+      # nothing when DEBUG is False), so www-data needs read access on the host.
+      - ${WAYPOST_DATA_DIR:-/home/deploy/waypost-data}/media:/app/media
+      # Document templates are gitignored but required: quotation, delivery and
+      # invoice generation raise FileNotFoundError without them. Read-only,
+      # because the app only fills copies.
+      - ${WAYPOST_DATA_DIR:-/home/deploy/waypost-data}/template_files:/app/template_files:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+    # Gunicorn's --timeout is 300s and a single xlsx->PDF conversion may take
+    # 120s; the default 10s grace period would SIGKILL requests in flight.
+    stop_grace_period: 60s
+
+  db:
+    # Debian-based, not -alpine, deliberately: PostgreSQL indexes are built with
+    # the libc collation, and musl's collation order has changed between Alpine
+    # releases - an image bump can silently corrupt index ordering. The extra
+    # ~200 MB is cheap insurance for the only stateful service in the stack.
+    # Matches backend-ci.yml, which tests against postgres:16.
+    image: postgres:16
+    container_name: waypost_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-waypost_db}
+      POSTGRES_USER: ${POSTGRES_USER:-waypost_django}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      # UTF-8 is mandatory, not a preference: the schema stores Simplified
+      # Chinese (company names, product descriptions, inspection notes). Only
+      # applies on first initialisation of an empty volume.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    volumes:
+      - waypost_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-waypost_django} -d ${POSTGRES_DB:-waypost_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: always
+    # No published ports: reachable only from this compose network.
+
+  redis:
+    # Cache only - every key is reconstructible, so persistence is disabled and a
+    # restart costs a cold cache, not data. Matches backend-ci.yml (redis:7).
+    image: redis:7-alpine
+    container_name: waypost_redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+volumes:
+  waypost_pg_data:

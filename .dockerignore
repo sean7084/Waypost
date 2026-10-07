@@ -1,0 +1,59 @@
+# Build context is the repository root (see docker-compose.yml).
+#
+# Two goals: keep secrets and local state out of the image, and keep the context
+# small enough that a build is not uploading hundreds of megabytes of QA
+# screenshots to the daemon.
+
+# --- Secrets. Never bake these into a layer: an image can be exported. --------
+.env
+*.env
+*.env.local
+private.*.key
+*.pem
+
+# --- Local database and runtime data (mounted as volumes instead) ------------
+db.sqlite3
+media/
+template_files/
+logs/
+staticfiles/
+runtime/
+
+# --- Version control and editor/agent state ---------------------------------
+.git
+.gitattributes
+.github
+.gitignore
+.claude
+.vscode
+.mcp.json
+*.code-workspace
+
+# --- Local Python state ------------------------------------------------------
+.venv
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# --- Node / mini program tooling (the client is built and shipped separately) -
+node_modules/
+miniprogram/node_modules/
+miniprogram/preview-qr.jpg
+
+# --- Documentation and scratch files ----------------------------------------
+docs/
+*.md
+.playwright-mcp/
+tmp_*
+debug_roles.py
+
+# --- QA screenshots at the repository root ----------------------------------
+# Anchored with a leading slash on purpose: static/images/*.png are real
+# application assets and must stay in the image.
+/*.png
+/*.xlsx
+/*.ico

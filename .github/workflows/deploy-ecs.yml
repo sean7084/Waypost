@@ -1,0 +1,191 @@
+name: Deploy to ECS
+
+# Tag-promoted deployment to the production ECS.
+#
+# Merging a PR to `main` does NOT deploy anything: it only proves the image still
+# builds. Production moves when an annotated tag `v*` is pushed, which is the
+# release act defined in docs/RELEASE_PROCEDURE.md §4-§5.6. That keeps
+# "redeploy the previous release" a well-defined operation and stops work that is
+# merely merged from reaching users before it is released.
+#
+# The deployment logic lives on the host in `docker/bin/ci-deploy.sh`; this
+# workflow only opens an SSH session and passes the tag. Keeping it there means
+# the exact same script can be run by hand during an incident, with no runner,
+# no secrets and no network path through GitHub involved.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   ECS_DEPLOY_HOST        public IP or DNS name of the ECS
+#   ECS_DEPLOY_PORT        SSH port (this host uses 49153, not 22)
+#   ECS_DEPLOY_USER        the unprivileged deploy account
+#   ECS_DEPLOY_SSH_KEY     private key, whose public half is the ONLY entry in
+#                          that account's authorized_keys
+#   ECS_DEPLOY_KNOWN_HOSTS `ssh-keyscan -p <port> <host>` output, so the runner
+#                          verifies the host key instead of trusting whatever
+#                          answers (StrictHostKeyChecking=yes)
+
+on:
+  pull_request:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to deploy (for example v0.2.0)'
+        required: true
+        type: string
+
+# One deploy at a time. Cancelling a deploy in progress is how you end up with a
+# half-migrated database, so queued runs wait instead.
+concurrency:
+  group: waypost-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # --- PR gate: does the image still build? --------------------------------
+  image-validate:
+    name: Docker image builds (dependency stage)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Dockerfile defaults to the Aliyun mirrors because production builds
+      # run on an ECS in cn-heyuan. GitHub-hosted runners are nowhere near that
+      # network, so override them back to the upstream mirrors here - otherwise
+      # this job spends most of its time waiting on a trans-Pacific route.
+      - name: Build the dependency stage
+        run: |
+          docker build -f docker/Dockerfile --target deps \
+            --build-arg APT_MIRROR=deb.debian.org \
+            --build-arg PIP_INDEX_URL=https://pypi.org/simple/ \
+            --build-arg PIP_TRUSTED_HOST=pypi.org \
+            -t waypost-deps-check .
+
+  # --- Tag path: verify, then deploy ---------------------------------------
+  preflight:
+    name: Pre-deploy checks
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      # WeasyPrint imports its native libraries at module load, and
+      # quotations.services is imported during django.setup().
+      - name: Install WeasyPrint system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 libffi-dev shared-mime-info
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Django system checks
+        run: python manage.py check
+
+      # A tag cut from a tree with uncommitted model changes would migrate the
+      # production database into a shape no commit can reproduce.
+      - name: Verify no missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Ruff
+        run: python -m ruff check .
+
+  deploy:
+    name: Deploy to production (ECS)
+    needs: preflight
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Records the deployment against the repo's `production` environment, so the
+    # Environments tab is a deploy history. An approval gate can be added there
+    # later without editing this file.
+    environment: production
+    timeout-minutes: 25
+    env:
+      # A tag push gives the tag in ref_name; a manual run takes it from the input.
+      DEPLOY_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - name: Refuse to deploy anything that is not a release tag
+        run: |
+          echo "Requested deploy of: ${DEPLOY_TAG}"
+          case "${DEPLOY_TAG}" in
+            v*) ;;
+            *) echo "::error::'${DEPLOY_TAG}' is not a v* tag. Production deploys are tag-promoted; see docs/RELEASE_PROCEDURE.md §4."
+               exit 1 ;;
+          esac
+
+      - name: Verify deploy secrets are configured
+        env:
+          HOST: ${{ secrets.ECS_DEPLOY_HOST }}
+          PORT: ${{ secrets.ECS_DEPLOY_PORT }}
+          USER_NAME: ${{ secrets.ECS_DEPLOY_USER }}
+          KEY: ${{ secrets.ECS_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.ECS_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          missing=""
+          [ -n "${HOST}" ]        || missing="${missing} ECS_DEPLOY_HOST"
+          [ -n "${PORT}" ]        || missing="${missing} ECS_DEPLOY_PORT"
+          [ -n "${USER_NAME}" ]   || missing="${missing} ECS_DEPLOY_USER"
+          [ -n "${KEY}" ]         || missing="${missing} ECS_DEPLOY_SSH_KEY"
+          [ -n "${KNOWN_HOSTS}" ] || missing="${missing} ECS_DEPLOY_KNOWN_HOSTS"
+          if [ -n "${missing}" ]; then
+            echo "::error::Missing repository secret(s):${missing}"
+            echo "Provisioning steps: docs/DEPLOYMENT.md, 'CI/CD credentials'."
+            exit 1
+          fi
+
+      - name: Install the deploy SSH key
+        env:
+          KEY: ${{ secrets.ECS_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.ECS_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "${HOME}/.ssh"
+          printf '%s\n' "${KEY}" > "${HOME}/.ssh/id_waypost_deploy"
+          chmod 600 "${HOME}/.ssh/id_waypost_deploy"
+          printf '%s\n' "${KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/known_hosts"
+
+      # Plain OpenSSH rather than a third-party action: one less supply-chain
+      # dependency holding a private key that can reach production.
+      - name: Run the deploy script on the ECS
+        env:
+          HOST: ${{ secrets.ECS_DEPLOY_HOST }}
+          PORT: ${{ secrets.ECS_DEPLOY_PORT }}
+          USER_NAME: ${{ secrets.ECS_DEPLOY_USER }}
+        run: |
+          ssh -i "${HOME}/.ssh/id_waypost_deploy" \
+              -o StrictHostKeyChecking=yes \
+              -o UserKnownHostsFile="${HOME}/.ssh/known_hosts" \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              -p "${PORT}" "${USER_NAME}@${HOST}" \
+              "/srv/waypost/bin/ci-deploy.sh '${DEPLOY_TAG}'"
+
+      - name: Erase the key from the runner
+        if: always()
+        run: rm -f "${HOME}/.ssh/id_waypost_deploy"
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          {
+            echo "## Waypost production deploy"
+            echo ""
+            echo "- **tag:** \`${DEPLOY_TAG}\`"
+            echo "- **trigger:** \`${github.event_name}\` by \`${github.actor}\`"
+            echo "- **result:** \`${{ job.status }}\`"
+            echo ""
+            echo "The host-side log is \`/srv/waypost/backups/deploy.log\`; container logs are"
+            echo "\`docker compose logs --tail=200 app\` in \`/srv/waypost/app\`."
+          } >> "${GITHUB_STEP_SUMMARY}"

@@ -12,9 +12,15 @@ from django.conf.urls.i18n import i18n_patterns
 from django.views.generic import RedirectView
 
 from api.views import APIDocumentationView
+from waypost.health import healthz
 
 # Non-internationalized URLs (API, admin, etc.)
 urlpatterns = [
+    # Liveness/readiness probe. Unauthenticated, no language prefix, and exempt
+    # from SECURE_SSL_REDIRECT (see waypost/health.py) so the container
+    # healthcheck and the deploy script can reach it over plain HTTP.
+    path('healthz/', healthz, name='healthz'),
+
     # Admin interface
     path('admin/', admin.site.urls),
 
