@@ -57,6 +57,24 @@ ROLLED_BACK=0
 log()  { printf '%s %s\n' "$(date -Is)" "$*"; }
 die()  { log "FATAL: $*" >&2; record "ABORTED"; exit 1; }
 
+# github.com is intermittently unreachable from this network - observed during
+# bring-up as `curl 28 Failed to connect to github.com port 443 after 135163 ms`,
+# with the very next request succeeding. A single attempt therefore makes release
+# outcome depend on a transient blip. Retry, and bound the transfer so a stalled
+# connection fails in a minute instead of hanging for the whole SSH session.
+fetch_with_retry() {
+    local attempt
+    for attempt in 1 2 3; do
+        if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 \
+               fetch --tags --force origin; then
+            return 0
+        fi
+        log "git fetch attempt ${attempt}/3 failed; retrying in 15s"
+        sleep 15
+    done
+    return 1
+}
+
 record() {
     mkdir -p "$BACKUP_DIR"
     printf '%s\t%s\t%s\t%s\n' "$(date -Is)" "${TAG:-none}" "${SHA:-none}" "${1:-unknown}" >> "$DEPLOY_LOG"
@@ -164,7 +182,7 @@ else
 fi
 
 # --- 3. check out the released tag ------------------------------------------
-git fetch --tags --force origin || fail "git fetch failed"
+fetch_with_retry || fail "git fetch failed after 3 attempts (is github.com reachable from this host?)"
 git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null || fail "tag ${TAG} does not exist in origin"
 git checkout -f "$TAG" || fail "git checkout ${TAG} failed"
 # -ffd, never -x: .env is gitignored and must survive every deploy.
