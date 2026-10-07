@@ -122,7 +122,7 @@ TEST_OUTBOUND_EMAIL_OVERRIDE = os.environ.get('TEST_OUTBOUND_EMAIL_OVERRIDE', 's
 # ---------------------------------------------------------------------------
 PRODUCT_NAME = 'Waypost'
 PRODUCT_NAME_ZH = '驿'
-PRODUCT_TAGLINE = 'From RFQ to the shop floor'
+PRODUCT_TAGLINE = 'Every order a journey; every journey, a waypost.'
 
 COMPANY_NAME_EN = 'HengJi'
 COMPANY_NAME_ZH = '上海珩际信息科技有限公司'
@@ -293,6 +293,11 @@ LANGUAGES = [
 LOCALE_PATHS = [
     BASE_DIR / 'locale',
 ]
+
+# Project-provided per-locale display formats (date/number). Django's built-in
+# zh_CN formats omit DATE_FORMAT etc., which made locale-aware |date:"DATE_FORMAT"
+# fall back to English month names. See waypost/formats/zh_CN/formats.py.
+FORMAT_MODULE_PATH = 'waypost.formats'
 
 TIME_ZONE = 'UTC'
 

@@ -5,30 +5,41 @@
 
 {% block extra_css %}
 <style>
+    /* Metric cards follow the design system: solid surface, a coloured left
+       accent, dark text. No decorative gradient, no opacity-dimmed copy.
+       See docs/DESIGN_SYSTEM.md. */
     .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        color: white;
-        transition: transform 0.2s;
+        background: var(--wp-color-surface);
+        border: 1px solid var(--wp-color-border);
+        border-left: 4px solid var(--wp-color-primary);
+        color: var(--wp-color-text);
+        transition: transform var(--wp-motion-duration-base) var(--wp-motion-easing-standard),
+                    box-shadow var(--wp-motion-duration-base) var(--wp-motion-easing-standard);
     }
     .metric-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: var(--wp-shadow-2);
     }
     .metric-card .card-body {
-        padding: 1.5rem;
+        padding: var(--wp-space-5);
     }
     .metric-number {
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
+        font-size: var(--wp-font-size-2xl);
+        font-weight: var(--wp-font-weight-bold);
+        line-height: var(--wp-font-line-tight);
+        color: var(--wp-color-text);
+        margin-bottom: var(--wp-space-1);
     }
     .metric-label {
-        font-size: 0.875rem;
-        opacity: 0.9;
+        font-size: var(--wp-font-size-sm);
+        color: var(--wp-color-text-muted);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.04em;
+        font-weight: var(--wp-font-weight-semibold);
     }
+    .metric-card--success { border-left-color: var(--wp-color-success); }
+    .metric-card--info    { border-left-color: var(--wp-color-info); }
+    .metric-card--warning { border-left-color: var(--wp-color-warning); }
     .chart-container {
         position: relative;
         height: 280px;
@@ -36,26 +47,24 @@
     .chart-card {
         position: relative;
     }
+    /* Always visible (was opacity:0 until hover) - a control must never be
+       hidden until hover. It is an outline button, which the design system
+       renders on a solid surface so it stays legible. */
     .chart-settings-btn {
         position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 10;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-    .chart-card:hover .chart-settings-btn {
-        opacity: 1;
+        top: var(--wp-space-3);
+        right: var(--wp-space-3);
+        z-index: var(--wp-z-raised);
     }
     .customize-btn {
         position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 100;
-        border-radius: 50%;
+        bottom: var(--wp-space-5);
+        right: var(--wp-space-5);
+        z-index: var(--wp-z-fixed);
+        border-radius: var(--wp-radius-circle);
         width: 56px;
         height: 56px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: var(--wp-shadow-2);
     }
     .customize-modal .modal-body {
         max-height: 70vh;
@@ -63,18 +72,19 @@
     }
     .chart-option {
         cursor: pointer;
-        border: 2px solid #dee2e6;
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 10px;
-        transition: all 0.2s;
+        border: 1px solid var(--wp-color-border);
+        border-radius: var(--wp-radius-md);
+        padding: var(--wp-space-3);
+        margin-bottom: var(--wp-space-3);
+        transition: border-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+                    background-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard);
     }
     .chart-option:hover {
-        border-color: #667eea;
+        border-color: var(--wp-color-primary);
     }
     .chart-option.selected {
-        border-color: #667eea;
-        background-color: rgba(102, 126, 234, 0.1);
+        border-color: var(--wp-color-primary);
+        background-color: var(--wp-color-primary-subtle);
     }
     .chart-option input[type="radio"] {
         display: none;
@@ -86,19 +96,20 @@
     }
     .chart-type-btn {
         padding: 5px 10px;
-        font-size: 0.75rem;
-        border-radius: 4px;
-        border: 1px solid #dee2e6;
-        background: white;
+        font-size: var(--wp-font-size-xs);
+        border-radius: var(--wp-radius-sm);
+        border: 1px solid var(--wp-color-border);
+        background: var(--wp-color-surface);
+        color: var(--wp-color-text);
         cursor: pointer;
     }
     .chart-type-btn:hover {
-        background: #f8f9fa;
+        background: var(--wp-color-surface-subtle);
     }
     .chart-type-btn.active {
-        background: #667eea;
-        color: white;
-        border-color: #667eea;
+        background: var(--wp-color-primary);
+        color: var(--wp-color-primary-contrast);
+        border-color: var(--wp-color-primary);
     }
 </style>
 {% endblock %}
@@ -116,7 +127,7 @@
             </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card metric-card h-100" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <div class="card metric-card metric-card--success h-100">
                 <div class="card-body text-center">
                     <div class="metric-number">{{ available_assets|default:0 }}</div>
                     <div class="metric-label">{% trans "Available" %}</div>
@@ -124,7 +135,7 @@
             </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card metric-card h-100" style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);">
+            <div class="card metric-card metric-card--info h-100">
                 <div class="card-body text-center">
                     <div class="metric-number">{{ assigned_assets|default:0 }}</div>
                     <div class="metric-label">{% trans "Assigned" %}</div>
@@ -132,7 +143,7 @@
             </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card metric-card h-100" style="background: linear-gradient(135deg, #fbc2eb 0%, #a18cd1 100%);">
+            <div class="card metric-card metric-card--warning h-100">
                 <div class="card-body text-center">
                     <div class="metric-number">{{ pending_maintenance|default:0 }}</div>
                     <div class="metric-label">{% trans "Maintenance Due" %}</div>
@@ -247,7 +258,7 @@
                                                 {{ asset.get_status_display }}
                                             </span>
                                         </td>
-                                        <td>{{ asset.created_at|date:"M d, Y" }}</td>
+                                        <td>{{ asset.created_at|date:"DATE_FORMAT" }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>

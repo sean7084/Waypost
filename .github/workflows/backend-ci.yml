@@ -82,6 +82,10 @@ jobs:
 
       # `coverage report` enforces the fail_under floor from pyproject.toml, so a
       # coverage regression fails the build. See docs/TESTING.md for the ratchet.
+      # This step also runs tests/test_design_system.py, the design-system
+      # conformance gate (token drift, banned gradients/opacity, hex-free core
+      # files). Because it lives in this required, always-run job, UI guardrails
+      # are enforced on every PR without a separate required check.
       - name: Run tests with coverage
         run: |
           python -m coverage run manage.py test

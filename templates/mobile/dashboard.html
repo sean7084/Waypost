@@ -11,7 +11,7 @@
         left: 0;
         right: 0;
         background: white;
-        border-top: 1px solid #dee2e6;
+        border-top: 1px solid var(--wp-color-border);
         padding: 0.5rem;
         z-index: 1000;
     }
@@ -20,12 +20,12 @@
         flex-direction: column;
         align-items: center;
         text-decoration: none;
-        color: #6c757d;
+        color: var(--wp-color-neutral-500);
         font-size: 0.75rem;
         padding: 0.5rem;
     }
     .mobile-nav-item.active {
-        color: #007bff;
+        color: var(--wp-color-primary);
     }
     .mobile-nav-item i {
         font-size: 1.5rem;
@@ -40,19 +40,19 @@
         align-items: center;
         justify-content: center;
         padding: 1.5rem;
-        background: #f8f9fa;
+        background: var(--wp-color-surface-sunken);
         border-radius: 8px;
         text-decoration: none;
         color: inherit;
         transition: background 0.2s;
     }
     .quick-action:hover {
-        background: #e9ecef;
+        background: var(--wp-color-surface-sunken);
     }
     .quick-action i {
         font-size: 2rem;
         margin-bottom: 0.5rem;
-        color: #007bff;
+        color: var(--wp-color-primary);
     }
 </style>
 {% endblock %}

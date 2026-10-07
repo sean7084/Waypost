@@ -5,15 +5,15 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-            <h1 class="h3 mb-1">
+    <div class="wp-page-header">
+        <div class="wp-page-header__titles">
+            <h1 class="wp-page-header__title">
                 <i class="fas fa-layer-group text-primary me-2"></i>
                 {% trans "Inspection Batches" %}
             </h1>
-            <p class="text-muted mb-0">{% trans "Group store inspections into planning cycles for scheduling and export." %}</p>
+            <p class="wp-page-header__desc">{% trans "Group store inspections into planning cycles for scheduling and export." %}</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="wp-page-header__actions">
             <a href="{% url 'inspections:dashboard' %}" class="btn btn-outline-secondary">
                 <i class="fas fa-calendar-alt"></i> {% trans "Dashboard" %}
             </a>
@@ -109,7 +109,7 @@
                             </td>
                             <td>{{ batch.division.name|default:"-" }}</td>
                             <td class="small">
-                                {{ batch.start_date|date:"M j, Y" }} - {{ batch.end_date|date:"M j, Y" }}
+                                {{ batch.start_date|date:"DATE_FORMAT" }} - {{ batch.end_date|date:"DATE_FORMAT" }}
                             </td>
                             <td>{{ batch.engineer.get_full_name|default:"-" }}</td>
                             <td>

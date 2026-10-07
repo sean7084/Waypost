@@ -6,27 +6,28 @@
 {% block extra_css %}
 <style>
     .upload-zone {
-        border: 2px dashed #ced4da;
-        border-radius: 8px;
-        padding: 1.5rem;
+        border: 2px dashed var(--wp-color-border-strong);
+        border-radius: var(--wp-radius-md);
+        padding: var(--wp-space-6);
         text-align: center;
-        transition: all 0.2s;
-        background: #f8f9fa;
+        transition: border-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+                    background-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard);
+        background: var(--wp-color-surface-subtle);
     }
     .upload-zone:hover, .upload-zone.dragover {
-        border-color: var(--secondary-color);
-        background: #eef4fb;
+        border-color: var(--wp-color-primary);
+        background: var(--wp-color-primary-subtle);
     }
     .upload-zone input[type="file"] {
         cursor: pointer;
     }
     .schema-table {
-        font-size: 0.85rem;
+        font-size: var(--wp-font-size-sm);
     }
     .schema-table code {
-        background: #f1f3f5;
+        background: var(--wp-color-surface-sunken);
         padding: 1px 5px;
-        border-radius: 3px;
+        border-radius: var(--wp-radius-sm);
     }
 </style>
 {% endblock %}

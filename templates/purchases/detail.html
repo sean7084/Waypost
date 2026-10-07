@@ -72,7 +72,7 @@
                         </tr>
                         <tr>
                             <th>{% trans "Purchase Date" %}</th>
-                            <td>{{ asset.purchase_date|date:"Y-m-d"|default:"-" }}</td>
+                            <td>{{ asset.purchase_date|date:"SHORT_DATE_FORMAT"|default:"-" }}</td>
                         </tr>
                     </table>
                 </div>
@@ -101,7 +101,7 @@
                         </tr>
                         <tr>
                             <th>{% trans "Quote Date" %}</th>
-                            <td>{{ quotation.quotation_date|date:"Y-m-d" }}</td>
+                            <td>{{ quotation.quotation_date|date:"SHORT_DATE_FORMAT" }}</td>
                         </tr>
                         <tr>
                             <th>{% trans "Quote Total" %}</th>

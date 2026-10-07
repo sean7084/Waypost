@@ -44,6 +44,29 @@ LANGUAGE_PREFERENCE_CHOICES = [
 ]
 
 
+def apply_bootstrap_widget_classes(form):
+    """Give every field widget the matching Bootstrap control class.
+
+    Model-derived fields (e.g. the field-engineer profile: wechat_id,
+    invite_code, fe_rating, fe_notes) otherwise render as bare browser inputs
+    that do not match the explicitly declared, styled fields.
+    """
+    for field in form.fields.values():
+        widget = field.widget
+        existing = widget.attrs.get('class', '')
+        classes = set(existing.split()) if existing else set()
+        if isinstance(widget, forms.CheckboxSelectMultiple):
+            pass  # rendered as a group of check boxes; template styles it
+        elif isinstance(widget, (forms.Select, forms.SelectMultiple)):
+            classes.add('form-select')
+        elif isinstance(widget, (forms.RadioSelect, forms.CheckboxInput)):
+            classes.add('form-check-input')
+        else:
+            classes.add('form-control')
+        if classes:
+            widget.attrs['class'] = ' '.join(sorted(classes))
+
+
 class CustomLoginForm(AuthenticationForm):
     """
     Custom login form with enhanced styling and validation.
@@ -198,6 +221,8 @@ class UserRegistrationForm(UserCreationForm):
         self.fields.pop('password1', None)
         self.fields.pop('password2', None)
         self.fields.pop('use_random_password', None)
+
+        apply_bootstrap_widget_classes(self)
 
         # Add CSS classes to default fields
         self.fields['username'].widget.attrs.update({
@@ -493,6 +518,7 @@ class SuperuserUserForm(UserCreationForm):
         self.fields.pop('password1', None)
         self.fields.pop('password2', None)
         self.fields.pop('use_random_password', None)
+        apply_bootstrap_widget_classes(self)
         
         # Import here to avoid circular imports
         from companies.models import Company, Division, Location

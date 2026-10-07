@@ -98,7 +98,7 @@
                             <tbody>
                                 {% for inspection in inspections %}
                                 <tr>
-                                    <td class="text-nowrap">{{ inspection.inspection_date|date:"Y-m-d" }}</td>
+                                    <td class="text-nowrap">{{ inspection.inspection_date|date:"SHORT_DATE_FORMAT" }}</td>
                                     <td>
                                         <a href="{% url 'inspections:inspection_detail' inspection.id %}" class="text-decoration-none fw-semibold">
                                             {{ inspection.store_label|default:inspection.store_name|default:"-" }}

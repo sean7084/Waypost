@@ -69,8 +69,8 @@
                                 <span class="badge bg-secondary">{{ batch.get_status_display }}</span>
                                 {% endif %}
                             </td>
-                            <td>{{ batch.uploaded_at|date:"Y-m-d H:i" }}</td>
-                            <td>{% if batch.processed_at %}{{ batch.processed_at|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
+                            <td>{{ batch.uploaded_at|date:"SHORT_DATETIME_FORMAT" }}</td>
+                            <td>{% if batch.processed_at %}{{ batch.processed_at|date:"SHORT_DATETIME_FORMAT" }}{% else %}-{% endif %}</td>
                             <td>{{ batch.total_rows }}</td>
                             <td>{{ batch.created_rows }}</td>
                             <td>

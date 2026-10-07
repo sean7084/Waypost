@@ -20,6 +20,7 @@ Complete list of project documentation for reference and navigation.
 | Document | Location | Purpose |
 |----------|----------|---------|
 | **ARCHITECTURE.md** | `docs/` | System context, bounded contexts, end-to-end data flows |
+| **DESIGN_SYSTEM.md** | `docs/` | Mandatory UI design language, design tokens, components, accessibility & CI-enforced rules |
 | **ADR-0001** | `docs/ARCHITECTURAL_DECISION_RECORDS.md` | Service catalog separation decision |
 | **ADR-0002** | `docs/ARCHITECTURAL_DECISION_RECORDS.md` | Mailbox-driven RFQ automation |
 | **ADR-0003** | `docs/ARCHITECTURAL_DECISION_RECORDS.md` | Direct dispatch fulfillment workflow |
@@ -31,6 +32,7 @@ Complete list of project documentation for reference and navigation.
 | **ADR-0009** | `docs/ARCHITECTURAL_DECISION_RECORDS.md` | Warehouse slot tracking implementation |
 | **ADR-0010** | `docs/ARCHITECTURAL_DECISION_RECORDS.md` | Company contact vs company user model refactoring |
 | **ADR-0011** | `docs/ARCHITECTURAL_DECISION_RECORDS.md` | WeChat mini program for Kering store device inspection |
+| **ADR-0012** | `docs/ARCHITECTURAL_DECISION_RECORDS.md` | Unified design system and token single source of truth |
 
 ### 🔧 Operational Guides
 
@@ -105,8 +107,9 @@ waypost/
 ├── LICENSE                        ← Legal terms
 │
 ├── docs/                          ← Detailed specifications
-│   ├── ARCHITECTURAL_DECISION_RECORDS.md     ← ADRs (0001-0011)
+│   ├── ARCHITECTURAL_DECISION_RECORDS.md     ← ADRs (0001-0012)
 │   ├── ARCHITECTURE.md          ← System context + data flows
+│   ├── DESIGN_SYSTEM.md         ← Mandatory UI design language + tokens
 │   ├── API_GUIDE.md             ← REST API reference
 │   ├── WEB_ROUTES.md            ← HTML route/view/permission reference
 │   ├── TESTING.md               ← Test strategy, conventions, coverage
@@ -266,5 +269,5 @@ Questions about any document or suggestions for improvement?
 
 ---
 
-*Last Updated: September 24, 2026*  
+*Last Updated: October 5, 2026*  
 *Author: Sean Liu and contributors*

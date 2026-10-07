@@ -29,6 +29,10 @@ jobs:
           if [ -f package.json ]; then
             npm ci || npm install
             npm run lint --if-present
+            # Design-system guardrail: WXSS must use var(--wp-*) tokens, not raw
+            # hex. Mirrors tests/test_design_system.py so the mini program cannot
+            # drift from the web palette. See docs/DESIGN_SYSTEM.md.
+            npm run lint:style --if-present
           else
             echo "No miniprogram/package.json yet; add eslint + a lint script to enable JS linting."
           fi

@@ -25,7 +25,7 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="text-muted small">{% trans "Timestamp" %}</div>
-                            <div>{{ activity_log.created_at|date:"M d, Y H:i:s" }}</div>
+                            <div>{{ activity_log.created_at|date:"SHORT_DATETIME_FORMAT" }}</div>
                         </div>
                         <div class="col-md-6">
                             <div class="text-muted small">{% trans "Operation" %}</div>

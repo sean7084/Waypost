@@ -29,13 +29,13 @@
         <div class="col-md-3">
             <div class="card"><div class="card-body">
                 <div class="text-muted small">{% trans "Uploaded At" %}</div>
-                <div class="h6 mb-0">{{ batch.uploaded_at|date:"Y-m-d H:i" }}</div>
+                <div class="h6 mb-0">{{ batch.uploaded_at|date:"SHORT_DATETIME_FORMAT" }}</div>
             </div></div>
         </div>
         <div class="col-md-3">
             <div class="card"><div class="card-body">
                 <div class="text-muted small">{% trans "Processed At" %}</div>
-                <div class="h6 mb-0">{% if batch.processed_at %}{{ batch.processed_at|date:"Y-m-d H:i" }}{% else %}-{% endif %}</div>
+                <div class="h6 mb-0">{% if batch.processed_at %}{{ batch.processed_at|date:"SHORT_DATETIME_FORMAT" }}{% else %}-{% endif %}</div>
             </div></div>
         </div>
         <div class="col-md-3">
@@ -82,7 +82,7 @@
                         <tr>
                             <td>{{ item.source_row_number }}</td>
                             <td><a href="{% url 'invoices:invoice_detail' item.pk %}">{{ item.invoice_number }}</a></td>
-                            <td>{{ item.invoice_date|date:"Y-m-d" }}</td>
+                            <td>{{ item.invoice_date|date:"SHORT_DATE_FORMAT" }}</td>
                             <td>{{ item.kering_group_po_number }}</td>
                             <td>{{ item.internal_order }}</td>
                             <td>{{ item.sap_cost_center }}</td>

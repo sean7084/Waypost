@@ -1,0 +1,11 @@
+{% load i18n %}
+{# Horizontal action toolbar from a toolbar_actions list; for mixed form/button toolbars use the .wp-toolbar class directly. #}
+{% if toolbar_actions %}
+<div class="wp-toolbar">
+    {% for action in toolbar_actions %}
+    <a href="{{ action.url }}" class="btn {{ action.style|default:'btn-outline-secondary' }}">
+        {% if action.icon %}<i class="fas {{ action.icon }}"></i> {% endif %}{{ action.label }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}

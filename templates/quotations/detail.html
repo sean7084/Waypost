@@ -62,7 +62,7 @@
     {% if quotation.is_expired and quotation.status == 'sent' %}
     <div class="alert alert-warning">
         <i class="fas fa-exclamation-triangle"></i>
-        {% trans "This quotation has expired. The validity date was" %} {{ quotation.valid_until|date:"Y-m-d" }}.
+        {% trans "This quotation has expired. The validity date was" %} {{ quotation.valid_until|date:"SHORT_DATE_FORMAT" }}.
     </div>
     {% endif %}
 
@@ -107,15 +107,15 @@
                             <table class="table table-borderless">
                                 <tr>
                                     <th width="40%">{% trans "Quotation Date" %}</th>
-                                    <td>{{ quotation.quotation_date|date:"Y-m-d" }}</td>
+                                    <td>{{ quotation.quotation_date|date:"SHORT_DATE_FORMAT" }}</td>
                                 </tr>
                                 <tr>
                                     <th>{% trans "Valid Until" %}</th>
-                                    <td>{{ quotation.valid_until|date:"Y-m-d" }}</td>
+                                    <td>{{ quotation.valid_until|date:"SHORT_DATE_FORMAT" }}</td>
                                 </tr>
                                 <tr>
                                     <th>{% trans "Created" %}</th>
-                                    <td>{{ quotation.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ quotation.created_at|date:"SHORT_DATETIME_FORMAT" }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -289,7 +289,7 @@
                             <tr>
                                 <td>{{ att.get_attachment_type_display }}</td>
                                 <td>{{ att.file.name|truncatechars:30 }}</td>
-                                <td>{{ att.uploaded_at|date:"Y-m-d H:i" }}</td>
+                                <td>{{ att.uploaded_at|date:"SHORT_DATETIME_FORMAT" }}</td>
                                 <td>
                                     <a href="{{ att.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
                                         <i class="fas fa-download"></i>
@@ -362,12 +362,12 @@
                     <ul class="list-unstyled small">
                         <li class="mb-2">
                             <i class="fas fa-plus text-success"></i>
-                            {% trans "Created" %}: {{ quotation.created_at|date:"Y-m-d H:i" }}
+                            {% trans "Created" %}: {{ quotation.created_at|date:"SHORT_DATETIME_FORMAT" }}
                         </li>
                         {% if quotation.updated_at != quotation.created_at %}
                         <li class="mb-2">
                             <i class="fas fa-edit text-info"></i>
-                            {% trans "Updated" %}: {{ quotation.updated_at|date:"Y-m-d H:i" }}
+                            {% trans "Updated" %}: {{ quotation.updated_at|date:"SHORT_DATETIME_FORMAT" }}
                         </li>
                         {% endif %}
                     </ul>

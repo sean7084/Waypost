@@ -41,7 +41,7 @@
                                     <tr class="asset-log-row" data-href="{% url 'assets:asset_log_detail' log.pk %}">
                                         <td>
                                             <a href="{% url 'assets:asset_log_detail' log.pk %}" class="text-decoration-none text-reset">
-                                                <small class="text-muted">{{ log.created_at|date:"M d, Y H:i:s" }}</small>
+                                                <small class="text-muted">{{ log.created_at|date:"SHORT_DATETIME_FORMAT" }}</small>
                                             </a>
                                         </td>
                                         <td>

@@ -74,7 +74,7 @@
                             <td><a href="{% url 'deliveries:detail' d.pk %}">{{ d.delivery_number }}</a></td>
                             <td><a href="{% url 'quotations:detail' d.quotation.pk %}">{{ d.quotation.quotation_number }}</a></td>
                             <td>{{ d.quotation.customer.name }}</td>
-                            <td>{{ d.delivery_date|date:"Y-m-d" }}</td>
+                            <td>{{ d.delivery_date|date:"SHORT_DATE_FORMAT" }}</td>
                             <td>{{ d.receiver_name }}</td>
                             <td><span class="badge {{ d.status|workflow_badge_class:'delivery' }}">{{ d.get_status_display }}</span></td>
                             <td class="small text-muted">{{ d|delivery_next_action }}</td>

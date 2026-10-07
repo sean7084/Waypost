@@ -1,0 +1,19 @@
+{% load i18n %}
+{# Standard page header: icon + title + description left, actions right. Pass a page_actions list, or use the .wp-page-header classes directly (see docs/DESIGN_SYSTEM.md). #}
+<div class="wp-page-header">
+    <div class="wp-page-header__titles">
+        <h1 class="wp-page-header__title">
+            {% if icon %}<i class="fas {{ icon }} me-2 text-primary"></i>{% endif %}{{ title }}
+        </h1>
+        {% if description %}<p class="wp-page-header__desc">{{ description }}</p>{% endif %}
+    </div>
+    {% if page_actions %}
+    <div class="wp-page-header__actions">
+        {% for action in page_actions %}
+        <a href="{{ action.url }}" class="btn {{ action.style|default:'btn-outline-secondary' }}">
+            {% if action.icon %}<i class="fas {{ action.icon }}"></i> {% endif %}{{ action.label }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

@@ -17,6 +17,7 @@ This directory contains architectural decision records for the Waypost.
 | [0009](#adr-0009-warehouse-slot-tracking) | Warehouse Slot Tracking | Accepted | 2026-04-20 |
 | [0010](#adr-0010-company-contact-vs-company-user) | Company Contact vs Company User Model | Accepted | 2026-04-21 |
 | [0011](#adr-0011-wechat-mini-program-for-kering-store-device-inspection) | WeChat Mini Program for Kering Store Device Inspection | Accepted | 2026-09-13 |
+| [0012](#adr-0012-unified-design-system-and-token-single-source-of-truth) | Unified Design System and Token Single Source of Truth | Accepted | 2026-10-05 |
 
 ---
 
@@ -548,6 +549,83 @@ photos, device counts, issue list, signatures); stores often have weak connectiv
 
 ---
 
+## ADR-0012: Unified Design System and Token Single Source of Truth
+
+**Status**: Accepted  
+**Date**: 2026-10-05  
+**Authors**: Sean Liu
+
+### Context
+
+The web front end accumulated visual definitions in three places with no single
+authority: a large inline `<style>` block in `templates/base/base.html`, 24+
+per-template `{% block extra_css %}` blocks, and the WeChat mini program's own
+`app.wxss`. The consequences were user-visible defects:
+
+- The page background used a decorative purple gradient
+  (`linear-gradient(135deg,#667eea,#764ba2)`) duplicated in both `base.html` and
+  `dashboard.html`. Outline buttons placed on it (e.g. the "Dashboard" button on
+  `/inspections/batches/`) had too little contrast to read reliably.
+- A fragile fix that forced outline buttons to render solid only matched
+  `.row.mb-4` headers, so newer `.d-flex ... mb-4` headers were not covered.
+- Some essential controls were hidden until hover via `opacity: 0`.
+- The top navigation wrapped to two lines when the viewport was not wide enough,
+  because nothing moved overflow items out of the bar.
+- The mini program used an olive-green palette (`#4F6228`) that did not match the
+  web app at all.
+
+We needed one design language, applied consistently to both surfaces, with a
+mechanism that stops the drift from recurring.
+
+### Decision
+
+Adopt a token-driven design system with a single source of truth and CI-enforced
+guardrails.
+
+1. **Single token source.** All visual values live in `static/design/tokens.json`.
+   `scripts/build_design_tokens.py` generates both `static/css/tokens.css`
+   (`:root { --wp-* }`) and `miniprogram/styles/tokens.wxss` (`page { --wp-* }`),
+   so the web app and the mini program are structurally guaranteed to share an
+   identical palette, type scale, spacing, radii, shadows and motion.
+2. **Shared component layer.** `static/css/waypost.css` layers a blended
+   Apple-HIG-clarity + Jira/ServiceNow-density component system on top of
+   Bootstrap 5.3 (buttons, cards, tables, forms, badges, alerts, empty states,
+   pagination, nav). Bootstrap is kept; tokens restyle it.
+3. **Priority+ navigation.** `static/js/nav-overflow.js` keeps the top bar on one
+   row, moving overflow items into a "More" (…) dropdown and collapsing to the
+   hamburger below the `lg` breakpoint.
+4. **Mandatory guide.** `docs/DESIGN_SYSTEM.md` documents the language and the
+   hard rules (no raw colour literals, no opacity-hidden controls, no
+   outline-on-gradient, single-row nav, AA contrast).
+5. **Automated enforcement.** `tests/test_design_system.py` runs inside the
+   existing required backend CI job: it fails on token drift, raw colour literals
+   outside the token files/allowlist, and banned opacity/gradient/outline
+   patterns. Mini program styles are linted with `stylelint`.
+
+### Consequences
+
+- **Positive:** one place to change any visual value; web and mini program cannot
+  drift apart; the contrast/opacity/nav defects are prevented by CI rather than
+  by reviewer memory; new pages inherit a consistent look from shared components.
+- **Negative / trade-offs:** a one-time big-bang migration of 119 templates and 8
+  mini program pages; the generated files must be rebuilt after any token change
+  (the drift check makes forgetting this fail loudly); the mini program moves from
+  `rpx` to token `px` for shared dimensions.
+- **Mitigations:** delivered as a sequence of module-scoped PRs to keep CI green
+  and review manageable; the generator is deterministic and idempotent; dark mode
+  is deferred but the token structure already anticipates a `[data-theme]` block.
+
+### References
+
+- Guide: `docs/DESIGN_SYSTEM.md`
+- Tokens: `static/design/tokens.json`; generator: `scripts/build_design_tokens.py`
+- Generated: `static/css/tokens.css`, `miniprogram/styles/tokens.wxss`
+- Components: `static/css/waypost.css`; nav: `static/js/nav-overflow.js`
+- Enforcement: `tests/test_design_system.py`, `miniprogram/.stylelintrc.json`
+- Shell: `templates/base/base.html`
+
+---
+
 [Continue for remaining ADRs...]
 
 ---
@@ -580,4 +658,4 @@ Links to related files, migrations, discussions
 
 ---
 
-*Last Updated: April 29, 2026*
+*Last Updated: October 5, 2026*

@@ -10,11 +10,11 @@
     "pages/sync/sync"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#4F6228",
+    "navigationBarBackgroundColor": "#2F6FED",
     "navigationBarTextStyle": "white",
     "navigationBarTitleText": "驿 · 店铺巡检",
-    "backgroundColor": "#F2F2F2",
-    "backgroundTextStyle": "light"
+    "backgroundColor": "#F6F7F9",
+    "backgroundTextStyle": "dark"
   },
   "usingComponents": {
     "home-button": "/components/home-button/home-button"

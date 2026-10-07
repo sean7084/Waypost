@@ -18,7 +18,7 @@ class ProductPriceForm(forms.ModelForm):
 
     brand_name = forms.CharField(
         required=False,
-        label='Brand',
+        label=_('Brand'),
         widget=forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'})
     )
 

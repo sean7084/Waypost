@@ -843,6 +843,9 @@ msgstr "总额（含税）"
 msgid "From RFQ to the shop floor"
 msgstr "驿 · 从询价到门店现场，一路留痕"
 
+msgid "Every order a journey; every journey, a waypost."
+msgstr "一单一程，一程一驿。"
+
 msgid "iStore Tech"
 msgstr "上海思导信息科技有限公司"
 

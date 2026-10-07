@@ -104,7 +104,13 @@ Three asset numbering modes supported:
 
 ### Style Reference
 
-UI design inspired by [Ralph](https://ralphapp.com/) and [Snipe-IT](https://snipeitapp.com/) with a lightweight aesthetic.
+UI follows the **Waypost Design System** - a token-driven blend of Apple Human
+Interface Guidelines clarity (restraint, whitespace, one accent) and Jira /
+ServiceNow data density (compact tables, clear hierarchy). A single token source
+(`static/design/tokens.json`) generates both the web stylesheet and the WeChat
+mini program styles so the two surfaces stay identical. The mandatory guide,
+component rules and CI-enforced guardrails live in
+[`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) (see ADR-0012).
 
 ### App Responsibilities
 

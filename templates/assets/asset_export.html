@@ -6,44 +6,51 @@
 {% block extra_css %}
 <style>
     .export-section {
-        background: #f8f9fa;
-        border-left: 4px solid #007bff;
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-        border-radius: 0 8px 8px 0;
+        background: var(--wp-color-surface-subtle);
+        border-left: 4px solid var(--wp-color-primary);
+        padding: var(--wp-space-4);
+        margin-bottom: var(--wp-space-6);
+        border-radius: 0 var(--wp-radius-md) var(--wp-radius-md) 0;
     }
     .filter-section {
-        background: #fff;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
+        background: var(--wp-color-surface);
+        border: 1px solid var(--wp-color-border);
+        border-radius: var(--wp-radius-lg);
+        padding: var(--wp-space-6);
+        margin-bottom: var(--wp-space-6);
     }
     .format-option {
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        transition: all 0.2s;
+        border: 1px solid var(--wp-color-border);
+        border-radius: var(--wp-radius-md);
+        padding: var(--wp-space-4);
+        margin-bottom: var(--wp-space-4);
+        transition: border-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+                    background-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard);
     }
     .format-option:hover {
-        border-color: #007bff;
-        background-color: #f8f9fa;
+        border-color: var(--wp-color-primary);
+        background-color: var(--wp-color-surface-subtle);
     }
     .format-option input[type="radio"]:checked + label .format-option {
-        border-color: #007bff;
-        background-color: #e3f2fd;
+        border-color: var(--wp-color-primary);
+        background-color: var(--wp-color-primary-subtle);
     }
     .field-checkbox {
-        margin-bottom: 0.5rem;
+        margin-bottom: var(--wp-space-2);
     }
+    /* Was a purple gradient with white text; now a clean surface panel with a
+       primary accent and dark text (design system: no gradient behind text). */
     .preview-stats {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 8px;
-        padding: 1.5rem;
+        background: var(--wp-color-surface);
+        color: var(--wp-color-text);
+        border: 1px solid var(--wp-color-border);
+        border-top: 4px solid var(--wp-color-primary);
+        border-radius: var(--wp-radius-lg);
+        padding: var(--wp-space-6);
         text-align: center;
     }
+    .preview-stats .fa-database { color: var(--wp-color-primary); }
+    .preview-stats p { color: var(--wp-color-text-muted); }
 </style>
 {% endblock %}
 
@@ -130,7 +137,7 @@
                         <!-- Category Filter -->
                         <div class="col-md-6 mb-4">
                             <h6>{{ form.category.label }}</h6>
-                            <div style="max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
+                            <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--wp-color-border); border-radius: 4px; padding: 10px;">
                                 {% for choice in form.category %}
                                 <div class="field-checkbox">
                                     {{ choice.tag }}
@@ -151,7 +158,7 @@
                         <!-- Brand Filter -->
                         <div class="col-md-6 mb-4">
                             <h6>{{ form.brand.label }}</h6>
-                            <div style="max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
+                            <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--wp-color-border); border-radius: 4px; padding: 10px;">
                                 {% for choice in form.brand %}
                                 <div class="field-checkbox">
                                     {{ choice.tag }}

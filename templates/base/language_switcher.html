@@ -1,22 +1,21 @@
 {% load i18n %}
-<!-- Language Switcher Component -->
-<div class="language-switcher-container">
-    <form method="post" action="{% url 'set_language' %}" class="d-inline">
+{% get_current_language as CURRENT_LANG %}
+{# Segmented 中/EN switcher; each form posts its own target-language `next`. #}
+{% with stripped=request.get_full_path|slice:"7:" %}
+<div class="wp-langswitch" role="group" aria-label="{% trans 'Language' %}">
+    <form method="post" action="{% url 'set_language' %}" class="wp-langswitch__form">
         {% csrf_token %}
-        <input name="next" type="hidden" value="{{ request.get_full_path }}">
-        <select name="language" class="form-select form-select-sm" onchange="this.form.submit();" style="width: auto; display: inline-block;">
-            {% get_available_languages as LANGUAGES %}
-            {% for lang_code, lang_name in LANGUAGES %}
-                <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>
-                    {% if lang_code == 'en-us' %}
-                        English (US)
-                    {% elif lang_code == 'zh-cn' %}
-                        简体中文
-                    {% else %}
-                        {{ lang_name }}
-                    {% endif %}
-                </option>
-            {% endfor %}
-        </select>
+        <input type="hidden" name="next" value="/zh-cn/{{ stripped }}">
+        <button type="submit" name="language" value="zh-cn"
+                class="wp-langswitch__opt{% if CURRENT_LANG == 'zh-cn' %} wp-langswitch__opt--active{% endif %}"
+                aria-pressed="{% if CURRENT_LANG == 'zh-cn' %}true{% else %}false{% endif %}">中</button>
+    </form>
+    <form method="post" action="{% url 'set_language' %}" class="wp-langswitch__form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/en-us/{{ stripped }}">
+        <button type="submit" name="language" value="en-us"
+                class="wp-langswitch__opt{% if CURRENT_LANG == 'en-us' %} wp-langswitch__opt--active{% endif %}"
+                aria-pressed="{% if CURRENT_LANG == 'en-us' %}true{% else %}false{% endif %}">EN</button>
     </form>
 </div>
+{% endwith %}

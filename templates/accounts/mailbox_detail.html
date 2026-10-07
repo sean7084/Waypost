@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h4 mb-1">{{ message.subject|default:_('Mailbox Message') }}</h1>
-            <p class="text-muted mb-0">{% if message.direction == 'inbox' %}{{ message.sender }}{% else %}{{ message.recipients }}{% endif %} · {{ message.event_at|date:"M d, Y H:i" }}</p>
+            <p class="text-muted mb-0">{% if message.direction == 'inbox' %}{{ message.sender }}{% else %}{{ message.recipients }}{% endif %} · {{ message.event_at|date:"SHORT_DATETIME_FORMAT" }}</p>
         </div>
         <div class="d-flex gap-2">
             {% if message.direction == 'inbox' %}
@@ -29,7 +29,7 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-6"><strong>{% trans "Direction" %}:</strong> {{ message.get_direction_display }}</div>
-                <div class="col-md-6"><strong>{% if message.direction == 'inbox' %}{% trans "Receive Time" %}{% else %}{% trans "Sent Time" %}{% endif %}:</strong> {{ message.event_at|date:"M d, Y H:i"|default:"-" }}</div>
+                <div class="col-md-6"><strong>{% if message.direction == 'inbox' %}{% trans "Receive Time" %}{% else %}{% trans "Sent Time" %}{% endif %}:</strong> {{ message.event_at|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</div>
                 <div class="col-md-6"><strong>{% trans "From" %}:</strong> {{ message.sender|default:"-" }}</div>
                 <div class="col-md-6"><strong>{% trans "To" %}:</strong> {{ message.recipients|default:"-" }}</div>
                 <div class="col-md-6"><strong>{% trans "Message ID" %}:</strong> {{ message.message_id|default:"-" }}</div>

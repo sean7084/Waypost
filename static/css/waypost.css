@@ -1,0 +1,1050 @@
+/* ==========================================================================
+   Waypost design system - shared component layer.
+   Loaded AFTER Bootstrap 5.3 and tokens.css (see templates/base/base.html).
+
+   Strategy: first map Bootstrap's own CSS variables (--bs-*) onto our design
+   tokens so every Bootstrap component adopts the palette automatically, then
+   add targeted refinements for the components where we need a specific look or
+   an accessibility guarantee.
+
+   Rules enforced here (see docs/DESIGN_SYSTEM.md):
+     - No decorative gradients behind text/controls; light canvas only.
+     - Buttons always have sufficient contrast; disabled = opacity 1.
+     - Outline buttons render on a solid surface so they are never invisible.
+     - Top navigation stays on a single row (priority+ overflow).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Map Bootstrap variables to Waypost tokens
+   -------------------------------------------------------------------------- */
+:root {
+  /* Typography */
+  --bs-font-sans-serif: var(--wp-font-family-base);
+  --bs-body-font-family: var(--wp-font-family-base);
+  --bs-body-font-size: var(--wp-font-size-base);
+  --bs-body-line-height: var(--wp-font-line-base);
+
+  /* Surfaces & text */
+  --bs-body-color: var(--wp-color-text);
+  --bs-body-bg: var(--wp-color-bg);
+  --bs-emphasis-color: var(--wp-color-text);
+  --bs-secondary-color: var(--wp-color-text-muted);
+  --bs-secondary-bg: var(--wp-color-surface-sunken);
+  --bs-tertiary-color: var(--wp-color-text-subtle);
+  --bs-tertiary-bg: var(--wp-color-surface-subtle);
+
+  /* Borders */
+  --bs-border-color: var(--wp-color-border);
+  --bs-border-radius: var(--wp-radius-md);
+  --bs-border-radius-sm: var(--wp-radius-sm);
+  --bs-border-radius-lg: var(--wp-radius-lg);
+  --bs-border-radius-xl: var(--wp-radius-lg);
+  --bs-border-radius-2xl: var(--wp-radius-xl);
+  --bs-border-radius-pill: var(--wp-radius-pill);
+
+  /* Links */
+  --bs-link-color: var(--wp-color-primary);
+  --bs-link-hover-color: var(--wp-color-primary-hover);
+  --bs-link-color-rgb: 47, 111, 237;
+  --bs-link-hover-color-rgb: 31, 90, 209;
+
+  /* Accent + semantics (rgb triplets power Bootstrap's rgba() helpers) */
+  --bs-primary: var(--wp-color-primary);
+  --bs-primary-rgb: 47, 111, 237;
+  --bs-secondary-rgb: 91, 100, 114;
+  --bs-success: var(--wp-color-success);
+  --bs-success-rgb: 26, 127, 55;
+  --bs-danger: var(--wp-color-danger);
+  --bs-danger-rgb: 207, 34, 46;
+  --bs-warning: var(--wp-color-warning);
+  --bs-warning-rgb: 154, 103, 0;
+  --bs-info: var(--wp-color-info);
+  --bs-info-rgb: 9, 105, 218;
+
+  --bs-primary-bg-subtle: var(--wp-color-primary-subtle);
+  --bs-success-bg-subtle: var(--wp-color-success-subtle);
+  --bs-warning-bg-subtle: var(--wp-color-warning-subtle);
+  --bs-danger-bg-subtle: var(--wp-color-danger-subtle);
+  --bs-info-bg-subtle: var(--wp-color-info-subtle);
+
+  --bs-primary-text-emphasis: var(--wp-color-primary-active);
+  --bs-success-text-emphasis: var(--wp-color-success);
+  --bs-warning-text-emphasis: var(--wp-color-warning);
+  --bs-danger-text-emphasis: var(--wp-color-danger);
+  --bs-info-text-emphasis: var(--wp-color-info);
+
+  /* Elevation */
+  --bs-box-shadow: var(--wp-shadow-1);
+  --bs-box-shadow-sm: var(--wp-shadow-1);
+  --bs-box-shadow-lg: var(--wp-shadow-3);
+
+  /* Focus ring */
+  --bs-focus-ring-color: var(--wp-color-focus-ring);
+}
+
+/* --------------------------------------------------------------------------
+   2. Base layout
+   -------------------------------------------------------------------------- */
+body {
+  font-family: var(--wp-font-family-base);
+  background-color: var(--wp-color-bg);
+  color: var(--wp-color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.main-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-wrapper > main:not(.login-container) {
+  flex: 1 0 auto;
+}
+
+a {
+  color: var(--wp-color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--wp-color-primary-hover);
+  text-decoration: underline;
+}
+
+.text-muted {
+  color: var(--wp-color-text-muted) !important;
+}
+
+:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--wp-color-focus-ring);
+}
+
+.wp-nav-hidden {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Top navigation - single row, priority+ overflow, light theme
+   -------------------------------------------------------------------------- */
+.wp-navbar {
+  background-color: var(--wp-nav-bg);
+  border-bottom: 1px solid var(--wp-nav-border);
+  min-height: var(--wp-nav-height);
+  padding-top: 0;
+  padding-bottom: 0;
+  position: sticky;
+  top: 0;
+  z-index: var(--wp-z-sticky);
+  box-shadow: var(--wp-shadow-1);
+}
+
+.wp-nav__inner {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--wp-space-3);
+  min-height: var(--wp-nav-height);
+}
+
+.wp-navbar .navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-2);
+  font-weight: var(--wp-font-weight-bold);
+  font-size: var(--wp-font-size-lg);
+  color: var(--wp-color-text);
+  flex: 0 0 auto;
+}
+
+.wp-navbar .navbar-brand:hover {
+  color: var(--wp-color-text);
+}
+
+.wp-navbar .logo-img {
+  height: 32px;
+  width: auto;
+}
+
+.wp-navbar .navbar-toggler {
+  border-color: var(--wp-color-border);
+  color: var(--wp-color-text);
+}
+
+.wp-nav__collapse {
+  flex: 1 1 auto;
+  min-width: 0;          /* let #wpNavMenu shrink so its overflow triggers More */
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.wp-nav__more-wrap {
+  flex: 0 0 auto;
+}
+
+.wp-nav__menu {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* Must stay visible: an overflow:hidden here would clip the absolutely
+     positioned dropdown menus of the nav groups. Overflowing items are hidden
+     by nav-overflow.js (display:none), not by clipping. */
+  overflow: visible;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.wp-nav__menu > .nav-item {
+  flex: 0 0 auto;
+}
+
+.wp-nav__menu .nav-link {
+  white-space: nowrap;
+  color: var(--wp-nav-text-muted);
+  font-weight: var(--wp-font-weight-medium);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--wp-radius-sm);
+}
+
+.wp-nav__menu .nav-link:hover,
+.wp-nav__menu .nav-link:focus-visible {
+  color: var(--wp-nav-text);
+  background-color: var(--wp-color-surface-sunken);
+}
+
+.wp-nav__menu .nav-link.active,
+.wp-nav__menu .nav-item.active > .nav-link,
+.wp-nav__menu .nav-link[aria-current="page"] {
+  color: var(--wp-nav-accent);
+  font-weight: var(--wp-font-weight-semibold);
+}
+
+.wp-nav__end {
+  flex: 0 0 auto;
+  align-items: center;
+  margin-left: auto;
+}
+
+.wp-nav__end .nav-link {
+  color: var(--wp-nav-text-muted);
+}
+
+.wp-nav__end .nav-link:hover {
+  color: var(--wp-nav-text);
+}
+
+.wp-nav__more .nav-link {
+  font-weight: var(--wp-font-weight-semibold);
+}
+
+/* Collapsed (mobile) state: stack vertically, no clipping. */
+@media (max-width: 991.98px) {
+  .wp-nav__inner {
+    flex-wrap: wrap;
+  }
+  .wp-nav__collapse {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+  }
+  .wp-nav__menu {
+    overflow: visible;
+    flex-wrap: wrap;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .wp-nav__menu > .nav-item {
+    width: 100%;
+  }
+  .wp-nav__end {
+    width: 100%;
+    margin-left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    border-top: 1px solid var(--wp-nav-border);
+    padding-top: var(--wp-space-2);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. Buttons - the contrast-safe matrix
+   -------------------------------------------------------------------------- */
+.btn {
+  --bs-btn-border-radius: var(--wp-radius-md);
+  font-family: var(--wp-font-family-base);
+  font-weight: var(--wp-font-weight-semibold);
+  min-height: var(--wp-control-height-md);
+  padding: 0.5rem var(--wp-control-pad-x);
+  border-radius: var(--wp-radius-md);
+  transition: background-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+              border-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+              color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+              box-shadow var(--wp-motion-duration-fast) var(--wp-motion-easing-standard);
+}
+
+.btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--wp-color-focus-ring);
+}
+
+.btn-sm, .btn-group-sm > .btn {
+  min-height: var(--wp-control-height-sm);
+  border-radius: var(--wp-radius-sm);
+}
+
+.btn-lg, .btn-group-lg > .btn {
+  min-height: var(--wp-control-height-lg);
+}
+
+/* Primary: filled accent, white text (AA on primary). */
+.btn-primary {
+  --bs-btn-bg: var(--wp-color-primary);
+  --bs-btn-border-color: var(--wp-color-primary);
+  --bs-btn-color: var(--wp-color-primary-contrast);
+  --bs-btn-hover-bg: var(--wp-color-primary-hover);
+  --bs-btn-hover-border-color: var(--wp-color-primary-hover);
+  --bs-btn-hover-color: var(--wp-color-primary-contrast);
+  --bs-btn-active-bg: var(--wp-color-primary-active);
+  --bs-btn-active-border-color: var(--wp-color-primary-active);
+  --bs-btn-active-color: var(--wp-color-primary-contrast);
+  --bs-btn-disabled-bg: var(--wp-color-neutral-200);
+  --bs-btn-disabled-border-color: var(--wp-color-neutral-200);
+  --bs-btn-disabled-color: var(--wp-color-neutral-500);
+}
+
+/* Secondary: solid surface + border + body text (never transparent-only). */
+.btn-secondary {
+  --bs-btn-bg: var(--wp-color-surface);
+  --bs-btn-border-color: var(--wp-color-border-strong);
+  --bs-btn-color: var(--wp-color-text);
+  --bs-btn-hover-bg: var(--wp-color-surface-subtle);
+  --bs-btn-hover-border-color: var(--wp-color-border-strong);
+  --bs-btn-hover-color: var(--wp-color-text);
+  --bs-btn-active-bg: var(--wp-color-surface-sunken);
+  --bs-btn-active-border-color: var(--wp-color-border-strong);
+  --bs-btn-active-color: var(--wp-color-text);
+  --bs-btn-disabled-bg: var(--wp-color-neutral-200);
+  --bs-btn-disabled-border-color: var(--wp-color-neutral-200);
+  --bs-btn-disabled-color: var(--wp-color-neutral-500);
+}
+
+/* Outline buttons: rendered on a SOLID surface so they stay visible anywhere,
+   including on top of coloured page headers. This replaces the old fragile
+   `.row.mb-4`-only hack that left outline buttons invisible on the gradient. */
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.btn-outline-danger,
+.btn-outline-warning,
+.btn-outline-info {
+  background-color: var(--wp-color-surface);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--wp-color-primary);
+  --bs-btn-border-color: var(--wp-color-primary);
+  --bs-btn-hover-bg: var(--wp-color-primary);
+  --bs-btn-hover-border-color: var(--wp-color-primary);
+  --bs-btn-hover-color: var(--wp-color-primary-contrast);
+  --bs-btn-active-bg: var(--wp-color-primary-active);
+  --bs-btn-active-color: var(--wp-color-primary-contrast);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--wp-color-text);
+  --bs-btn-border-color: var(--wp-color-border-strong);
+  --bs-btn-hover-bg: var(--wp-color-surface-sunken);
+  --bs-btn-hover-border-color: var(--wp-color-border-strong);
+  --bs-btn-hover-color: var(--wp-color-text);
+  --bs-btn-active-bg: var(--wp-color-surface-sunken);
+  --bs-btn-active-color: var(--wp-color-text);
+}
+
+.btn-outline-success {
+  --bs-btn-color: var(--wp-color-success);
+  --bs-btn-border-color: var(--wp-color-success);
+  --bs-btn-hover-bg: var(--wp-color-success);
+  --bs-btn-hover-color: var(--wp-color-text-inverse);
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--wp-color-danger);
+  --bs-btn-border-color: var(--wp-color-danger);
+  --bs-btn-hover-bg: var(--wp-color-danger);
+  --bs-btn-hover-color: var(--wp-color-text-inverse);
+}
+
+.btn-outline-warning {
+  --bs-btn-color: var(--wp-color-warning);
+  --bs-btn-border-color: var(--wp-color-warning);
+  --bs-btn-hover-bg: var(--wp-color-warning);
+  --bs-btn-hover-color: var(--wp-color-text-inverse);
+}
+
+.btn-outline-info {
+  --bs-btn-color: var(--wp-color-info);
+  --bs-btn-border-color: var(--wp-color-info);
+  --bs-btn-hover-bg: var(--wp-color-info);
+  --bs-btn-hover-color: var(--wp-color-text-inverse);
+}
+
+/* Semantic filled buttons. */
+.btn-success {
+  --bs-btn-bg: var(--wp-color-success);
+  --bs-btn-border-color: var(--wp-color-success);
+  --bs-btn-hover-bg: var(--wp-color-success-hover);
+  --bs-btn-hover-border-color: var(--wp-color-success-hover);
+  --bs-btn-color: var(--wp-color-text-inverse);
+  --bs-btn-hover-color: var(--wp-color-text-inverse);
+}
+
+.btn-danger {
+  --bs-btn-bg: var(--wp-color-danger);
+  --bs-btn-border-color: var(--wp-color-danger);
+  --bs-btn-hover-bg: var(--wp-color-danger-hover);
+  --bs-btn-hover-border-color: var(--wp-color-danger-hover);
+  --bs-btn-color: var(--wp-color-text-inverse);
+  --bs-btn-hover-color: var(--wp-color-text-inverse);
+}
+
+.btn-warning {
+  --bs-btn-bg: var(--wp-color-warning);
+  --bs-btn-border-color: var(--wp-color-warning);
+  --bs-btn-hover-bg: var(--wp-color-warning-hover);
+  --bs-btn-hover-border-color: var(--wp-color-warning-hover);
+  --bs-btn-color: var(--wp-color-text-inverse);
+  --bs-btn-hover-color: var(--wp-color-text-inverse);
+}
+
+.btn-info {
+  --bs-btn-bg: var(--wp-color-info);
+  --bs-btn-border-color: var(--wp-color-info);
+  --bs-btn-hover-bg: var(--wp-color-info-hover);
+  --bs-btn-hover-border-color: var(--wp-color-info-hover);
+  --bs-btn-color: var(--wp-color-text-inverse);
+  --bs-btn-hover-color: var(--wp-color-text-inverse);
+}
+
+.btn-link {
+  --bs-btn-color: var(--wp-color-primary);
+  --bs-btn-hover-color: var(--wp-color-primary-hover);
+  font-weight: var(--wp-font-weight-medium);
+}
+
+/* Ghost / tertiary: transparent until hover, but text is always primary-colour
+   so it never disappears. For low-emphasis inline actions. */
+.wp-btn--ghost,
+.btn-ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--wp-color-primary);
+}
+
+.wp-btn--ghost:hover,
+.btn-ghost:hover {
+  background-color: var(--wp-color-primary-subtle);
+  color: var(--wp-color-primary-active);
+}
+
+/* Disabled: neutral fill + neutral text at FULL opacity. We never dim a button
+   with opacity < 1 - that is the exact regression this system prevents. */
+.btn:disabled,
+.btn.disabled,
+fieldset:disabled .btn {
+  opacity: 1;
+  background-color: var(--wp-color-neutral-200);
+  border-color: var(--wp-color-neutral-200);
+  color: var(--wp-color-neutral-500);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   5. Cards
+   -------------------------------------------------------------------------- */
+.card {
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-lg);
+  box-shadow: var(--wp-shadow-1);
+}
+
+.card-header {
+  background-color: var(--wp-color-surface-subtle);
+  border-bottom: 1px solid var(--wp-color-border);
+  font-weight: var(--wp-font-weight-semibold);
+  padding: var(--wp-space-4) var(--wp-space-5);
+}
+
+.card-footer {
+  background-color: var(--wp-color-surface-subtle);
+  border-top: 1px solid var(--wp-color-border);
+}
+
+.card-title {
+  font-weight: var(--wp-font-weight-semibold);
+  color: var(--wp-color-text);
+}
+
+/* --------------------------------------------------------------------------
+   6. Tables - dense, per Jira/ServiceNow
+   -------------------------------------------------------------------------- */
+.table {
+  --bs-table-color: var(--wp-color-text);
+  --bs-table-border-color: var(--wp-color-border);
+  font-size: var(--wp-font-size-base);
+  margin-bottom: 0;
+}
+
+.table > :not(caption) > * > * {
+  padding: var(--wp-space-3) var(--wp-space-4);
+}
+
+.table thead th,
+.table > thead {
+  background-color: var(--wp-color-surface-sunken);
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+  font-weight: var(--wp-font-weight-semibold);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid var(--wp-color-border);
+}
+
+.table-hover > tbody > tr:hover > * {
+  background-color: var(--wp-color-surface-subtle);
+}
+
+/* --------------------------------------------------------------------------
+   7. Forms
+   -------------------------------------------------------------------------- */
+.form-label {
+  font-size: var(--wp-font-size-sm);
+  font-weight: var(--wp-font-weight-medium);
+  color: var(--wp-color-text);
+  margin-bottom: var(--wp-space-1);
+}
+
+.form-control,
+.form-select {
+  border-radius: var(--wp-radius-md);
+  border: 1px solid var(--wp-color-border-strong);
+  background-color: var(--wp-color-surface);
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-base);
+  padding: 0.5rem 0.75rem;
+  min-height: var(--wp-control-height-md);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--wp-color-primary);
+  box-shadow: 0 0 0 3px var(--wp-color-focus-ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  opacity: 1;
+  background-color: var(--wp-color-surface-sunken);
+  color: var(--wp-color-text-muted);
+}
+
+.form-text {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+}
+
+/* --------------------------------------------------------------------------
+   8. Badges & status pills
+   -------------------------------------------------------------------------- */
+.badge {
+  font-weight: var(--wp-font-weight-semibold);
+  border-radius: var(--wp-radius-pill);
+  padding: 0.3em 0.7em;
+}
+
+.wp-badge--subtle-success { background-color: var(--wp-color-success-subtle); color: var(--wp-color-success); }
+.wp-badge--subtle-warning { background-color: var(--wp-color-warning-subtle); color: var(--wp-color-warning); }
+.wp-badge--subtle-danger  { background-color: var(--wp-color-danger-subtle);  color: var(--wp-color-danger); }
+.wp-badge--subtle-info    { background-color: var(--wp-color-info-subtle);    color: var(--wp-color-info); }
+.wp-badge--subtle-primary { background-color: var(--wp-color-primary-subtle); color: var(--wp-color-primary-active); }
+.wp-badge--subtle-neutral { background-color: var(--wp-color-surface-sunken); color: var(--wp-color-text-muted); }
+
+/* --------------------------------------------------------------------------
+   9. Alerts
+   -------------------------------------------------------------------------- */
+.alert {
+  border-radius: var(--wp-radius-md);
+  border: 1px solid transparent;
+}
+
+.alert-success { background-color: var(--wp-color-success-subtle); color: var(--wp-color-success); border-left: 3px solid var(--wp-color-success); }
+.alert-danger  { background-color: var(--wp-color-danger-subtle);  color: var(--wp-color-danger);  border-left: 3px solid var(--wp-color-danger); }
+.alert-warning { background-color: var(--wp-color-warning-subtle); color: var(--wp-color-warning); border-left: 3px solid var(--wp-color-warning); }
+.alert-info    { background-color: var(--wp-color-info-subtle);    color: var(--wp-color-info);    border-left: 3px solid var(--wp-color-info); }
+
+/* --------------------------------------------------------------------------
+   10. Dropdowns
+   -------------------------------------------------------------------------- */
+.dropdown-menu {
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-md);
+  box-shadow: var(--wp-shadow-2);
+  padding: var(--wp-space-1);
+  font-size: var(--wp-font-size-base);
+}
+
+.dropdown-item {
+  border-radius: var(--wp-radius-sm);
+  color: var(--wp-color-text);
+  padding: 0.5rem 0.75rem;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--wp-color-primary-subtle);
+  color: var(--wp-color-primary-active);
+}
+
+.dropdown-header {
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-xs);
+  font-weight: var(--wp-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dropdown-divider {
+  border-color: var(--wp-color-border);
+  margin: var(--wp-space-1) 0;
+}
+
+/* --------------------------------------------------------------------------
+   11. Pagination
+   -------------------------------------------------------------------------- */
+.pagination {
+  --bs-pagination-color: var(--wp-color-text);
+  --bs-pagination-border-color: var(--wp-color-border);
+  --bs-pagination-hover-bg: var(--wp-color-surface-subtle);
+  --bs-pagination-hover-color: var(--wp-color-text);
+  --bs-pagination-active-bg: var(--wp-color-primary);
+  --bs-pagination-active-border-color: var(--wp-color-primary);
+  --bs-pagination-focus-box-shadow: 0 0 0 3px var(--wp-color-focus-ring);
+}
+
+.page-link {
+  border-radius: var(--wp-radius-sm);
+  font-weight: var(--wp-font-weight-medium);
+}
+
+/* --------------------------------------------------------------------------
+   12. Modals
+   -------------------------------------------------------------------------- */
+.modal-content {
+  background-color: var(--wp-color-surface);
+  border: none;
+  border-radius: var(--wp-radius-lg);
+  box-shadow: var(--wp-shadow-3);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--wp-color-border);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--wp-color-border);
+}
+
+/* --------------------------------------------------------------------------
+   13. Page header / toolbar / empty state (shared partials)
+   -------------------------------------------------------------------------- */
+.wp-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--wp-space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--wp-space-5);
+}
+
+.wp-page-header__titles {
+  min-width: 0;
+}
+
+.wp-page-header__title {
+  font-size: var(--wp-font-size-xl);
+  font-weight: var(--wp-font-weight-bold);
+  color: var(--wp-color-text);
+  margin: 0;
+  line-height: var(--wp-font-line-tight);
+}
+
+.wp-page-header__desc {
+  color: var(--wp-color-text-muted);
+  margin: var(--wp-space-1) 0 0;
+  font-size: var(--wp-font-size-base);
+}
+
+.wp-page-header__actions {
+  display: flex;
+  gap: var(--wp-space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.wp-toolbar {
+  display: flex;
+  gap: var(--wp-space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.wp-empty {
+  text-align: center;
+  padding: var(--wp-space-12) var(--wp-space-4);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-empty__icon {
+  font-size: var(--wp-font-size-3xl);
+  color: var(--wp-color-neutral-300);
+  margin-bottom: var(--wp-space-3);
+}
+
+.wp-empty__title {
+  font-size: var(--wp-font-size-lg);
+  font-weight: var(--wp-font-weight-semibold);
+  color: var(--wp-color-text);
+  margin-bottom: var(--wp-space-2);
+}
+
+/* --------------------------------------------------------------------------
+   14. Login shell
+   -------------------------------------------------------------------------- */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--wp-space-6) 0;
+  background-color: var(--wp-color-bg);
+}
+
+.login-card {
+  max-width: 440px;
+  width: 100%;
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-xl);
+  box-shadow: var(--wp-shadow-3);
+  padding: var(--wp-space-8);
+}
+
+.login-logo {
+  max-width: 180px;
+  height: auto;
+  margin-bottom: var(--wp-space-5);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: var(--wp-space-5);
+}
+
+.login-header h1 {
+  color: var(--wp-color-text);
+  font-weight: var(--wp-font-weight-bold);
+  font-size: var(--wp-font-size-xl);
+  margin-bottom: var(--wp-space-1);
+}
+
+.login-header p {
+  color: var(--wp-color-text-muted);
+  margin-bottom: 0;
+}
+
+.language-switcher {
+  position: fixed;
+  bottom: var(--wp-space-5);
+  right: var(--wp-space-5);
+  z-index: var(--wp-z-fixed);
+}
+
+/* Segmented language control (中 / EN): light track, active option as a raised
+   white pill - mirrors the tablist pattern in the product screenshots. */
+.wp-langswitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--wp-color-surface-sunken);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-pill);
+}
+
+.wp-langswitch__form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.wp-langswitch__opt {
+  border: 0;
+  background: transparent;
+  color: var(--wp-color-text-muted);
+  font-family: var(--wp-font-family-base);
+  font-size: var(--wp-font-size-sm);
+  font-weight: var(--wp-font-weight-medium);
+  line-height: 1.4;
+  padding: 3px 14px;
+  border-radius: var(--wp-radius-pill);
+  cursor: pointer;
+  transition: background-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+              color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard);
+}
+
+.wp-langswitch__opt:hover {
+  color: var(--wp-color-text);
+}
+
+.wp-langswitch__opt--active,
+.wp-langswitch__opt[aria-pressed="true"] {
+  background: var(--wp-color-surface);
+  color: var(--wp-color-text);
+  font-weight: var(--wp-font-weight-semibold);
+  box-shadow: var(--wp-shadow-1);
+}
+
+.wp-langswitch__opt:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--wp-color-focus-ring);
+}
+
+/* --------------------------------------------------------------------------
+   15. Footer
+   -------------------------------------------------------------------------- */
+.wp-footer {
+  background-color: var(--wp-color-surface);
+  border-top: 1px solid var(--wp-color-border);
+  color: var(--wp-color-text-muted);
+  padding: var(--wp-space-6) 0;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.wp-footer h5 {
+  color: var(--wp-color-text);
+  font-weight: var(--wp-font-weight-semibold);
+}
+
+/* --------------------------------------------------------------------------
+   16. Motion & misc
+   -------------------------------------------------------------------------- */
+.fade-in {
+  animation: wp-fade-in var(--wp-motion-duration-slow) var(--wp-motion-easing-standard);
+}
+
+@keyframes wp-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in { animation: none; }
+  * { scroll-behavior: auto !important; }
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   17. Standalone .wp-* component API
+   These classes carry the full token-driven styling on their own, so new
+   markup can use `class="wp-btn wp-btn--primary"` without depending on the
+   Bootstrap class names. They are the canonical component API documented in
+   docs/DESIGN_SYSTEM.md; the Bootstrap overrides above keep existing markup
+   consistent during migration.
+   -------------------------------------------------------------------------- */
+.wp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wp-space-2);
+  min-height: var(--wp-control-height-md);
+  padding: var(--wp-control-pad-y) var(--wp-control-pad-x);
+  font-family: var(--wp-font-family-base);
+  font-size: var(--wp-font-size-base);
+  font-weight: var(--wp-font-weight-semibold);
+  line-height: var(--wp-font-line-base);
+  text-align: center;
+  text-decoration: none;
+  border: var(--wp-control-border-width) solid transparent;
+  border-radius: var(--wp-radius-md);
+  cursor: pointer;
+  transition: background-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+              border-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+              color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+              box-shadow var(--wp-motion-duration-fast) var(--wp-motion-easing-standard);
+}
+
+.wp-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--wp-color-focus-ring);
+  outline: 0;
+}
+
+.wp-btn--sm { min-height: var(--wp-control-height-sm); border-radius: var(--wp-radius-sm); font-size: var(--wp-font-size-sm); }
+.wp-btn--lg { min-height: var(--wp-control-height-lg); font-size: var(--wp-font-size-md); }
+.wp-btn--block { display: flex; width: 100%; }
+
+.wp-btn--primary {
+  background-color: var(--wp-color-primary);
+  border-color: var(--wp-color-primary);
+  color: var(--wp-color-primary-contrast);
+}
+.wp-btn--primary:hover { background-color: var(--wp-color-primary-hover); border-color: var(--wp-color-primary-hover); color: var(--wp-color-primary-contrast); }
+.wp-btn--primary:active { background-color: var(--wp-color-primary-active); border-color: var(--wp-color-primary-active); }
+
+.wp-btn--secondary {
+  background-color: var(--wp-color-surface);
+  border-color: var(--wp-color-border-strong);
+  color: var(--wp-color-text);
+}
+.wp-btn--secondary:hover { background-color: var(--wp-color-surface-subtle); color: var(--wp-color-text); }
+.wp-btn--secondary:active { background-color: var(--wp-color-surface-sunken); }
+
+.wp-btn--danger {
+  background-color: var(--wp-color-danger);
+  border-color: var(--wp-color-danger);
+  color: var(--wp-color-text-inverse);
+}
+.wp-btn--danger:hover { background-color: var(--wp-color-danger-hover); border-color: var(--wp-color-danger-hover); }
+
+.wp-btn--success {
+  background-color: var(--wp-color-success);
+  border-color: var(--wp-color-success);
+  color: var(--wp-color-text-inverse);
+}
+.wp-btn--success:hover { background-color: var(--wp-color-success-hover); border-color: var(--wp-color-success-hover); }
+
+.wp-btn--ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--wp-color-primary);
+}
+.wp-btn--ghost:hover { background-color: var(--wp-color-primary-subtle); color: var(--wp-color-primary-active); }
+
+.wp-btn[disabled],
+.wp-btn--disabled,
+.wp-btn[aria-disabled="true"] {
+  opacity: 1;
+  background-color: var(--wp-color-neutral-200);
+  border-color: var(--wp-color-neutral-200);
+  color: var(--wp-color-neutral-500);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.wp-card {
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-lg);
+  box-shadow: var(--wp-shadow-1);
+}
+.wp-card__header {
+  background-color: var(--wp-color-surface-subtle);
+  border-bottom: 1px solid var(--wp-color-border);
+  padding: var(--wp-space-4) var(--wp-space-5);
+  font-weight: var(--wp-font-weight-semibold);
+}
+.wp-card__body { padding: var(--wp-space-5); }
+
+.wp-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-base);
+}
+.wp-table th,
+.wp-table td {
+  padding: var(--wp-space-3) var(--wp-space-4);
+  border-bottom: 1px solid var(--wp-color-border);
+  text-align: left;
+}
+.wp-table thead th {
+  background-color: var(--wp-color-surface-sunken);
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+  font-weight: var(--wp-font-weight-semibold);
+}
+.wp-table tbody tr:hover { background-color: var(--wp-color-surface-subtle); }
+
+.wp-form-label {
+  display: block;
+  margin-bottom: var(--wp-space-1);
+  font-size: var(--wp-font-size-sm);
+  font-weight: var(--wp-font-weight-medium);
+  color: var(--wp-color-text);
+}
+.wp-form-control {
+  width: 100%;
+  min-height: var(--wp-control-height-md);
+  padding: 0.5rem 0.75rem;
+  font-size: var(--wp-font-size-base);
+  color: var(--wp-color-text);
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border-strong);
+  border-radius: var(--wp-radius-md);
+}
+.wp-form-control:focus {
+  outline: 0;
+  border-color: var(--wp-color-primary);
+  box-shadow: 0 0 0 3px var(--wp-color-focus-ring);
+}
+
+.wp-alert {
+  padding: var(--wp-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--wp-radius-md);
+}
+.wp-alert--success { background-color: var(--wp-color-success-subtle); color: var(--wp-color-success); border-left: 3px solid var(--wp-color-success); }
+.wp-alert--danger  { background-color: var(--wp-color-danger-subtle);  color: var(--wp-color-danger);  border-left: 3px solid var(--wp-color-danger); }
+.wp-alert--warning { background-color: var(--wp-color-warning-subtle); color: var(--wp-color-warning); border-left: 3px solid var(--wp-color-warning); }
+.wp-alert--info    { background-color: var(--wp-color-info-subtle);    color: var(--wp-color-info);    border-left: 3px solid var(--wp-color-info); }
+
+.wp-badge {
+  display: inline-block;
+  padding: 0.3em 0.7em;
+  font-size: var(--wp-font-size-xs);
+  font-weight: var(--wp-font-weight-semibold);
+  border-radius: var(--wp-radius-pill);
+  background-color: var(--wp-color-surface-sunken);
+  color: var(--wp-color-text-muted);
+}
+
+.wp-pagination {
+  display: flex;
+  gap: var(--wp-space-1);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.wp-pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--wp-control-height-sm);
+  min-height: var(--wp-control-height-sm);
+  padding: 0 var(--wp-space-3);
+  color: var(--wp-color-text);
+  background-color: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-sm);
+  text-decoration: none;
+}
+.wp-pagination__link:hover { background-color: var(--wp-color-surface-subtle); }
+.wp-pagination__item--active .wp-pagination__link {
+  background-color: var(--wp-color-primary);
+  border-color: var(--wp-color-primary);
+  color: var(--wp-color-primary-contrast);
+}

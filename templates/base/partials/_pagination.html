@@ -1,0 +1,25 @@
+{% load i18n %}
+{# Compact pagination; expects page_obj and an optional query_string of extra filters to preserve. #}
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<nav class="p-3" aria-label="{% trans 'Pagination' %}">
+    <ul class="pagination pagination-sm mb-0 justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ query_string|default:'' }}" aria-label="{% trans 'Previous' %}">
+                <i class="fas fa-angle-left"></i>
+            </a>
+        </li>
+        {% endif %}
+        <li class="page-item active" aria-current="page">
+            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ query_string|default:'' }}" aria-label="{% trans 'Next' %}">
+                <i class="fas fa-angle-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

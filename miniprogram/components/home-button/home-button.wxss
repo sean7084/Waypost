@@ -1,19 +1,21 @@
+/* Floating "home" button. Colours come from the shared design tokens so the
+   component matches the web app; do not hardcode colours here. */
 .home-btn {
   position: fixed;
-  right: 32rpx;
-  bottom: 64rpx;
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  background: #4F6228;
-  color: #fff;
+  right: var(--wp-space-4);
+  bottom: var(--wp-space-8);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--wp-radius-circle);
+  background: var(--wp-color-primary);
+  color: var(--wp-color-primary-contrast);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.25);
-  z-index: 999;
+  box-shadow: var(--wp-shadow-3);
+  z-index: var(--wp-z-fixed);
 }
 .home-icon {
-  font-size: 44rpx;
+  font-size: var(--wp-font-size-xl);
   line-height: 1;
 }

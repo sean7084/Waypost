@@ -70,7 +70,7 @@
                             <td>
                                 <a href="{% url 'invoices:invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a>
                             </td>
-                            <td>{{ invoice.invoice_date|date:"Y-m-d" }}</td>
+                            <td>{{ invoice.invoice_date|date:"SHORT_DATE_FORMAT" }}</td>
                             <td>{{ invoice.bill_to|default:"-" }}</td>
                             <td>{{ invoice.kering_group_po_number }}</td>
                             <td>{{ invoice.internal_order }}</td>

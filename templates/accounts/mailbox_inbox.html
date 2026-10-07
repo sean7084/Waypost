@@ -66,7 +66,7 @@
                     <tbody>
                         {% for message in mailbox_messages %}
                         <tr class="mailbox-row" data-href="{% url 'accounts:mailbox_detail' message.pk %}">
-                            <td>{{ message.event_at|date:"M d, Y H:i"|default:"-" }}</td>
+                            <td>{{ message.event_at|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
                             <td>{% if active_direction == 'inbox' %}{{ message.sender|default:"-" }}{% else %}{{ message.recipients|default:"-" }}{% endif %}</td>
                             <td>{{ message.subject|default:"(no subject)" }}</td>
                             <td>{{ message.body_preview|truncatechars:120 }}</td>

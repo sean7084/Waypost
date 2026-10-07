@@ -6,20 +6,20 @@
 {% block extra_css %}
 <style>
     .slot-grid { width: 100%; border-collapse: collapse; }
-    .slot-grid th, .slot-grid td { border: 1px solid #dee2e6; padding: 6px; vertical-align: top; }
-    .slot-grid th { background: #f8f9fa; font-size: .8rem; }
-    .day-cell { min-height: 64px; background: #fff; }
-    .day-cell.dragover { background: #eef4fb; outline: 2px dashed #3498db; }
+    .slot-grid th, .slot-grid td { border: 1px solid var(--wp-color-border); padding: 6px; vertical-align: top; }
+    .slot-grid th { background: var(--wp-color-surface-sunken); font-size: var(--wp-font-size-sm); color: var(--wp-color-text-muted); }
+    .day-cell { min-height: 64px; background: var(--wp-color-surface); }
+    .day-cell.dragover { background: var(--wp-color-primary-subtle); outline: 2px dashed var(--wp-color-primary); }
     .site-card {
-        border-radius: 6px; color: #fff; padding: 4px 6px; margin-bottom: 4px;
-        font-size: .78rem; cursor: grab; display: block; text-decoration: none;
+        border-radius: var(--wp-radius-sm); color: var(--wp-color-text-inverse); padding: 4px 6px; margin-bottom: 4px;
+        font-size: var(--wp-font-size-xs); cursor: grab; display: block; text-decoration: none;
     }
-    .site-card:hover { opacity: .9; color: #fff; text-decoration: none; }
-    .site-card .meta { opacity: .85; font-size: .7rem; }
-    .summary-tile { border-left: 4px solid; border-radius: 6px; padding: .75rem 1rem; background: #fff; }
-    .summary-tile .count { font-size: 1.6rem; font-weight: 700; line-height: 1; }
-    .summary-tile .label { font-size: .78rem; text-transform: uppercase; letter-spacing: .4px; color: #6c757d; }
-    .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+    .site-card:hover { color: var(--wp-color-text-inverse); text-decoration: none; filter: brightness(0.95); }
+    .site-card .meta { opacity: .9; font-size: 11px; }
+    .summary-tile { border-left: 4px solid var(--wp-color-primary); border-radius: var(--wp-radius-sm); padding: var(--wp-space-3) var(--wp-space-4); background: var(--wp-color-surface); }
+    .summary-tile .count { font-size: var(--wp-font-size-xl); font-weight: var(--wp-font-weight-bold); line-height: 1; color: var(--wp-color-text); }
+    .summary-tile .label { font-size: var(--wp-font-size-xs); text-transform: uppercase; letter-spacing: .04em; color: var(--wp-color-text-muted); }
+    .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: var(--wp-radius-circle); margin-right: 4px; }
 </style>
 {% endblock %}
 
@@ -46,7 +46,7 @@
                     <option value="">{% trans "All batches" %}</option>
                     {% for b in batches %}
                     <option value="{{ b.id }}" {% if batch and b.id == batch.id %}selected{% endif %}>
-                        {{ b.name }} ({{ b.start_date|date:"M j" }} - {{ b.end_date|date:"M j, Y" }})
+                        {{ b.name }} ({{ b.start_date|date:"MONTH_DAY_FORMAT" }} - {{ b.end_date|date:"DATE_FORMAT" }})
                     </option>
                     {% endfor %}
                 </select>
@@ -65,19 +65,19 @@
     <!-- Summary tiles -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3 col-lg">
-            <div class="summary-tile" style="border-color: #2c3e50;"><div class="count">{{ total_count }}</div><div class="label">{% trans "Total" %}</div></div>
+            <div class="summary-tile" style="border-color: var(--wp-color-text);"><div class="count">{{ total_count }}</div><div class="label">{% trans "Total" %}</div></div>
         </div>
         <div class="col-6 col-md-3 col-lg">
-            <div class="summary-tile" style="border-color: #6c757d;"><div class="count">{{ planned_count }}</div><div class="label">{% trans "Planned" %}</div></div>
+            <div class="summary-tile" style="border-color: var(--wp-color-neutral-500);"><div class="count">{{ planned_count }}</div><div class="label">{% trans "Planned" %}</div></div>
         </div>
         <div class="col-6 col-md-3 col-lg">
-            <div class="summary-tile" style="border-color: #0dcaf0;"><div class="count">{{ in_progress_count }}</div><div class="label">{% trans "In Progress" %}</div></div>
+            <div class="summary-tile" style="border-color: var(--wp-color-info);"><div class="count">{{ in_progress_count }}</div><div class="label">{% trans "In Progress" %}</div></div>
         </div>
         <div class="col-6 col-md-3 col-lg">
-            <div class="summary-tile" style="border-color: #198754;"><div class="count">{{ completed_count }}</div><div class="label">{% trans "Completed" %}</div></div>
+            <div class="summary-tile" style="border-color: var(--wp-color-success);"><div class="count">{{ completed_count }}</div><div class="label">{% trans "Completed" %}</div></div>
         </div>
         <div class="col-6 col-md-3 col-lg">
-            <div class="summary-tile" style="border-color: #6610f2;"><div class="count">{{ submitted_count }}</div><div class="label">{% trans "Submitted" %}</div></div>
+            <div class="summary-tile" style="border-color: var(--wp-color-primary);"><div class="count">{{ submitted_count }}</div><div class="label">{% trans "Submitted" %}</div></div>
         </div>
     </div>
 
@@ -85,10 +85,10 @@
     <div class="card mb-3">
         <div class="card-body py-2 d-flex flex-wrap gap-3 align-items-center small">
             <span class="fw-semibold">{% trans "Legend:" %}</span>
-            <span><span class="status-dot" style="background:#6c757d;"></span>{% trans "Planned" %}</span>
-            <span><span class="status-dot" style="background:#0dcaf0;"></span>{% trans "In Progress" %}</span>
-            <span><span class="status-dot" style="background:#198754;"></span>{% trans "Completed" %}</span>
-            <span><span class="status-dot" style="background:#6610f2;"></span>{% trans "Submitted" %}</span>
+            <span><span class="status-dot" style="background:var(--wp-color-neutral-500);"></span>{% trans "Planned" %}</span>
+            <span><span class="status-dot" style="background:var(--wp-color-info);"></span>{% trans "In Progress" %}</span>
+            <span><span class="status-dot" style="background:var(--wp-color-success);"></span>{% trans "Completed" %}</span>
+            <span><span class="status-dot" style="background:var(--wp-color-primary);"></span>{% trans "Submitted" %}</span>
             {% if can_manage %}<span class="text-muted ms-auto">{% trans "Drag a site card between AM/PM cells to rearrange." %}</span>{% endif %}
         </div>
     </div>
@@ -99,7 +99,7 @@
            href="?month={{ prev_month }}{% if batch %}&amp;batch={{ batch.id }}{% endif %}">
             <i class="fas fa-chevron-left"></i>
         </a>
-        <span class="fw-semibold">{{ month_start|date:"F Y" }}</span>
+        <span class="fw-semibold">{{ month_start|date:"YEAR_MONTH_FORMAT" }}</span>
         <a class="btn btn-outline-secondary btn-sm" title="{% trans 'Next month' %}"
            href="?month={{ next_month }}{% if batch %}&amp;batch={{ batch.id }}{% endif %}">
             <i class="fas fa-chevron-right"></i>
@@ -109,7 +109,7 @@
             {% trans "This month" %}
         </a>
         {% endif %}
-        <span class="text-muted small ms-2">{{ month_start|date:"M j" }} &ndash; {{ month_end|date:"M j, Y" }}</span>
+        <span class="text-muted small ms-2">{{ month_start|date:"MONTH_DAY_FORMAT" }} &ndash; {{ month_end|date:"DATE_FORMAT" }}</span>
     </div>
 
     <!-- AM/PM scheduler grid -->

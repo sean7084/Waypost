@@ -118,7 +118,7 @@
                             </td>
                             <td>{{ company_user.get_contact_email|default:"-" }}</td>
                             <td>{{ company_user.get_contact_phone|default:"-" }}</td>
-                            <td>{{ company_user.start_date|date:"M d, Y"|default:"-" }}</td>
+                            <td>{{ company_user.start_date|date:"DATE_FORMAT"|default:"-" }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <a href="{% url 'companies:companyuser_edit' company_user.pk %}" class="btn btn-secondary" title="{% trans 'Edit' %}">

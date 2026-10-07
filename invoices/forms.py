@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from deliveries.models import DeliveryOrder
 from quotations.models import Quotation
@@ -8,8 +9,8 @@ from .models import EmailDispatch, InvoiceInfo
 
 class SharepointImportForm(forms.Form):
     sharepoint_file = forms.FileField(
-        label='Sharepoint Excel File',
-        help_text='Upload an .xlsx file exported from Sharepoint.',
+        label=_('Sharepoint Excel File'),
+        help_text=_('Upload an .xlsx file exported from Sharepoint.'),
     )
 
     def clean_sharepoint_file(self):

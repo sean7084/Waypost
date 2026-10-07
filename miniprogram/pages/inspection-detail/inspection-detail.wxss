@@ -7,10 +7,11 @@
 .nav-item {
   width: 30%;
   margin: 1.5%;
-  padding: 24rpx 0;
+  padding: var(--wp-space-4) 0;
   text-align: center;
-  background: #eef1e6;
-  color: #4f6228;
-  border-radius: 12rpx;
-  font-size: 26rpx;
+  background: var(--wp-color-primary-subtle);
+  color: var(--wp-color-primary-active);
+  border-radius: var(--wp-radius-md);
+  font-size: var(--wp-font-size-sm);
+  font-weight: var(--wp-font-weight-medium);
 }
