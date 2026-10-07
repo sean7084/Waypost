@@ -105,6 +105,12 @@ waypost/
 ├── README.md                      ← Main landing page
 ├── CHANGELOG.md                   ← Release history  
 ├── LICENSE                        ← Legal terms
+├── docker-compose.yml             ← Production stack: app + postgres:16 + redis:7
+├── docker/                        ← Container deployment assets
+│   ├── Dockerfile                 ← Multi-stage image (WeasyPrint, LibreOffice, CJK fonts)
+│   ├── entrypoint.sh              ← migrate → collectstatic → exec gunicorn
+│   ├── nginx/waypost.conf         ← Host Nginx site (SNI-shared 443)
+│   └── bin/ci-deploy.sh           ← Tag-promoted deploy invoked by CI over SSH
 │
 ├── docs/                          ← Detailed specifications
 │   ├── ARCHITECTURAL_DECISION_RECORDS.md     ← ADRs (0001-0012)
@@ -151,10 +157,15 @@ waypost/
 
 ### For Production Deployment
 
-1. **Prerequisites check**: `DEPLOYMENT.md` → Step 1
-2. **Follow**: Manual installation OR Docker section
-3. **Test**: Run migration and verify health endpoint
-4. **Monitor**: Configure backup scripts and alerts per deployment guide
+1. **Production path**: `DEPLOYMENT.md` → "Option 2: Docker Compose Deployment"
+   (host prerequisites, `.env`, build, Nginx/TLS, CI/CD credentials)
+2. **Bare-metal alternative**: `DEPLOYMENT.md` → "Option 1: Manual Installation"
+3. **Releasing**: `RELEASE_PROCEDURE.md` §4–§6 — pushing an annotated `v*` tag is
+   what deploys; merging to `main` does not
+4. **Data**: `DATABASE_MIGRATION.md` for SQLite → PostgreSQL
+5. **Recovery**: `BACKUP_RESTORE.md` §2b/§3a for the containerised stack
+6. **Verify**: `curl https://<host>/healthz/` (`waypost/health.py`), then the
+   `RELEASE_PROCEDURE.md` §7 checklist
 
 ### For API Integration
 
@@ -232,11 +243,13 @@ All documentation should:
 | **Write the missing tests** — `assets` (23.9%), `deliveries` (21.5%), `utils/import_rollback`, `invoices` first; overall coverage is 43.7% | High | 20+ hours | #16 (strategy done — test-writing is a separate epic) |
 | ADRs 0012–0018 for undocumented architectural decisions | High | 4 hours | #20 |
 | `docs/OPERATIONS_RUNBOOK.md` — troubleshooting, incident response, monitoring | Medium | 4 hours | #22 |
-| Production mailbox-sync strategy (avoid multi-worker duplicate sync) | Medium | 3 hours | #24 |
-| Lint/format tooling (ruff/black) and enforcement | Medium | 3 hours | #21 |
-| Coverage step in CI + PostgreSQL/Redis service containers | Medium | 2 hours | #17 |
+| Production mailbox-sync strategy — the background thread is `runserver`-only, so nothing polls unattended in production | Medium | 3 hours | #24 |
 | WeChat MP registration, HTTPS/ICP domain, legal-domain whitelist | Medium | external | #53 |
 | Video tutorials for key workflows | Low | 20 hours | untracked |
+
+**Delivered since the table above was written:** lint tooling and enforcement
+(#21 — ruff is a required check on `main`) and the CI coverage step with
+PostgreSQL/Redis service containers (#17 — `backend-ci.yml`).
 
 > Effort estimates are indicative for one maintainer working in focused blocks; they are not
 > commitments. Priority reflects risk × size, per the gap analysis above.
@@ -269,5 +282,5 @@ Questions about any document or suggestions for improvement?
 
 ---
 
-*Last Updated: October 5, 2026*  
+*Last Updated: October 7, 2026*  
 *Author: Sean Liu and contributors*

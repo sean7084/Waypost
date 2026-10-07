@@ -37,3 +37,19 @@ private.*.key
 .coverage.*
 htmlcov/
 .pytest_cache/
+.ruff_cache/
+
+# Deployment credentials and data exports.
+# The CI deploy keypair is generated outside the repository (see
+# docs/DEPLOYMENT.md, "CI/CD credentials"); these patterns are a second line of
+# defence, because a private key committed to a *public* repository is a
+# production credential leak even after it is deleted from HEAD.
+# waypost_data.json is the dumpdata fixture used for the SQLite -> PostgreSQL
+# migration and contains every row of business data.
+deploy_key*
+*_deploy_key*
+id_ed25519*
+id_rsa*
+*.ppk
+known_hosts
+waypost_data.json

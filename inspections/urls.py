@@ -20,6 +20,8 @@ urlpatterns = [
     path('batches/new/', views.InspectionBatchCreateView.as_view(), name='batch_create'),
     path('batches/new/by-brand/', views.InspectionBatchCreateByBrandView.as_view(), name='batch_create_by_brand'),
     path('batches/new/import/', views.InspectionBatchImportView.as_view(), name='batch_import'),
+    path('batches/new/import/sample/<str:kind>/', views.ImportSampleFileView.as_view(),
+         name='import_sample'),
     path('batches/<uuid:pk>/', views.InspectionBatchDetailView.as_view(), name='batch_detail'),
     path('batches/<uuid:pk>/edit/', views.InspectionBatchUpdateView.as_view(), name='batch_update'),
 

@@ -1,5 +1,63 @@
 # Waypost - Changelog
 
+## Unreleased
+
+**Version:** to be assigned by the release-prep PR (per `docs/RELEASE_PROCEDURE.md` §2 this is at least a MINOR bump — it changes how production is deployed)
+**Release Date:** —
+**Focus:** Containerised production deployment on the shared Aliyun ECS, plus a tag-promoted CI/CD pipeline
+
+---
+
+### Highlights
+
+1. Waypost can now be deployed to production as a Docker Compose stack; the image carries WeasyPrint's native libraries, LibreOffice and CJK fonts, and fails to build if any of them are missing rather than degrading silently at request time.
+2. Pushing an annotated `v*` tag deploys to production automatically, with a pre-deploy database checkpoint, a health gate, and an automatic image rollback when the new release does not come up.
+3. Fixed a defect that would have broken every form submission in production: behind Nginx TLS termination Django rebuilt the expected CSRF origin as `http://` while browsers sent `https://`, so every POST — starting with login — returned 403.
+4. Added an unauthenticated `/healthz/` probe reporting database and cache status, used by the container healthcheck, the deploy gate and host monitoring.
+
+### Delivered Scope (14-file iteration)
+
+1. Production request security
+- `waypost/settings.py`: env-driven `SECURE_PROXY_SSL_HEADER` and `CSRF_TRUSTED_ORIGINS`; secure cookies, SSL redirect and HSTS gated on `DEBUG` (HSTS ships at 0 because the header is sticky); `SECURE_REDIRECT_EXEMPT` keeps the probe reachable on loopback.
+- Request hardening is disabled under the test runner (`settings._RUNNING_TESTS`). `manage.py test` flips `DEBUG` to `False`, which would otherwise turn every view test into an assertion about a 301 — 57 spurious failures that read like an application bug.
+- Log file handler is now rotating; an unbounded `FileHandler` grows the container's writable layer forever.
+
+2. Health probe
+- `waypost/health.py` + route in `waypost/urls.py`: unauthenticated, no language prefix, 200/503, reports the deployed tag and revision. Failure detail is limited to the exception *class* name, because a database error message can contain the DSN.
+- `waypost/tests.py`: 12 tests covering the healthy path, the degraded paths, the no-leak guarantee, reachability with `SECURE_SSL_REDIRECT` on, and the proxy settings' defaults.
+
+3. Container runtime
+- `docker/Dockerfile`: multi-stage (`deps` → `runtime`), Aliyun mirror defaults with build-arg overrides, renders a Chinese string through WeasyPrint at build time as proof the font and Pango stack work.
+- `docker-compose.yml`: `app` + `postgres:16` (Debian, not Alpine — musl collation changes can corrupt indexes) + `redis:7`; only the app publishes a port, and only on loopback. `name: waypost` is pinned so the project name cannot collide with another stack on the same host.
+- `docker/entrypoint.sh`: `migrate` → `collectstatic` → `exec gunicorn` (exec, so Gunicorn is PID 1 and receives SIGTERM instead of being SIGKILLed after the grace period).
+- `docker/nginx/waypost.conf`: SNI-shared 443 with no `default_server`, ACME webroot before the redirect, `/media/` aliases, and the `X-Forwarded-Proto` header the CSRF fix depends on.
+- `.dockerignore`, `.gitattributes` (`*.sh` pinned to LF — a CRLF entrypoint fails as `/bin/bash^M`).
+
+4. CI/CD
+- `.github/workflows/deploy-ecs.yml`: image-build validation on PRs, `preflight` + `deploy` on `v*` tags, plain OpenSSH with a pinned `known_hosts` and `StrictHostKeyChecking=yes`, `environment: production`, serialized by a concurrency group.
+- `docker/bin/ci-deploy.sh`: the host-side deploy — rollback alias, `pg_dump` checkpoint, tag checkout, build, health gates, automatic image rollback. It never restores the database automatically, because a release may contain a one-way-door migration.
+- `.gitignore`: deploy keypairs and the `waypost_data.json` migration fixture.
+
+5. Documentation and one silent-failure fix
+- `docs/DEPLOYMENT.md`: Option 2 is now the real production procedure (co-hosting, rootless file ownership, `.env`, Nginx/TLS ordering, CI/CD credentials); Step 4b's template table corrected against the code; Step 10 corrected — the mailbox sync thread is `runserver`-only, so it never runs in production. Four new troubleshooting entries.
+- `docs/RELEASE_PROCEDURE.md`: §1 current-reality table re-verified, §6.2 rewritten for the container deploy, §11 gaps updated.
+- `docs/BACKUP_RESTORE.md`: §2b/§3a for the containerised stack.
+- `invoices/services.py`: a missing `签收单 template.xlsx` was swallowed by a bare `except FileNotFoundError: pass`, so invoice dispatch emails quietly lost their delivery documents. Now logged as a warning.
+
+### Migration Files Added
+
+None.
+
+### Validation
+
+- `python manage.py test`: 205 tests, 0 failures (baseline `origin/main` at the time: 193 tests, 0 failures) — the 12 new probe tests, no regressions.
+- `python manage.py check` and `makemigrations --check --dry-run`: clean.
+- `python -m ruff check .`: clean.
+- Production-shaped configuration verified by booting with `DJANGO_DEBUG=False` and printing the resolved settings: proxy header, CSRF origins, SSL redirect, redirect exemption, secure cookies, WhiteNoise manifest storage and middleware, rotating log handler.
+- The same 12 probe tests pass under a production-shaped environment, confirming the `_RUNNING_TESTS` guard.
+
+---
+
 ## Release Notes v0.1.7
 
 **Version:** 0.1.7  

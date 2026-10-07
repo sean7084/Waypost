@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 from email.message import EmailMessage as SMTPEmailMessage
@@ -24,6 +25,8 @@ from quotations.services import render_quotation_pdf_html
 
 from .models import EmailDispatch, InvoiceInfo, InvoiceInfoItem, WeeklyOrderBatch
 
+
+LOGGER = logging.getLogger(__name__)
 
 HEADER_ALIASES = {
     'kering_group_po_number': [
@@ -526,8 +529,15 @@ def collect_email_attachments(dispatch):
                         'path': str(delivery_pdf),
                     }
                 )
-        except FileNotFoundError:
-            pass
+        except FileNotFoundError as exc:
+            # template_files/ is gitignored and provisioned out of band, so a
+            # missing template is an operations gap rather than a code defect.
+            # The dispatch still goes out - it just quietly lacks its delivery
+            # document, which nobody notices until a customer asks. Log it.
+            LOGGER.warning(
+                'Delivery document omitted from dispatch %s (%s): %s',
+                dispatch.pk, getattr(delivery, 'delivery_number', '?'), exc,
+            )
 
     if dispatch.invoice_info_id:
         invoice = dispatch.invoice_info

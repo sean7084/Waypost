@@ -142,8 +142,12 @@
 
         <div class="col-lg-5">
             <div class="card">
-                <div class="card-header bg-light">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center gap-2">
                     <h5 class="card-title mb-0"><i class="fas fa-table me-2"></i>{% trans "Expected Schedule Columns" %}</h5>
+                    <a class="btn btn-sm btn-outline-primary text-nowrap"
+                       href="{% url 'inspections:import_sample' 'schedule' %}">
+                        <i class="fas fa-download me-1"></i>{% trans "Sample CSV" %}
+                    </a>
                 </div>
                 <div class="card-body">
                     <table class="table table-sm schema-table mb-0">
@@ -151,28 +155,37 @@
                             <tr><th>{% trans "Column" %}</th><th>{% trans "Required" %}</th><th>{% trans "Notes" %}</th></tr>
                         </thead>
                         <tbody>
+                            <tr><td><code>JDA code</code></td><td>{% trans "Yes" %}</td><td>{% trans "Store identity; mapped to Location.code" %}</td></tr>
                             <tr><td><code>Brand</code></td><td>{% trans "Yes" %}</td><td>{% trans "Mapped to Division" %}</td></tr>
                             <tr><td><code>Store Name</code></td><td>{% trans "Yes" %}</td><td>{% trans "Mapped to Location.name" %}</td></tr>
-                            <tr><td><code>JDA code</code></td><td>{% trans "Yes" %}</td><td>{% trans "Mapped to Location.code" %}</td></tr>
-                            <tr><td><code>inspection_date</code></td><td>{% trans "Yes" %}</td><td>{% trans "Any parseable date" %}</td></tr>
-                            <tr><td><code>Address</code></td><td>{% trans "No" %}</td><td>{% trans "Ignored by importer" %}</td></tr>
-                            <tr><td><code>City</code></td><td>{% trans "No" %}</td><td>{% trans "Ignored by importer" %}</td></tr>
-                            <tr><td><code>device_count</code></td><td>{% trans "No" %}</td><td>{% trans "Informational only" %}</td></tr>
+                            <tr><td><code>City</code></td><td>{% trans "No" %}</td><td>{% trans "Clusters sites when auto-arranging dates" %}</td></tr>
+                            <tr><td><code>Address</code></td><td>{% trans "No" %}</td><td>{% trans "Same address/mall gets consecutive AM/PM slots" %}</td></tr>
+                            <tr><td><code>Store Dir. Phone</code></td><td>{% trans "No" %}</td><td>{% trans "Stored on the Location" %}</td></tr>
+                            <tr><td><code>inspection_date</code></td><td>{% trans "No" %}</td><td>{% trans "Any parseable date; leave blank to auto-arrange" %}</td></tr>
+                            <tr><td><code>AM/PM</code></td><td>{% trans "No" %}</td><td>{% trans "am/pm or 上午/下午; blank is balanced automatically" %}</td></tr>
+                            <tr><td><code>Device Count</code></td><td>{% trans "No" %}</td><td>{% trans "Orders AM/PM (busier store first); the asset list overrides it" %}</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
             <div class="card mt-3">
-                <div class="card-header bg-light">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center gap-2">
                     <h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>{% trans "Asset List Columns (optional)" %}</h5>
+                    <a class="btn btn-sm btn-outline-primary text-nowrap"
+                       href="{% url 'inspections:import_sample' 'assets' %}">
+                        <i class="fas fa-download me-1"></i>{% trans "Sample CSV" %}
+                    </a>
                 </div>
                 <div class="card-body small text-muted">
                     <p class="mb-2">{% trans "If you upload a master asset list, it should have these columns:" %}</p>
-                    <p class="mb-0">
+                    <p class="mb-2">
                         <code>STORE</code>, <code>JDA</code>, <code>Asset ID</code>, <code>Category</code>,
                         <code>Brand-Model</code>, <code>SN</code>, <code>Warranty-start</code>, <code>Usage</code>,
                         <code>Status</code>, <code>照片需求</code>, <code>大纲</code>, <code>注释</code>.
+                    </p>
+                    <p class="mb-0">
+                        {% trans "Each row becomes one expected device, and the row count per JDA code is what decides which store of a day gets the morning slot." %}
                     </p>
                 </div>
             </div>
@@ -180,6 +193,7 @@
             <div class="alert alert-info mt-3 mb-0 small">
                 <i class="fas fa-lightbulb me-2"></i>
                 {% trans "Schedule-only imports create empty inspections; engineers add devices onsite via the mini program. Uploading both files pre-populates the expected device list." %}
+                {% trans "Samples are .csv; the importer also accepts .xlsx and .xls." %}
             </div>
         </div>
     </div>

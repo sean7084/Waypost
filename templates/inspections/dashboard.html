@@ -14,12 +14,15 @@
         border-radius: var(--wp-radius-sm); color: var(--wp-color-text-inverse); padding: 4px 6px; margin-bottom: 4px;
         font-size: var(--wp-font-size-xs); cursor: grab; display: block; text-decoration: none;
     }
-    .site-card:hover { color: var(--wp-color-text-inverse); text-decoration: none; filter: brightness(0.95); }
-    .site-card .meta { opacity: .9; font-size: 11px; }
-    .summary-tile { border-left: 4px solid var(--wp-color-primary); border-radius: var(--wp-radius-sm); padding: var(--wp-space-3) var(--wp-space-4); background: var(--wp-color-surface); }
-    .summary-tile .count { font-size: var(--wp-font-size-xl); font-weight: var(--wp-font-weight-bold); line-height: 1; color: var(--wp-color-text); }
-    .summary-tile .label { font-size: var(--wp-font-size-xs); text-transform: uppercase; letter-spacing: .04em; color: var(--wp-color-text-muted); }
-    .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: var(--wp-radius-circle); margin-right: 4px; }
+    .site-card:hover { opacity: .9; color: #fff; text-decoration: none; }
+    .site-card .meta { opacity: .85; font-size: .7rem; }
+    /* Day view has room for detail, so its cards are larger and text-dark. */
+    .site-card-wide { padding: 10px 12px; font-size: .9rem; }
+    .site-card-wide .meta { font-size: .8rem; opacity: .9; }
+    .summary-tile { border-left: 4px solid; border-radius: 6px; padding: .75rem 1rem; background: #fff; }
+    .summary-tile .count { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+    .summary-tile .label { font-size: .78rem; text-transform: uppercase; letter-spacing: .4px; color: #6c757d; }
+    .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
 </style>
 {% endblock %}
 
@@ -34,14 +37,16 @@
             </h1>
             <p class="text-muted mb-0">
                 {% if batch %}
-                    {% blocktrans with name=batch.name %}Monthly arrangement for batch "{{ name }}".{% endblocktrans %}
+                    {% blocktrans with name=batch.name %}Arrangement for batch "{{ name }}".{% endblocktrans %}
                 {% else %}
-                    {% trans "Monthly arrangement of store inspections (AM / PM slots)." %}
+                    {% trans "Arrangement of store inspections (AM / PM slots)." %}
                 {% endif %}
             </p>
         </div>
         <div class="d-flex flex-wrap gap-2">
             <form method="get" class="d-flex gap-2">
+                {% if requested_view %}<input type="hidden" name="view" value="{{ requested_view }}">{% endif %}
+                {% if requested_anchor %}<input type="hidden" name="date" value="{{ requested_anchor }}">{% endif %}
                 <select name="batch" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 220px;">
                     <option value="">{% trans "All batches" %}</option>
                     {% for b in batches %}
@@ -93,23 +98,54 @@
         </div>
     </div>
 
-    <!-- Month navigation -->
+    <!-- View switcher + period navigation -->
     <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
-        <a class="btn btn-outline-secondary btn-sm" title="{% trans 'Previous month' %}"
-           href="?month={{ prev_month }}{% if batch %}&amp;batch={{ batch.id }}{% endif %}">
+        <div class="btn-group btn-group-sm" role="group" aria-label="{% trans 'Calendar view' %}">
+            {% for item in views %}
+            <a class="btn btn-outline-secondary {% if view == item %}active{% endif %}"
+               href="?view={{ item }}&amp;date={{ anchor }}{% if batch %}&amp;batch={{ batch.id }}{% endif %}">
+                {% if item == 'month' %}{% trans "Month" %}{% elif item == 'week' %}{% trans "Week" %}{% else %}{% trans "Day" %}{% endif %}
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if prev_anchor %}
+        <a class="btn btn-outline-secondary btn-sm" title="{% trans 'Previous' %}"
+           href="?view={{ view }}&amp;date={{ prev_anchor }}{% if batch %}&amp;batch={{ batch.id }}{% endif %}">
             <i class="fas fa-chevron-left"></i>
         </a>
-        <span class="fw-semibold">{{ month_start|date:"YEAR_MONTH_FORMAT" }}</span>
-        <a class="btn btn-outline-secondary btn-sm" title="{% trans 'Next month' %}"
-           href="?month={{ next_month }}{% if batch %}&amp;batch={{ batch.id }}{% endif %}">
+        {% endif %}
+
+        <span class="fw-semibold">
+            {% if view == 'day' %}
+                {{ window_start|date:"D, M j, Y" }}
+            {% elif view == 'month' %}
+                {{ window_start|date:"F Y" }}
+            {% else %}
+                {{ window_start|date:"M j" }} &ndash; {{ window_end|date:"M j, Y" }}
+            {% endif %}
+        </span>
+
+        {% if next_anchor %}
+        <a class="btn btn-outline-secondary btn-sm" title="{% trans 'Next' %}"
+           href="?view={{ view }}&amp;date={{ next_anchor }}{% if batch %}&amp;batch={{ batch.id }}{% endif %}">
             <i class="fas fa-chevron-right"></i>
         </a>
-        {% if not is_current_month %}
-        <a class="btn btn-outline-primary btn-sm" href="?{% if batch %}batch={{ batch.id }}{% endif %}">
-            {% trans "This month" %}
+        {% endif %}
+
+        {% if not is_current_period %}
+        <a class="btn btn-outline-primary btn-sm"
+           href="?view={{ view }}&amp;date={{ today }}{% if batch %}&amp;batch={{ batch.id }}{% endif %}">
+            {% trans "Today" %}
         </a>
         {% endif %}
-        <span class="text-muted small ms-2">{{ month_start|date:"MONTH_DAY_FORMAT" }} &ndash; {{ month_end|date:"DATE_FORMAT" }}</span>
+
+        {% if view == 'batch' %}
+        <span class="badge bg-light text-dark border">{% trans "Whole batch range" %}</span>
+        {% endif %}
+        <span class="text-muted small ms-auto">
+            {{ total_count }} {% trans "inspections in view" %}
+        </span>
     </div>
 
     <!-- AM/PM scheduler grid -->
@@ -134,21 +170,37 @@
 <script>
 const DAYS = {{ days_json|safe }};
 const CAN_MANAGE = {{ can_manage|yesno:"true,false" }};
+const VIEW = '{{ view }}';
 const MOVE_URL = '{% url "inspections:inspection_move" %}';
 const CSRF = '{{ csrf_token }}';
 
+// The day view has room for a detailed card; month/week stay compact.
 function cardHtml(card) {
     const meta = card.collected + '/' + card.total + (card.engineer ? ' · ' + card.engineer : '');
-    return '<a class="site-card" draggable="' + CAN_MANAGE + '" data-id="' + card.id + '" href="' + card.url + '" ' +
-           'style="background:' + card.color + ';" title="' + card.status_display + '">' +
-           '<div>' + card.label + '</div><div class="meta">' + meta + '</div></a>';
+    const open = '<a class="site-card' + (VIEW === 'day' ? ' site-card-wide' : '') +
+                 '" draggable="' + CAN_MANAGE + '" data-id="' + card.id + '" href="' + card.url +
+                 '" style="background:' + card.color + ';" title="' + card.status_display + '">';
+    if (VIEW !== 'day') {
+        return open + '<div>' + card.label + '</div><div class="meta">' + meta + '</div></a>';
+    }
+    const times = (card.arriving || card.leaving)
+        ? '<div class="meta">' + (card.arriving || '--:--') + ' → ' + (card.leaving || '--:--') + '</div>'
+        : '';
+    return open +
+        '<div class="fw-semibold">' + card.label + '</div>' +
+        '<div class="meta">' + card.jda + (card.brand ? ' · ' + card.brand : '') +
+            ' · ' + card.status_display + '</div>' +
+        times +
+        '<div class="meta">' + card.collected + ' / ' + card.total + ' devices inspected' +
+            (card.engineer ? ' · ' + card.engineer : '') + '</div></a>';
 }
 
 function render() {
     const body = document.getElementById('slotBody');
     body.innerHTML = DAYS.map(function (day) {
+        const label = day.date + (day.weekday ? ' <span class="text-muted">(' + day.weekday + ')</span>' : '');
         return '<tr>' +
-            '<td class="text-nowrap small">' + day.date + '</td>' +
+            '<td class="text-nowrap small">' + label + '</td>' +
             '<td class="day-cell" data-date="' + day.date + '" data-slot="am">' + day.am.map(cardHtml).join('') + '</td>' +
             '<td class="day-cell" data-date="' + day.date + '" data-slot="pm">' + day.pm.map(cardHtml).join('') + '</td>' +
             '</tr>';

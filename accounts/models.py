@@ -785,7 +785,13 @@ class ReceivedEmailMessage(models.Model):
         verbose_name=_('Direction'),
     )
     external_id = models.CharField(max_length=255, verbose_name=_('External ID'))
-    message_id = models.CharField(max_length=255, blank=True, verbose_name=_('Message-ID'))
+    # RFC 5322 sets no length limit on Message-ID, and real ones from Microsoft
+    # reach 333 characters ('<OneTimePasscode-<guid>;rcid_<guid>;wiid_<guid>@...>').
+    # mailbox_sync copies the header verbatim, so a bounded column is a
+    # production DataError waiting for the next long header - it already broke
+    # the SQLite -> PostgreSQL load for 10 of 427 rows. TextField matches
+    # invoices.EmailDispatch.reply_references, which holds the same kind of value.
+    message_id = models.TextField(blank=True, verbose_name=_('Message-ID'))
     folder_name = models.CharField(max_length=120, blank=True, verbose_name=_('Folder'))
     subject = models.CharField(max_length=255, blank=True, verbose_name=_('Subject'))
     sender = models.CharField(max_length=255, blank=True, verbose_name=_('Sender'))

@@ -60,11 +60,115 @@ echo "Backup complete: $STAMP"
 
 > `.pgpass` (mode `600`) avoids embedding the DB password: `127.0.0.1:5432:waypost_db:waypost_django:<password>`.
 
+### 2b. Docker Compose deployment (production)
+
+Production runs PostgreSQL inside the compose stack with **no published port**,
+so `pg_dump` has to run in the `db` container — there is nothing on the host to
+connect to. Everything below runs as the `deploy` user from `/srv/waypost/app`.
+
+```bash
+# /srv/waypost/bin/waypost-backup.sh   (mode 750, owner deploy)
+set -euo pipefail
+
+BACKUP_DIR="/srv/waypost/backups"
+DATA_DIR="${WAYPOST_DATA_DIR:-/home/deploy/waypost-data}"
+STAMP=$(date +%Y%m%d_%H%M%S)
+APP_DIR="/srv/waypost/app"
+
+mkdir -p "${BACKUP_DIR}/pg"
+cd "$APP_DIR"
+
+# 1) Database. The credentials come from the db container's own environment, so
+#    this cannot drift from what Postgres was actually initialised with.
+docker compose exec -T db sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' \
+  > "${BACKUP_DIR}/pg/db_${STAMP}.dump"
+
+# 2) Media uploads and 3) document templates - both are host bind mounts, so a
+#    plain tar is enough; no need to go through the container.
+tar czf "${BACKUP_DIR}/media_${STAMP}.tar.gz" -C "$DATA_DIR" media
+tar czf "${BACKUP_DIR}/template_files_${STAMP}.tar.gz" -C "$DATA_DIR" template_files
+
+# 4) Configuration. .env holds DJANGO_FIELD_ENCRYPTION_KEY, without which stored
+#    mailbox credentials cannot be decrypted even from a good database dump.
+#    It is copied at mode 600 rather than gpg'd against a passphrase stored next
+#    to the ciphertext, which would be security theatre: an attacker who can read
+#    the backup directory could read the passphrase too. Anything that leaves this
+#    host (object storage, a laptop) must be encrypted in transit/at rest there.
+install -m 600 "${APP_DIR}/.env" "${BACKUP_DIR}/env_${STAMP}"
+
+# 5) Retention
+find "${BACKUP_DIR}/pg" -name 'db_*.dump' -mtime +7 -delete
+find "${BACKUP_DIR}" -maxdepth 1 -name 'media_*.tar.gz'          -mtime +28 -delete
+find "${BACKUP_DIR}" -maxdepth 1 -name 'template_files_*.tar.gz' -mtime +28 -delete
+find "${BACKUP_DIR}" -maxdepth 1 -name 'env_*'                   -mtime +28 -delete
+
+echo "$(date -Is) ok ${STAMP}"
+```
+
+This is installed on the production host as `/srv/waypost/bin/waypost-backup.sh`
+(mode `750`, owner `deploy`) and driven by that account's crontab:
+
+```cron
+40 3 * * *  /srv/waypost/bin/waypost-backup.sh    >> /srv/waypost/backups/backup.log 2>&1
+*/5 * * * * /srv/waypost/bin/waypost-probe.sh     >> /srv/waypost/backups/probe.log 2>&1
+35 9 * * *  /srv/waypost/bin/waypost-cert-check.sh >> /srv/waypost/backups/cert-check.log 2>&1
+```
+
+The minutes are offset from the other application's jobs on the same host (03:15
+and 09:30) so two stacks do not spike the disk together. Cron has no login shell,
+so each script sets its own `PATH`, `XDG_RUNTIME_DIR` and `DOCKER_HOST`.
+
+`waypost-cert-check.sh` deliberately inspects the certificate that is actually
+*served* (`openssl s_client … | openssl x509 -checkend 2592000`) rather than a
+file under `/etc/letsencrypt`: that directory is root-only and the deploy account
+has no sudo, and the served-certificate check also catches Nginx presenting the
+wrong certificate.
+
+The container image itself is **not** backed up: it is reproducible from a git
+tag plus `docker/Dockerfile`. What is not reproducible is the database, the two
+bind mounts, and `.env`.
+
+> ℹ️ `docker/bin/ci-deploy.sh` already writes a `pre-<tag>-<stamp>.dump`
+> checkpoint into `backups/pg/` before every deploy and keeps the newest 14.
+> That is the §6.1 release safety net, automated — the cron job above is the
+> nightly baseline underneath it.
+
 **Back up before every deploy/migration** as a point-in-time safety net (see [`RELEASE_PROCEDURE.md`](RELEASE_PROCEDURE.md) §6.1). This backup is the only reliable rollback path for releases containing non-reversible data migrations — see [`RELEASE_PROCEDURE.md`](RELEASE_PROCEDURE.md) §9.2.
 
 ---
 
 ## 3. PostgreSQL Restore (Production)
+
+### 3a. Docker Compose deployment
+
+```bash
+cd /srv/waypost/app
+docker compose stop app          # nothing may write while you restore
+
+# Restore in place. --clean --if-exists makes it re-runnable; --no-owner avoids
+# role-name mismatches between environments.
+docker compose exec -T db sh -c 'pg_restore --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  < /srv/waypost/backups/pg/db_<STAMP>.dump
+
+docker compose start app
+curl -s http://127.0.0.1:8000/healthz/
+```
+
+To restore into a **scratch** database first (the drill in §8, and the safer path
+for anything but a total loss):
+
+```bash
+docker compose exec -T db sh -c 'createdb -U "$POSTGRES_USER" waypost_restore'
+docker compose exec -T db sh -c 'pg_restore --no-owner -U "$POSTGRES_USER" -d waypost_restore' \
+  < /srv/waypost/backups/pg/db_<STAMP>.dump
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d waypost_restore -c "\dt"'
+docker compose exec -T db sh -c 'dropdb -U "$POSTGRES_USER" waypost_restore'
+```
+
+Media and templates are host directories, so restore them with `tar xzf` into
+`${WAYPOST_DATA_DIR}` and re-apply the `www-data` ACLs (see `DEPLOYMENT.md` §2.3).
+
+### 3b. Bare-metal deployment (Option 1)
 
 ```bash
 # Restore into a fresh/empty database (recommended)
