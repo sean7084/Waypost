@@ -14,14 +14,14 @@
         border-radius: var(--wp-radius-sm); color: var(--wp-color-text-inverse); padding: 4px 6px; margin-bottom: 4px;
         font-size: var(--wp-font-size-xs); cursor: grab; display: block; text-decoration: none;
     }
-    .site-card:hover { opacity: .9; color: #fff; text-decoration: none; }
+    .site-card:hover { opacity: .9; color: var(--wp-color-text-inverse); text-decoration: none; }
     .site-card .meta { opacity: .85; font-size: .7rem; }
     /* Day view has room for detail, so its cards are larger and text-dark. */
     .site-card-wide { padding: 10px 12px; font-size: .9rem; }
     .site-card-wide .meta { font-size: .8rem; opacity: .9; }
-    .summary-tile { border-left: 4px solid; border-radius: 6px; padding: .75rem 1rem; background: #fff; }
+    .summary-tile { border-left: 4px solid; border-radius: 6px; padding: .75rem 1rem; background: var(--wp-color-surface); }
     .summary-tile .count { font-size: 1.6rem; font-weight: 700; line-height: 1; }
-    .summary-tile .label { font-size: .78rem; text-transform: uppercase; letter-spacing: .4px; color: #6c757d; }
+    .summary-tile .label { font-size: .78rem; text-transform: uppercase; letter-spacing: .4px; color: var(--wp-color-text-muted); }
     .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
 </style>
 {% endblock %}
