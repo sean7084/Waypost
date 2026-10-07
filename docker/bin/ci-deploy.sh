@@ -262,12 +262,17 @@ fi
 if [ "${SKIP_PUBLIC_GATE:-0}" != "1" ]; then
     edge_ok=1
     wait_for_health "$PUBLIC_HEALTH_URL" "public healthz" || edge_ok=0
-    login_code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$PUBLIC_LOGIN_URL" || true)"
+    # -L is load-bearing. A bare /accounts/login/ legitimately 302s to the default
+    # language prefix (/en-us/accounts/login/), so demanding 200 on the first hop
+    # fails EVERY deploy even when the edge is fine - it marked a healthy deploy
+    # FAILED_EDGE during bring-up. Following redirects tests the whole path instead:
+    # Nginx, TLS, the locale redirect and the rendered login page.
+    login_code="$(curl -sL -o /dev/null -w '%{http_code}' --max-time 20 "$PUBLIC_LOGIN_URL" || true)"
     if [ "$login_code" != "200" ]; then
-        log "public login page returned ${login_code:-none} (expected 200): ${PUBLIC_LOGIN_URL}"
+        log "public login page returned ${login_code:-none} after following redirects (expected 200): ${PUBLIC_LOGIN_URL}"
         edge_ok=0
     else
-        log "health gate passed (public login): ${PUBLIC_LOGIN_URL}"
+        log "health gate passed (public login, redirects followed): ${PUBLIC_LOGIN_URL}"
     fi
 
     if [ "$edge_ok" -ne 1 ]; then

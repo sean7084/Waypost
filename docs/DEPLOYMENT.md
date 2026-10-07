@@ -727,9 +727,21 @@ key to look after.
 
 ```bash
 curl -s https://ams.istore-tech.cn/healthz/          # 200, database/cache "ok"
-curl -sI https://ams.istore-tech.cn/login/           # 302 -> /accounts/login/
-curl -s -o /dev/null -w '%{http_code}\n' https://ams.istore-tech.cn/accounts/login/   # 200
+
+# Unprefixed paths 302 to the default language prefix, so follow redirects (-L)
+# rather than expecting 200 on the first hop. Measured values:
+curl -sL -o /dev/null -w '%{http_code} %{url_effective}\n' \
+     https://ams.istore-tech.cn/accounts/login/      # 200 https://.../en-us/accounts/login/
+curl -s -o /dev/null -w '%{http_code} -> %{redirect_url}\n' \
+     https://ams.istore-tech.cn/login/               # 302 -> https://.../en-us/login/
+curl -s -o /dev/null -w '%{http_code} %{size_download}\n' \
+     https://ams.istore-tech.cn/zh-cn/accounts/login/  # 200, ~6 KB of HTML
 ```
+
+> A bare `302` from `/`, `/login/` or `/accounts/login/` is **correct**, not a
+> failure: `LocaleMiddleware` redirects to `/en-us/…`. Anything that asserts on
+> these URLs must either follow redirects or request a language-prefixed path.
+> This trap marked an otherwise healthy deploy `FAILED_EDGE` once already.
 
 Then in a browser: static assets render (an unstyled page means `collectstatic`
 did not run or the manifest is stale), **log in and submit any form** — a 403
