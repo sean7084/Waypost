@@ -29,6 +29,14 @@
 # This script prints the checkpoint path and stops.
 set -euo pipefail
 
+# Docker access must not depend on how this account's CLI context happens to be
+# configured, nor on ~/.bashrc being sourced: a non-interactive `ssh host cmd`
+# does not source it, and the CI authorized_keys entry is `restrict`ed (no user
+# rc). Point straight at this user's own rootless socket instead.
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export DOCKER_HOST="${DOCKER_HOST:-unix://${XDG_RUNTIME_DIR}/docker.sock}"
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+
 APP_DIR="${APP_DIR:-/srv/waypost/app}"
 BACKUP_DIR="${BACKUP_DIR:-/srv/waypost/backups}"
 IMAGE="waypost-app"
