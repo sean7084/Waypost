@@ -52,7 +52,7 @@
                                 </tr>
                                 <tr>
                                     <th>{% trans "Created At" %}</th>
-                                    <td>{{ approval_request.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ approval_request.created_at|date:"SHORT_DATETIME_FORMAT" }}</td>
                                 </tr>
                                 <tr>
                                     <th>{% trans "Review Notes" %}</th>
@@ -64,7 +64,7 @@
                                 </tr>
                                 <tr>
                                     <th>{% trans "Reviewed At" %}</th>
-                                    <td>{% if approval_request.reviewed_at %}{{ approval_request.reviewed_at|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
+                                    <td>{% if approval_request.reviewed_at %}{{ approval_request.reviewed_at|date:"SHORT_DATETIME_FORMAT" }}{% else %}-{% endif %}</td>
                                 </tr>
                             </tbody>
                         </table>

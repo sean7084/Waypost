@@ -293,7 +293,7 @@
                             {% if mailbox_form.instance.created_at %}
                             <div class="col-12">
                                 <div class="small text-muted">{{ mailbox_form.instance.last_connection_message|default:"" }}</div>
-                                <div class="small text-muted">{% trans "Last mailbox sync" %}: {{ mailbox_form.instance.last_mailbox_sync_at|date:"M d, Y H:i"|default:"-" }}</div>
+                                <div class="small text-muted">{% trans "Last mailbox sync" %}: {{ mailbox_form.instance.last_mailbox_sync_at|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</div>
                             </div>
                             {% endif %}
                         </div>

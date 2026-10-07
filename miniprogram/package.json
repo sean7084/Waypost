@@ -5,12 +5,14 @@
   "description": "WeChat mini program for the Kering store device inspection (Waypost backend)",
   "scripts": {
     "lint": "eslint .",
+    "lint:style": "stylelint \"**/*.wxss\"",
     "preview": "node scripts/ci.js preview",
     "upload": "node scripts/ci.js upload"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
     "eslint": "^9.9.0",
-    "miniprogram-ci": "^2.1.31"
+    "miniprogram-ci": "^2.1.31",
+    "stylelint": "^16.10.0"
   }
 }

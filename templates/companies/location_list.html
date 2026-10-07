@@ -126,7 +126,7 @@
                                     {{ location.manager|default:"-" }}
                                 {% endif %}
                             </td>
-                            <td>{{ location.created_at|date:"M d, Y" }}</td>
+                            <td>{{ location.created_at|date:"DATE_FORMAT" }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     {% if user.can_manage_companies %}

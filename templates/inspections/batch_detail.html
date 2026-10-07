@@ -8,7 +8,7 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
         <div>
-            <nav aria-label="breadcrumb">
+            <nav aria-label="{% trans 'breadcrumb' %}">
                 <ol class="breadcrumb mb-1 small">
                     <li class="breadcrumb-item"><a href="{% url 'inspections:batch_list' %}">{% trans "Batches" %}</a></li>
                     <li class="breadcrumb-item active">{{ batch.name }}</li>
@@ -21,7 +21,7 @@
             <div class="text-muted small">
                 <span class="badge bg-light text-dark border me-2">{{ batch.get_source_display }}</span>
                 {% if batch.division %}<span class="me-2"><i class="fas fa-tag me-1"></i>{{ batch.division.name }}</span>{% endif %}
-                <span class="me-2"><i class="fas fa-calendar me-1"></i>{{ batch.start_date|date:"M j, Y" }} - {{ batch.end_date|date:"M j, Y" }}</span>
+                <span class="me-2"><i class="fas fa-calendar me-1"></i>{{ batch.start_date|date:"DATE_FORMAT" }} - {{ batch.end_date|date:"DATE_FORMAT" }}</span>
                 {% if batch.engineer %}<span class="me-2"><i class="fas fa-user-cog me-1"></i>{{ batch.engineer.get_full_name }}</span>{% endif %}
             </div>
         </div>
@@ -67,7 +67,7 @@
         <div class="col-6 col-md-3">
             <div class="card text-center h-100">
                 <div class="card-body py-3">
-                    <div class="h2 mb-0">{{ batch.start_date|date:"N j" }}</div>
+                    <div class="h2 mb-0">{{ batch.start_date|date:"MONTH_DAY_FORMAT" }}</div>
                     <div class="small text-muted text-uppercase">{% trans "Starts" %}</div>
                 </div>
             </div>
@@ -75,7 +75,7 @@
         <div class="col-6 col-md-3">
             <div class="card text-center h-100">
                 <div class="card-body py-3">
-                    <div class="h2 mb-0">{{ batch.end_date|date:"N j" }}</div>
+                    <div class="h2 mb-0">{{ batch.end_date|date:"MONTH_DAY_FORMAT" }}</div>
                     <div class="small text-muted text-uppercase">{% trans "Ends" %}</div>
                 </div>
             </div>
@@ -108,7 +108,7 @@
                         {% for row in rows %}
                         {% with inspection=row.inspection %}
                         <tr>
-                            <td class="text-nowrap">{{ inspection.inspection_date|date:"Y-m-d (D)" }}</td>
+                            <td class="text-nowrap">{{ inspection.inspection_date|date:"SHORT_DATE_FORMAT" }}</td>
                             <td>
                                 <a href="{% url 'inspections:inspection_detail' inspection.id %}" class="text-decoration-none fw-semibold">
                                     {{ inspection.store_label|default:inspection.store_name|default:"-" }}
@@ -189,7 +189,7 @@
                     {% trans "Errors" %}: {{ batch.import_run.error_count }}
                 </dd>
                 <dt class="col-sm-3">{% trans "Created at" %}</dt>
-                <dd class="col-sm-9">{{ batch.import_run.created_at|date:"Y-m-d H:i" }}</dd>
+                <dd class="col-sm-9">{{ batch.import_run.created_at|date:"SHORT_DATETIME_FORMAT" }}</dd>
             </dl>
         </div>
     </div>

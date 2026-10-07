@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class WeeklyOrderBatch(models.Model):
@@ -228,9 +229,9 @@ class EmailDispatch(models.Model):
     subject = models.CharField(max_length=255)
     body = models.TextField(blank=True)
 
-    sent_to = models.TextField(help_text='Comma separated recipients')
-    cc = models.TextField(blank=True, help_text='Comma separated CC recipients')
-    bcc = models.TextField(blank=True, help_text='Comma separated BCC recipients')
+    sent_to = models.TextField(help_text=_('Comma separated recipients'))
+    cc = models.TextField(blank=True, help_text=_('Comma separated CC recipients'))
+    bcc = models.TextField(blank=True, help_text=_('Comma separated BCC recipients'))
 
     attachments = models.JSONField(default=list, blank=True)
     # Copied verbatim from a ReceivedEmailMessage.message_id (accounts/rfq_ai.py,

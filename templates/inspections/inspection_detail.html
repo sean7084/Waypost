@@ -6,7 +6,7 @@
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb + header -->
-    <nav aria-label="breadcrumb">
+    <nav aria-label="{% trans 'breadcrumb' %}">
         <ol class="breadcrumb small mb-2">
             <li class="breadcrumb-item"><a href="{% url 'inspections:inspection_list' %}">{% trans "Inspections" %}</a></li>
             {% if inspection.batch %}
@@ -25,7 +25,7 @@
             <div class="text-muted small d-flex flex-wrap gap-3">
                 <span><i class="fas fa-hashtag me-1"></i>{{ inspection.jda_code|default:"-" }}</span>
                 <span><i class="fas fa-tag me-1"></i>{{ inspection.brand_name|default:inspection.division.name|default:"-" }}</span>
-                <span><i class="fas fa-calendar me-1"></i>{{ inspection.inspection_date|date:"Y-m-d (D)" }}</span>
+                <span><i class="fas fa-calendar me-1"></i>{{ inspection.inspection_date|date:"SHORT_DATE_FORMAT" }}</span>
                 <span><i class="fas fa-user-cog me-1"></i>{{ inspection.engineer.get_full_name|default:"-" }}</span>
                 {% with status=inspection.status %}
                 <span class="badge bg-{% if status == 'planned' %}secondary{% elif status == 'in_progress' %}info{% elif status == 'completed' %}success{% elif status == 'submitted' %}primary{% else %}light text-dark border{% endif %}">
@@ -128,7 +128,7 @@
                         {% endif %}
                         {% if inspection.signed_at %}
                         <dt class="col-6">{% trans "Signed At" %}</dt>
-                        <dd class="col-6">{{ inspection.signed_at|date:"Y-m-d H:i" }}</dd>
+                        <dd class="col-6">{{ inspection.signed_at|date:"SHORT_DATETIME_FORMAT" }}</dd>
                         {% endif %}
                     </dl>
                 </div>
@@ -288,7 +288,7 @@
                                     </td>
                                     <td class="small" data-col="comment">{{ device.comment|truncatechars:40|default:"-" }}</td>
                                     <td class="small text-muted">
-                                        {% if device.collected_at %}{{ device.collected_at|date:"m-d H:i" }}{% else %}-{% endif %}
+                                        {% if device.collected_at %}{{ device.collected_at|date:"SHORT_DATETIME_FORMAT" }}{% else %}-{% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}

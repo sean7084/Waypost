@@ -169,13 +169,13 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label text-muted">{% trans "Date Joined" %}</label>
-                                    <div>{{ profile_user.date_joined|date:"F d, Y" }}</div>
+                                    <div>{{ profile_user.date_joined|date:"DATE_FORMAT" }}</div>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label text-muted">{% trans "Last Login" %}</label>
                                     <div>
                                         {% if profile_user.last_login %}
-                                        {{ profile_user.last_login|date:"F d, Y H:i" }}
+                                        {{ profile_user.last_login|date:"SHORT_DATETIME_FORMAT" }}
                                         {% else %}
                                         {% trans "Never" %}
                                         {% endif %}

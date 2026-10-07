@@ -1,0 +1,118 @@
+/* GENERATED FILE - DO NOT EDIT.
+ *
+ * Source:    static/design/tokens.json
+ * Generator: scripts/build_design_tokens.py
+ *
+ * Design tokens shared by the whole product. Edit the JSON and re-run the
+ * generator; never edit this file by hand. See docs/DESIGN_SYSTEM.md.
+ */
+:root {
+  --wp-color-bg: #F6F7F9;
+  --wp-color-surface: #FFFFFF;
+  --wp-color-surface-subtle: #FBFBFC;
+  --wp-color-surface-sunken: #F1F3F5;
+  --wp-color-border: #E3E6EA;
+  --wp-color-border-strong: #CDD2D9;
+  --wp-color-text: #1A1D21;
+  --wp-color-text-muted: #5B6472;
+  --wp-color-text-subtle: #6B7480;
+  --wp-color-text-inverse: #FFFFFF;
+  --wp-color-primary: #2F6FED;
+  --wp-color-primary-hover: #1F5AD1;
+  --wp-color-primary-active: #1A4BB0;
+  --wp-color-primary-contrast: #FFFFFF;
+  --wp-color-primary-subtle: #EAF0FE;
+  --wp-color-primary-subtle-hover: #DCE7FD;
+  --wp-color-success: #1A7F37;
+  --wp-color-success-hover: #166B2E;
+  --wp-color-success-subtle: #E7F5EC;
+  --wp-color-warning: #9A6700;
+  --wp-color-warning-hover: #855900;
+  --wp-color-warning-subtle: #FCF3E0;
+  --wp-color-danger: #CF222E;
+  --wp-color-danger-hover: #B21D27;
+  --wp-color-danger-subtle: #FBE9EA;
+  --wp-color-info: #0969DA;
+  --wp-color-info-hover: #0859BA;
+  --wp-color-info-subtle: #E7F0FB;
+  --wp-color-neutral-50: #F6F7F9;
+  --wp-color-neutral-100: #ECEEF1;
+  --wp-color-neutral-200: #E3E6EA;
+  --wp-color-neutral-300: #CDD2D9;
+  --wp-color-neutral-400: #9AA3AF;
+  --wp-color-neutral-500: #6B7480;
+  --wp-color-neutral-600: #5B6472;
+  --wp-color-neutral-700: #3D444D;
+  --wp-color-neutral-800: #2A2E34;
+  --wp-color-neutral-900: #1A1D21;
+  --wp-color-focus-ring: rgba(47, 111, 237, 0.35);
+  --wp-color-overlay: rgba(16, 24, 40, 0.45);
+  --wp-color-scrim: rgba(16, 24, 40, 0.06);
+  --wp-color-brand-olive: #4F6228;
+  --wp-color-brand-olive-subtle: #EEF1E6;
+  --wp-font-family-base: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --wp-font-family-mono: 'SF Mono', SFMono-Regular, ui-monospace, 'Cascadia Code', 'Segoe UI Mono', Menlo, Consolas, monospace;
+  --wp-font-size-xs: 12px;
+  --wp-font-size-sm: 13px;
+  --wp-font-size-base: 14px;
+  --wp-font-size-md: 16px;
+  --wp-font-size-lg: 18px;
+  --wp-font-size-xl: 22px;
+  --wp-font-size-2xl: 28px;
+  --wp-font-size-3xl: 34px;
+  --wp-font-weight-regular: 400;
+  --wp-font-weight-medium: 500;
+  --wp-font-weight-semibold: 600;
+  --wp-font-weight-bold: 700;
+  --wp-font-line-tight: 1.25;
+  --wp-font-line-base: 1.5;
+  --wp-font-line-relaxed: 1.65;
+  --wp-space-0: 0;
+  --wp-space-1: 4px;
+  --wp-space-2: 8px;
+  --wp-space-3: 12px;
+  --wp-space-4: 16px;
+  --wp-space-5: 20px;
+  --wp-space-6: 24px;
+  --wp-space-8: 32px;
+  --wp-space-10: 40px;
+  --wp-space-12: 48px;
+  --wp-space-16: 64px;
+  --wp-radius-none: 0;
+  --wp-radius-sm: 6px;
+  --wp-radius-md: 10px;
+  --wp-radius-lg: 14px;
+  --wp-radius-xl: 20px;
+  --wp-radius-pill: 999px;
+  --wp-radius-circle: 50%;
+  --wp-shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
+  --wp-shadow-2: 0 4px 8px -2px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --wp-shadow-3: 0 12px 24px -6px rgba(16, 24, 40, 0.12), 0 4px 8px -4px rgba(16, 24, 40, 0.08);
+  --wp-z-base: 0;
+  --wp-z-raised: 1;
+  --wp-z-dropdown: 1000;
+  --wp-z-sticky: 1020;
+  --wp-z-fixed: 1030;
+  --wp-z-modal-backdrop: 1040;
+  --wp-z-modal: 1050;
+  --wp-z-popover: 1060;
+  --wp-z-tooltip: 1070;
+  --wp-control-height-sm: 32px;
+  --wp-control-height-md: 40px;
+  --wp-control-height-lg: 48px;
+  --wp-control-touch-target: 44px;
+  --wp-control-border-width: 1px;
+  --wp-control-pad-x: 16px;
+  --wp-control-pad-y: 8px;
+  --wp-motion-duration-fast: 120ms;
+  --wp-motion-duration-base: 200ms;
+  --wp-motion-duration-slow: 320ms;
+  --wp-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --wp-motion-easing-emphasis: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --wp-nav-height: 60px;
+  --wp-nav-bg: #FFFFFF;
+  --wp-nav-border: #E3E6EA;
+  --wp-nav-text: #1A1D21;
+  --wp-nav-text-muted: #5B6472;
+  --wp-nav-accent: #2F6FED;
+}

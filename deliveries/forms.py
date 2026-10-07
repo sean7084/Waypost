@@ -1,6 +1,7 @@
 """Forms for delivery order workflow."""
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from assets.models import Asset
 
@@ -15,7 +16,7 @@ class DeliveryOrderForm(forms.ModelForm):
         queryset=Asset.objects.none(),
         required=False,
         widget=forms.CheckboxSelectMultiple,
-        label='Assets to Dispatch',
+        label=_('Assets to Dispatch'),
     )
 
     class Meta:

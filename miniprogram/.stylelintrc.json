@@ -1,0 +1,13 @@
+{
+  "ignoreFiles": [
+    "**/node_modules/**",
+    "styles/tokens.wxss"
+  ],
+  "rules": {
+    "color-no-hex": true,
+    "color-named": "never",
+    "unit-no-unknown": [true, { "ignoreUnits": ["rpx"] }],
+    "declaration-block-no-duplicate-properties": true,
+    "block-no-empty": true
+  }
+}

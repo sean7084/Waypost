@@ -78,7 +78,7 @@
                 <div class="card-body">
                     <table class="table table-borderless table-sm">
                         <tr><th>{% trans "Status" %}</th><td><span class="badge {{ delivery.status|workflow_badge_class:'delivery' }}">{{ delivery.get_status_display }}</span></td></tr>
-                        <tr><th>{% trans "Date" %}</th><td>{{ delivery.delivery_date|date:"Y-m-d" }}</td></tr>
+                        <tr><th>{% trans "Date" %}</th><td>{{ delivery.delivery_date|date:"SHORT_DATE_FORMAT" }}</td></tr>
                         <tr><th>{% trans "Receiver" %}</th><td>{{ delivery.receiver_name }}</td></tr>
                         <tr><th>{% trans "Phone" %}</th><td>{{ delivery.receiver_phone }}</td></tr>
                         <tr><th>{% trans "Method" %}</th><td>{{ delivery.delivery_method|default:"-" }}</td></tr>

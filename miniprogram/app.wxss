@@ -1,22 +1,42 @@
-/* Global styles for the Kering inspection mini program. */
+/* ==========================================================================
+   Waypost WeChat mini program - global styles.
+
+   These styles are driven by the SAME design tokens as the web app
+   (static/design/tokens.json -> miniprogram/styles/tokens.wxss) so the mini
+   program and the backend stay visually identical. Do not hardcode colours
+   here; use var(--wp-*). See docs/DESIGN_SYSTEM.md (section 7).
+   ========================================================================== */
+@import "styles/tokens.wxss";
+
 page {
-  background: #f2f2f2;
-  font-size: 28rpx;
-  color: #222;
+  background: var(--wp-color-bg);
+  color: var(--wp-color-text);
+  font-family: var(--wp-font-family-base);
+  font-size: var(--wp-font-size-md);
+  line-height: var(--wp-font-line-base);
 }
 
 .container {
-  padding: 24rpx;
+  padding: var(--wp-space-4);
 }
 
+/* --- Cards ------------------------------------------------------------- */
 .card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border);
+  border-radius: var(--wp-radius-lg);
+  padding: var(--wp-space-4);
+  margin-bottom: var(--wp-space-4);
+  box-shadow: var(--wp-shadow-1);
 }
 
+.card-title {
+  font-size: var(--wp-font-size-md);
+  font-weight: var(--wp-font-weight-semibold);
+  color: var(--wp-color-text);
+}
+
+/* --- Layout helpers ---------------------------------------------------- */
 .row {
   display: flex;
   align-items: center;
@@ -24,58 +44,124 @@ page {
 }
 
 .title {
-  font-size: 34rpx;
-  font-weight: 600;
+  font-size: var(--wp-font-size-lg);
+  font-weight: var(--wp-font-weight-semibold);
+  color: var(--wp-color-text);
 }
 
 .muted {
-  color: #888;
-  font-size: 24rpx;
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
 }
 
+.divider {
+  height: 1px;
+  background: var(--wp-color-border);
+  margin: var(--wp-space-3) 0;
+}
+
+/* --- Buttons -----------------------------------------------------------
+   Filled primary by default (matches the web .btn-primary). The button matrix
+   guarantees contrast; the disabled state is a neutral fill, never an opacity
+   dim, and essential controls are never hidden. */
 .btn {
-  background: #4f6228;
-  color: #fff;
-  border-radius: 12rpx;
-  padding: 20rpx;
+  background: var(--wp-color-primary);
+  color: var(--wp-color-primary-contrast);
+  border-radius: var(--wp-radius-md);
+  border: 1px solid var(--wp-color-primary);
+  padding: 0 var(--wp-space-4);
+  min-height: var(--wp-control-touch-target);
+  line-height: var(--wp-control-touch-target);
   text-align: center;
-  margin-top: 20rpx;
+  font-size: var(--wp-font-size-md);
+  font-weight: var(--wp-font-weight-semibold);
+  margin-top: var(--wp-space-4);
+  transition: background-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard);
 }
 
-.btn-disabled {
-  background: #b7bf9f;
+.btn-hover,
+.btn.btn-hover {
+  background: var(--wp-color-primary-hover);
+  border-color: var(--wp-color-primary-hover);
 }
 
+.btn-primary {
+  background: var(--wp-color-primary);
+  border-color: var(--wp-color-primary);
+  color: var(--wp-color-primary-contrast);
+}
+
+.btn-secondary {
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border-strong);
+  color: var(--wp-color-text);
+}
+
+.btn-success {
+  background: var(--wp-color-success);
+  border-color: var(--wp-color-success);
+  color: var(--wp-color-text-inverse);
+}
+
+.btn-danger {
+  background: var(--wp-color-danger);
+  border-color: var(--wp-color-danger);
+  color: var(--wp-color-text-inverse);
+}
+
+.btn-block {
+  display: block;
+  width: 100%;
+}
+
+/* Disabled: neutral fill + neutral text at full opacity (never opacity < 1). */
+.btn-disabled,
+.btn.btn-disabled {
+  background: var(--wp-color-neutral-200);
+  border-color: var(--wp-color-neutral-200);
+  color: var(--wp-color-neutral-500);
+}
+
+/* --- Forms ------------------------------------------------------------- */
 .field {
-  margin-bottom: 20rpx;
+  margin-bottom: var(--wp-space-4);
 }
 
 .field-label {
-  color: #555;
-  margin-bottom: 8rpx;
+  color: var(--wp-color-text-muted);
+  font-size: var(--wp-font-size-sm);
+  font-weight: var(--wp-font-weight-medium);
+  margin-bottom: var(--wp-space-2);
   display: block;
 }
 
 .input {
-  background: #f7f7f7;
-  border-radius: 10rpx;
-  padding: 16rpx;
+  background: var(--wp-color-surface);
+  border: 1px solid var(--wp-color-border-strong);
+  border-radius: var(--wp-radius-md);
+  padding: var(--wp-space-3);
+  color: var(--wp-color-text);
+  font-size: var(--wp-font-size-md);
+  min-height: var(--wp-control-height-md);
 }
 
+.input-static {
+  background: var(--wp-color-surface-sunken);
+  color: var(--wp-color-text-muted);
+}
+
+/* --- Tags / status chips (subtle background + strong text) ------------- */
 .tag {
-  font-size: 22rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 20rpx;
-  background: #eef1e6;
-  color: #4f6228;
+  font-size: var(--wp-font-size-xs);
+  padding: 2px var(--wp-space-3);
+  border-radius: var(--wp-radius-pill);
+  background: var(--wp-color-surface-sunken);
+  color: var(--wp-color-text-muted);
+  font-weight: var(--wp-font-weight-semibold);
 }
 
-.tag-warn {
-  background: #fdeeee;
-  color: #b60205;
-}
-
-.tag-ok {
-  background: #e9f6ec;
-  color: #0e8a16;
-}
+.tag-primary { background: var(--wp-color-primary-subtle); color: var(--wp-color-primary-active); }
+.tag-ok      { background: var(--wp-color-success-subtle); color: var(--wp-color-success); }
+.tag-warn    { background: var(--wp-color-danger-subtle);  color: var(--wp-color-danger); }
+.tag-info    { background: var(--wp-color-info-subtle);    color: var(--wp-color-info); }
+.tag-warning { background: var(--wp-color-warning-subtle); color: var(--wp-color-warning); }

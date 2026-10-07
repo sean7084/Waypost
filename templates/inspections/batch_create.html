@@ -6,32 +6,34 @@
 {% block extra_css %}
 <style>
     .flow-card {
-        border: 2px solid #dee2e6;
-        border-radius: 12px;
-        padding: 2rem;
+        border: 1px solid var(--wp-color-border);
+        border-radius: var(--wp-radius-lg);
+        padding: var(--wp-space-6);
         height: 100%;
-        transition: all 0.2s;
+        transition: border-color var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+                    transform var(--wp-motion-duration-fast) var(--wp-motion-easing-standard),
+                    box-shadow var(--wp-motion-duration-fast) var(--wp-motion-easing-standard);
         text-decoration: none;
         color: inherit;
         display: block;
-        background: #fff;
+        background: var(--wp-color-surface);
     }
     .flow-card:hover {
-        border-color: var(--secondary-color);
+        border-color: var(--wp-color-primary);
         transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        box-shadow: var(--wp-shadow-2);
         color: inherit;
         text-decoration: none;
     }
     .flow-icon {
         width: 64px;
         height: 64px;
-        border-radius: 50%;
+        border-radius: var(--wp-radius-circle);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.8rem;
-        margin-bottom: 1rem;
+        font-size: var(--wp-font-size-xl);
+        margin-bottom: var(--wp-space-4);
     }
 </style>
 {% endblock %}
@@ -54,7 +56,7 @@
     <div class="row g-4">
         <div class="col-md-6">
             <a href="{% url 'inspections:batch_create_by_brand' %}" class="flow-card">
-                <div class="flow-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;">
+                <div class="flow-icon" style="background: var(--wp-color-primary-subtle); color: var(--wp-color-primary);">
                     <i class="fas fa-tags"></i>
                 </div>
                 <h4 class="h5">{% trans "By Brand" %}</h4>
@@ -76,7 +78,7 @@
 
         <div class="col-md-6">
             <a href="{% url 'inspections:batch_import' %}" class="flow-card">
-                <div class="flow-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff;">
+                <div class="flow-icon" style="background: var(--wp-color-success-subtle); color: var(--wp-color-success);">
                     <i class="fas fa-file-upload"></i>
                 </div>
                 <h4 class="h5">{% trans "Schedule Upload" %}</h4>

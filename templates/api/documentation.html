@@ -6,7 +6,7 @@
 {% block extra_css %}
 <style>
     .endpoint-card {
-        border-left: 4px solid #007bff;
+        border-left: 4px solid var(--wp-color-primary);
         margin-bottom: 1rem;
     }
     .method-badge {
@@ -15,19 +15,19 @@
         display: inline-block;
         text-align: center;
     }
-    .method-get { color: #28a745; }
-    .method-post { color: #007bff; }
-    .method-put { color: #ffc107; }
-    .method-delete { color: #dc3545; }
-    .method-patch { color: #6f42c1; }
+    .method-get { color: var(--wp-color-success); }
+    .method-post { color: var(--wp-color-primary); }
+    .method-put { color: var(--wp-color-warning); }
+    .method-delete { color: var(--wp-color-danger); }
+    .method-patch { color: var(--wp-color-danger); }
     code {
-        background: #f4f4f4;
+        background: var(--wp-color-surface-sunken);
         padding: 0.2rem 0.4rem;
         border-radius: 4px;
         font-size: 0.9em;
     }
     .param-name {
-        color: #6610f2;
+        color: var(--wp-color-primary);
         font-weight: bold;
     }
 </style>
@@ -155,7 +155,7 @@
                 </div>
                 <div class="card-body">
                     <p>{% trans "All responses return JSON format:" %}</p>
-                    <pre style="background: #f4f4f4; padding: 1rem; border-radius: 8px;">{
+                    <pre style="background: var(--wp-color-surface-sunken); padding: 1rem; border-radius: 8px;">{
     "id": "uuid",
     "asset_number": "ACME-LAPTOP-001",
     "serial_number": "SN123456",
@@ -166,7 +166,7 @@
 }</pre>
 
                     <p class="mt-3">{% trans "List responses are paginated:" %}</p>
-                    <pre style="background: #f4f4f4; padding: 1rem; border-radius: 8px;">{
+                    <pre style="background: var(--wp-color-surface-sunken); padding: 1rem; border-radius: 8px;">{
     "count": 100,
     "next": "/api/v1/assets/?page=2",
     "previous": null,

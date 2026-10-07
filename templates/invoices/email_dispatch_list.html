@@ -71,7 +71,7 @@
                             <td>
                                 <span class="badge {{ dispatch.status|workflow_badge_class:'invoice_dispatch' }}">{{ dispatch.get_status_display }}</span>
                             </td>
-                            <td>{% if dispatch.sent_at %}{{ dispatch.sent_at|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
+                            <td>{% if dispatch.sent_at %}{{ dispatch.sent_at|date:"SHORT_DATETIME_FORMAT" }}{% else %}-{% endif %}</td>
                             <td>
                                 {% if dispatch.esker_sent %}
                                 <span class="badge bg-success">{% trans "Forwarded" %}</span>

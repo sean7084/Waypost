@@ -23,8 +23,8 @@
   height: 40rpx;
   line-height: 36rpx;
   text-align: center;
-  border-radius: 50%;
-  background: #b60205;
-  color: #fff;
+  border-radius: var(--wp-radius-circle);
+  background: var(--wp-color-danger);
+  color: var(--wp-color-text-inverse);
   font-size: 28rpx;
 }

@@ -1,0 +1,12 @@
+{% load i18n %}
+{# Standard empty state: centred icon, title, message, optional primary action. #}
+<div class="wp-empty">
+    {% if icon %}<div class="wp-empty__icon"><i class="fas {{ icon }}"></i></div>{% endif %}
+    {% if title %}<div class="wp-empty__title">{{ title }}</div>{% endif %}
+    {% if message %}<p class="mb-3">{{ message }}</p>{% endif %}
+    {% if action_url and action_label %}
+    <a href="{{ action_url }}" class="btn btn-primary">
+        {% if action_icon %}<i class="fas {{ action_icon }}"></i> {% endif %}{{ action_label }}
+    </a>
+    {% endif %}
+</div>

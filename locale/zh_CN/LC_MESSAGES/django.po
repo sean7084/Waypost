@@ -1,7 +1,6 @@
 # LANGUAGE translation of Django.
 # Copyright (C) 2026 iStore Tech (Waypost)
 # This file is distributed under the same license as the Django package.
-
 msgid ""
 msgstr ""
 "Language: zh-cn\n"
@@ -834,13 +833,16 @@ msgstr "总额（含税）"
 # The product name itself is never translated (templates render "Waypost" as a
 # literal); only the tagline is. Kept as one block instead of alphabetised so
 # the next rebrand is a single edit.
-#
+# 
 # "iStore Tech" is the PUBLISHING entity (footer copyright, LICENSE, docs).
 # The CONTRACTING entity that signs customer PDFs is 上海珩际信息科技有限公司 -
 # it is not a translatable string, it comes from settings.COMPANY_NAME_ZH.
 # Do not "fix" one to match the other.
 msgid "From RFQ to the shop floor"
 msgstr "驿 · 从询价到门店现场，一路留痕"
+
+msgid "Every order a journey; every journey, a waypost."
+msgstr "一单一程，一程一驿。"
 
 msgid "iStore Tech"
 msgstr "上海思导信息科技有限公司"
@@ -868,8 +870,8 @@ msgstr "Waypost REST API"
 
 msgid "Enter company code (e.g., ISTORE)"
 msgstr "请输入公司代码（例如 ISTORE）"
-# --- end brand block -----------------------------------------------------
 
+# --- end brand block -----------------------------------------------------
 msgid "History"
 msgstr "历史"
 
@@ -882,7 +884,9 @@ msgstr "导入批次"
 msgid "Import Failed"
 msgstr "导入失败"
 
-msgid "Import runs in strict mode. Duplicate entries stop the import and mark the batch as failed."
+msgid ""
+"Import runs in strict mode. Duplicate entries stop the import and mark the "
+"batch as failed."
 msgstr "导入以严格模式运行。重复条目将停止导入并将批次标记为失败。"
 
 msgid "Import Sharepoint Batch"
@@ -1089,7 +1093,8 @@ msgstr "PO 编号"
 msgid "Preview"
 msgstr "预览"
 
-msgid "Preview to load quotation, delivery, and invoice attachments automatically."
+msgid ""
+"Preview to load quotation, delivery, and invoice attachments automatically."
 msgstr "预览以自动加载报价单、出库单和发票附件。"
 
 msgid "Previous"
@@ -1398,7 +1403,8 @@ msgstr "已上传"
 msgid "Uploaded At"
 msgstr "上传于"
 
-msgid "Use Preview to inspect recipients, body, and attachments before sending."
+msgid ""
+"Use Preview to inspect recipients, body, and attachments before sending."
 msgstr "发送前使用预览来检查收件人、正文和附件。"
 
 msgid "User"
@@ -1454,3 +1460,6373 @@ msgstr "您即将将此报价单转换为采购订单。"
 
 msgid "You can continue with stock receipt."
 msgstr "您可以继续进行收货。"
+
+msgid "Set Up Two-Factor Authentication"
+msgstr "设置双因素认证"
+
+msgid "You are required to set up two-factor authentication to continue."
+msgstr "您需要设置双因素认证后才能继续。"
+
+msgid "Step 1: Download an Authenticator App"
+msgstr "第 1 步：下载验证器应用"
+
+msgid "Install one of these authenticator apps on your mobile device:"
+msgstr "请在您的移动设备上安装以下任一验证器应用："
+
+msgid "Step 2: Scan the QR Code"
+msgstr "第 2 步：扫描二维码"
+
+msgid "QR Code for 2FA setup"
+msgstr "用于 2FA 设置的二维码"
+
+msgid "QR Code generation failed"
+msgstr "二维码生成失败"
+
+msgid "Can't scan? Use this secret key instead:"
+msgstr "无法扫描？请改用以下密钥："
+
+msgid "Step 3: Verify and Enable"
+msgstr "第 3 步：验证并启用"
+
+msgid "Enter the 6-digit code from your authenticator app:"
+msgstr "请输入验证器应用中的 6 位验证码："
+
+msgid "Verification Code"
+msgstr "验证码"
+
+msgid "000000"
+msgstr "000000"
+
+msgid "Enable 2FA"
+msgstr "启用 2FA"
+
+msgid "Important:"
+msgstr "重要提示："
+
+msgid ""
+"After enabling 2FA, you'll receive backup codes. Save these codes in a safe "
+"place - they can be used to access your account if you lose your phone."
+msgstr "启用 2FA 后，您将获得备份码。请将这些备份码保存在安全的地方——当您丢失手机时，可用它们登录账户。"
+
+msgid "Enabling..."
+msgstr "启用中…"
+
+msgid "Two-Factor Verification"
+msgstr "双因素验证"
+
+msgid "Enter the 6-digit code from your authenticator app"
+msgstr "请输入验证器应用中的 6 位验证码"
+
+msgid "Verify"
+msgstr "验证"
+
+msgid ""
+"Enter the 6-digit code from your authenticator app (e.g., Google "
+"Authenticator, Microsoft Authenticator)."
+msgstr "请输入验证器应用（如 Google Authenticator、Microsoft Authenticator）中的 6 位验证码。"
+
+msgid "Back to Login"
+msgstr "返回登录"
+
+msgid "Verifying..."
+msgstr "验证中…"
+
+msgid "Backup Codes"
+msgstr "备份码"
+
+msgid "Two-factor authentication is now enabled!"
+msgstr "双因素认证已启用！"
+
+msgid "Important: Save these codes safely!"
+msgstr "重要提示：请妥善保存这些备份码！"
+
+msgid ""
+"Each code can only be used once. If you lose access to your authenticator "
+"app, you can use one of these codes to sign in."
+msgstr "每个备份码仅可使用一次。若您无法使用验证器应用，可使用其中任一备份码登录。"
+
+msgid "Your Backup Codes"
+msgstr "您的备份码"
+
+msgid "No backup codes available."
+msgstr "暂无备份码。"
+
+msgid "Print Codes"
+msgstr "打印备份码"
+
+msgid "Tips for Keeping Your Codes Safe"
+msgstr "备份码保管建议"
+
+msgid "Write them down and store in a secure location"
+msgstr "抄写下来并存放于安全地点"
+
+msgid "Keep them in a password manager"
+msgstr "保存在密码管理器中"
+
+msgid "Store in a secure physical location (safe, lockbox)"
+msgstr "存放于安全的物理位置（保险柜、密码箱）"
+
+msgid "Do not store in your phone or computer"
+msgstr "不要保存在手机或电脑中"
+
+msgid "Continue to Dashboard"
+msgstr "前往仪表板"
+
+msgid "Change Password"
+msgstr "修改密码"
+
+msgid "Back to Profile"
+msgstr "返回个人资料"
+
+msgid "Update Your Password"
+msgstr "更新您的密码"
+
+msgid "Password Security Tips"
+msgstr "密码安全建议"
+
+msgid "Use at least 8 characters"
+msgstr "至少使用 8 个字符"
+
+msgid "Include uppercase and lowercase letters"
+msgstr "包含大小写字母"
+
+msgid "Include numbers and special characters"
+msgstr "包含数字和特殊字符"
+
+msgid "Avoid common words or patterns"
+msgstr "避免常见单词或规律组合"
+
+msgid "Don't reuse old passwords"
+msgstr "不要重复使用旧密码"
+
+msgid "Disable Two-Factor Authentication"
+msgstr "停用双因素认证"
+
+msgid "This will reduce your account security"
+msgstr "这将降低账户安全性"
+
+msgid "Security Warning"
+msgstr "安全警告"
+
+msgid ""
+"Disabling two-factor authentication will make your account less secure."
+msgstr "停用双因素认证会降低账户安全性。"
+
+msgid "Are you sure you want to continue?"
+msgstr "确定要继续吗？"
+
+msgid "Yes, Disable 2FA"
+msgstr "是，停用 2FA"
+
+msgid "Secure login with two-factor authentication"
+msgstr "使用双因素认证安全登录"
+
+msgid "Having trouble logging in? Contact your administrator."
+msgstr "登录遇到问题？请联系管理员。"
+
+msgid "Reprocess RFQ"
+msgstr "重新处理询价单"
+
+msgid "Back to Inbox"
+msgstr "返回收件箱"
+
+msgid "Direction"
+msgstr "方向"
+
+msgid "Receive Time"
+msgstr "接收时间"
+
+msgid "Sent Time"
+msgstr "发送时间"
+
+msgid "Message ID"
+msgstr "邮件 ID"
+
+msgid "Protocol"
+msgstr "协议"
+
+msgid "RFQ Status"
+msgstr "询价单状态"
+
+msgid "RFQ Confidence"
+msgstr "询价单置信度"
+
+msgid "RFQ Workflow"
+msgstr "询价单流程"
+
+msgid "Summary"
+msgstr "摘要"
+
+msgid "Linked Draft Quotation"
+msgstr "关联的草稿报价单"
+
+msgid "Reply Draft"
+msgstr "回复草稿"
+
+msgid "Message Body"
+msgstr "邮件正文"
+
+msgid "View synced mailbox messages for your Order Management account."
+msgstr "查看订单管理账户已同步的邮箱邮件。"
+
+msgid "Sync Now"
+msgstr "立即同步"
+
+msgid "Mailbox Settings"
+msgstr "邮箱设置"
+
+msgid "Inbox"
+msgstr "收件箱"
+
+msgid "Outbox"
+msgstr "发件箱"
+
+msgid "Search Messages"
+msgstr "搜索邮件"
+
+msgid "Subject, sender, recipient, or preview text"
+msgstr "主题、发件人、收件人或预览文本"
+
+msgid "Clear"
+msgstr "清除"
+
+msgid "Sender"
+msgstr "发件人"
+
+msgid "Recipients"
+msgstr "收件人"
+
+msgid "No inbox messages have been synced yet."
+msgstr "尚未同步任何收件箱邮件。"
+
+msgid "No outbox messages have been synced yet."
+msgstr "尚未同步任何发件箱邮件。"
+
+msgid ""
+"Configure your mailbox settings on the account settings page before using "
+"the email module."
+msgstr "使用邮件模块前，请先在账户设置页配置邮箱设置。"
+
+msgid "User Profile"
+msgstr "用户资料"
+
+msgid "Profile Information"
+msgstr "资料信息"
+
+msgid "Username:"
+msgstr "用户名："
+
+msgid "Full Name:"
+msgstr "姓名："
+
+msgid "Email:"
+msgstr "邮箱："
+
+msgid "Role:"
+msgstr "角色："
+
+msgid "Company:"
+msgstr "公司："
+
+msgid "Security"
+msgstr "安全"
+
+msgid "Enabled"
+msgstr "已启用"
+
+msgid "Disabled"
+msgstr "已停用"
+
+msgid "Disable"
+msgstr "停用"
+
+msgid "Enable"
+msgstr "启用"
+
+msgid "Edit Profile"
+msgstr "编辑资料"
+
+msgid "Update Your Information"
+msgstr "更新您的信息"
+
+msgid "Profile Image"
+msgstr "头像"
+
+msgid "User Sessions"
+msgstr "用户会话"
+
+msgid "Active Sessions"
+msgstr "活跃会话"
+
+msgid "Your Active Sessions"
+msgstr "您的活跃会话"
+
+msgid "Device"
+msgstr "设备"
+
+msgid "IP Address"
+msgstr "IP 地址"
+
+msgid "Last Activity"
+msgstr "最近活动"
+
+msgid "ago"
+msgstr "前"
+
+msgid "Current Session"
+msgstr "当前会话"
+
+msgid "Are you sure you want to terminate this session?"
+msgstr "确定要终止此会话吗？"
+
+msgid "Terminate Session"
+msgstr "终止会话"
+
+msgid "Current"
+msgstr "当前"
+
+msgid "No active sessions"
+msgstr "暂无活跃会话"
+
+msgid "You don't have any active sessions."
+msgstr "您没有任何活跃会话。"
+
+msgid "Security Notice"
+msgstr "安全提示"
+
+msgid ""
+"If you see any sessions you don't recognize, terminate them immediately and "
+"change your password."
+msgstr "如发现无法识别的会话，请立即终止并修改密码。"
+
+msgid "Enable two-factor authentication for additional security."
+msgstr "启用双因素认证以提升安全性。"
+
+msgid "Account Settings"
+msgstr "账户设置"
+
+msgid "Preferences"
+msgstr "偏好设置"
+
+msgid "Save Preferences"
+msgstr "保存偏好设置"
+
+msgid "2FA is currently enabled for this account."
+msgstr "此账户当前已启用 2FA。"
+
+msgid "2FA is currently disabled for this account."
+msgstr "此账户当前已停用 2FA。"
+
+msgid "View Backup Tokens"
+msgstr "查看备份令牌"
+
+msgid "System SMTP Settings"
+msgstr "系统 SMTP 设置"
+
+msgid ""
+"These settings are used for system-generated emails such as password "
+"delivery and other outbound notifications."
+msgstr "这些设置用于系统生成的邮件，如密码下发及其他外发通知。"
+
+msgid "Save SMTP Settings"
+msgstr "保存 SMTP 设置"
+
+msgid "Order Management Mailbox"
+msgstr "订单管理邮箱"
+
+msgid "Last mailbox sync"
+msgstr "上次邮箱同步"
+
+msgid "Test Mailbox"
+msgstr "测试邮箱"
+
+msgid "Save Mailbox"
+msgstr "保存邮箱"
+
+msgid "You currently have %(backup_token_count)s backup token saved."
+msgid_plural "You currently have %(backup_token_count)s backup tokens saved."
+msgstr[0] "您当前已保存 %(backup_token_count)s 个备份令牌。"
+msgstr[1] "您当前已保存 %(backup_token_count)s 个备份令牌。"
+
+msgid "Two-Factor Authentication Setup"
+msgstr "双因素认证设置"
+
+msgid "Enhance your account security with 2FA"
+msgstr "使用 2FA 提升账户安全性"
+
+msgid "2FA is Enabled"
+msgstr "2FA 已启用"
+
+msgid "Two-factor authentication is already enabled for your account."
+msgstr "您的账户已启用双因素认证。"
+
+msgid "Setup Two-Factor Authentication"
+msgstr "设置双因素认证"
+
+msgid "Download an Authenticator App"
+msgstr "下载验证器应用"
+
+msgid "Scan the QR Code"
+msgstr "扫描二维码"
+
+msgid "Open your authenticator app and scan this QR code:"
+msgstr "打开验证器应用并扫描此二维码："
+
+msgid "QR Code generation failed. Please use manual entry."
+msgstr "二维码生成失败，请使用手动输入。"
+
+msgid "Can't scan? Manual entry key:"
+msgstr "无法扫描？手动输入密钥："
+
+msgid "Verify Your Setup"
+msgstr "验证您的设置"
+
+msgid "Enter the 6-digit code from your authenticator app to complete setup:"
+msgstr "请输入验证器应用中的 6 位验证码以完成设置："
+
+msgid "Enter the 6-digit code from your app"
+msgstr "请输入应用中的 6 位验证码"
+
+msgid "About Backup Codes"
+msgstr "关于备份码"
+
+msgid ""
+"After enabling 2FA, you'll receive backup codes that can be used to access "
+"your account if you lose your phone. Store these codes in a safe place."
+msgstr "启用 2FA 后您将获得备份码，可在丢失手机时用于登录账户。请将其保存在安全的地方。"
+
+msgid "Field Engineer Profile"
+msgstr "现场工程师资料"
+
+msgid "Leave blank to auto-generate for field engineers."
+msgstr "现场工程师留空时将自动生成。"
+
+msgid "Access Management"
+msgstr "访问管理"
+
+msgid ""
+"The system will generate a temporary password and email it to this user "
+"after the account is created."
+msgstr "账户创建后，系统将生成临时密码并通过邮件发送给该用户。"
+
+msgid "User Created Successfully"
+msgstr "用户创建成功"
+
+msgid "New User Account Created"
+msgstr "已创建新用户账户"
+
+msgid ""
+"The user account has been created successfully with the following details:"
+msgstr "用户账户创建成功，详情如下："
+
+msgid "Account Information"
+msgstr "账户信息"
+
+msgid "SECURE"
+msgstr "安全"
+
+msgid "Important"
+msgstr "重要"
+
+msgid "This password will only be shown once. Please copy it securely."
+msgstr "此密码仅显示一次，请妥善复制保存。"
+
+msgid "Copy"
+msgstr "复制"
+
+msgid "Next Steps"
+msgstr "后续步骤"
+
+msgid ""
+"Share the username and password with the new user through a secure channel"
+msgstr "通过安全渠道将用户名和密码告知新用户"
+
+msgid "The user will be required to change their password on first login"
+msgstr "用户首次登录时将被要求修改密码"
+
+msgid ""
+"Recommend the user to set up two-factor authentication for enhanced security"
+msgstr "建议用户设置双因素认证以增强安全性"
+
+msgid "Create Another User"
+msgstr "再创建一位用户"
+
+msgid "Back to User List"
+msgstr "返回用户列表"
+
+msgid "Copied!"
+msgstr "已复制！"
+
+msgid "2FA Enabled"
+msgstr "已启用 2FA"
+
+msgid "2FA"
+msgstr "2FA"
+
+msgid "Superuser"
+msgstr "超级用户"
+
+msgid "Deactivate User"
+msgstr "停用用户"
+
+msgid "Activate User"
+msgstr "启用用户"
+
+msgid "Contact Information"
+msgstr "联系信息"
+
+msgid "Organization"
+msgstr "组织"
+
+msgid "Company"
+msgstr "公司"
+
+msgid "Division"
+msgstr "部门"
+
+msgid "Date Joined"
+msgstr "加入日期"
+
+msgid "Last Login"
+msgstr "上次登录"
+
+msgid "Never"
+msgstr "从未"
+
+msgid "Timezone"
+msgstr "时区"
+
+msgid "Permissions"
+msgstr "权限"
+
+msgid "Access Permissions"
+msgstr "访问权限"
+
+msgid "Manage Assets"
+msgstr "管理资产"
+
+msgid "View Asset Change Logs"
+msgstr "查看资产变更日志"
+
+msgid "View Reports"
+msgstr "查看报表"
+
+msgid "Manage Users"
+msgstr "管理用户"
+
+msgid "Account Status"
+msgstr "账户状态"
+
+msgid "Account Active"
+msgstr "账户启用"
+
+msgid "Staff Access"
+msgstr "员工后台访问"
+
+msgid "View Details"
+msgstr "查看详情"
+
+msgid "Update User Information"
+msgstr "更新用户信息"
+
+msgid "Auto-generated; share with the FE for first login."
+msgstr "自动生成；首次登录时提供给现场工程师。"
+
+msgid ""
+"Use Reset Password from the user list to generate a new temporary password "
+"and email it to this user."
+msgstr "在用户列表中使用“重置密码”生成新的临时密码并邮件发送给该用户。"
+
+msgid "Search Users"
+msgstr "搜索用户"
+
+msgid "Username, email, name, or employee ID..."
+msgstr "用户名、邮箱、姓名或工号…"
+
+msgid "All Roles"
+msgstr "全部角色"
+
+msgid "Admin Role & Access"
+msgstr "管理员角色与权限"
+
+msgid "No admin roles"
+msgstr "无管理员角色"
+
+msgid "Reset Password"
+msgstr "重置密码"
+
+msgid "Generate a new temporary password and email it to this user?"
+msgstr "生成新的临时密码并邮件发送给该用户？"
+
+msgid "No email address available"
+msgstr "无可用邮箱地址"
+
+msgid "No users found"
+msgstr "未找到用户"
+
+msgid "Try adjusting your search criteria or add a new user."
+msgstr "请调整搜索条件或添加新用户。"
+
+msgid "Users pagination"
+msgstr "用户分页"
+
+msgid "of"
+msgstr "/"
+
+msgid "Quick Reference"
+msgstr "快速参考"
+
+msgid "Base URL"
+msgstr "基础 URL"
+
+msgid "Authentication"
+msgstr "认证"
+
+msgid "Session-based (login required)"
+msgstr "基于会话（需登录）"
+
+msgid "Response Format"
+msgstr "响应格式"
+
+msgid "Browseable API"
+msgstr "可浏览 API"
+
+msgid "API Version"
+msgstr "API 版本"
+
+msgid ""
+"All API endpoints require authentication. Login via the web interface to get"
+" a session cookie, or use the browsable API at"
+msgstr "所有 API 端点均需认证。请通过网页界面登录获取会话 Cookie，或使用可浏览 API："
+
+msgid "For token-based authentication, contact your system administrator."
+msgstr "如需基于令牌的认证，请联系系统管理员。"
+
+msgid "Common Filtering Parameters"
+msgstr "通用过滤参数"
+
+msgid "Assets API supports the following query parameters:"
+msgstr "资产 API 支持以下查询参数："
+
+msgid "Endpoints"
+msgstr "端点"
+
+msgid "Query Parameters"
+msgstr "查询参数"
+
+msgid "All responses return JSON format:"
+msgstr "所有响应均返回 JSON 格式："
+
+msgid "List responses are paginated:"
+msgstr "列表响应支持分页："
+
+msgid "Error Codes"
+msgstr "错误码"
+
+msgid "Code"
+msgstr "代码"
+
+msgid "Bad Request - Invalid parameters"
+msgstr "错误请求 - 参数无效"
+
+msgid "Unauthorized - Authentication required"
+msgstr "未授权 - 需要认证"
+
+msgid "Forbidden - Insufficient permissions"
+msgstr "禁止访问 - 权限不足"
+
+msgid "Not Found - Resource does not exist"
+msgstr "未找到 - 资源不存在"
+
+msgid "Internal Server Error"
+msgstr "服务器内部错误"
+
+msgid "Delete Asset"
+msgstr "删除资产"
+
+msgid "breadcrumb"
+msgstr "面包屑"
+
+msgid "This action permanently deletes the asset from the database."
+msgstr "此操作将从数据库中永久删除该资产。"
+
+msgid "Confirm Asset Deletion"
+msgstr "确认删除资产"
+
+msgid "Are you sure you want to delete the asset"
+msgstr "确定要删除该资产吗"
+
+msgid ""
+"This action cannot be undone. The asset record will be permanently removed "
+"from the database."
+msgstr "此操作不可撤销，资产记录将从数据库中被永久移除。"
+
+msgid "Asset Details:"
+msgstr "资产详情："
+
+msgid "Category:"
+msgstr "类别："
+
+msgid "Brand:"
+msgstr "品牌："
+
+msgid "Model:"
+msgstr "型号："
+
+msgid "Status:"
+msgstr "状态："
+
+msgid "Assigned To:"
+msgstr "分配给："
+
+msgid "Yes, Delete Asset"
+msgstr "是，删除资产"
+
+msgid "Edit Asset"
+msgstr "编辑资产"
+
+msgid "Toggle Dropdown"
+msgstr "展开/收起下拉菜单"
+
+msgid "Assign Asset"
+msgstr "分配资产"
+
+msgid "Return Asset"
+msgstr "归还资产"
+
+msgid "Asset Number:"
+msgstr "资产编号："
+
+msgid "Serial Number:"
+msgstr "序列号："
+
+msgid "Barcode:"
+msgstr "条码："
+
+msgid "Condition:"
+msgstr "成色："
+
+msgid "Location:"
+msgstr "地点："
+
+msgid "Zone / Rack / Shelf:"
+msgstr "区 / 架 / 层："
+
+msgid "Legacy Location Text:"
+msgstr "旧地点文本："
+
+msgid "Supplier:"
+msgstr "供应商："
+
+msgid "Purchase Date:"
+msgstr "采购日期："
+
+msgid "Purchase Price:"
+msgstr "采购价格："
+
+msgid "Warranty End Date:"
+msgstr "保修截止日期："
+
+msgid "Created At:"
+msgstr "创建时间："
+
+msgid "Updated At:"
+msgstr "更新时间："
+
+msgid "Description:"
+msgstr "描述："
+
+msgid "Notes:"
+msgstr "备注："
+
+msgid "Assignment History"
+msgstr "分配历史"
+
+msgid "Returned from"
+msgstr "归还自"
+
+msgid "Assigned to"
+msgstr "分配给"
+
+msgid "Assigned by"
+msgstr "分配人"
+
+msgid "on"
+msgstr "于"
+
+msgid "Returned on"
+msgstr "归还于"
+
+msgid "Returned"
+msgstr "已归还"
+
+msgid "Maintenance History"
+msgstr "维保历史"
+
+msgid "Completed:"
+msgstr "完成："
+
+msgid "Started:"
+msgstr "开始："
+
+msgid "Scheduled:"
+msgstr "计划："
+
+msgid "Cost:"
+msgstr "费用："
+
+msgid "Estimated:"
+msgstr "预估："
+
+msgid "Asset Image"
+msgstr "资产图片"
+
+msgid "No image available"
+msgstr "暂无图片"
+
+msgid "Print Label"
+msgstr "打印标签"
+
+msgid "Recent Activity"
+msgstr "最近动态"
+
+msgid "by"
+msgstr "由"
+
+msgid "Configure filters and export format for your asset data"
+msgstr "为资产数据配置过滤条件与导出格式"
+
+msgid "Back to Assets"
+msgstr "返回资产"
+
+msgid "Export Format"
+msgstr "导出格式"
+
+msgid "Best for spreadsheet applications"
+msgstr "最适合电子表格应用"
+
+msgid "Native Excel format with formatting"
+msgstr "带格式的原生 Excel 格式"
+
+msgid "Printable report format"
+msgstr "可打印的报表格式"
+
+msgid "Filters"
+msgstr "过滤条件"
+
+msgid "Leave empty to include all statuses"
+msgstr "留空以包含所有状态"
+
+msgid "No categories available"
+msgstr "暂无可用类别"
+
+msgid "Leave empty to include all categories"
+msgstr "留空以包含所有类别"
+
+msgid "No brands available"
+msgstr "暂无可用品牌"
+
+msgid "Leave empty to include all brands"
+msgstr "留空以包含所有品牌"
+
+msgid "Date Filters"
+msgstr "日期过滤"
+
+msgid "Select All"
+msgstr "全选"
+
+msgid "Clear All"
+msgstr "清空全部"
+
+msgid "Export Preview"
+msgstr "导出预览"
+
+msgid "Total Assets Available"
+msgstr "可用资产总数"
+
+msgid "Ready to Export?"
+msgstr "准备导出？"
+
+msgid ""
+"Review your filters and field selections, then click export to generate your"
+" file."
+msgstr "请核对过滤条件与字段选择，然后点击导出以生成文件。"
+
+msgid "Generate Export"
+msgstr "生成导出"
+
+msgid "Quick Export Options"
+msgstr "快速导出选项"
+
+msgid "Simple CSV Export"
+msgstr "简单 CSV 导出"
+
+msgid "Large exports may take a few moments to generate."
+msgstr "大批量导出可能需要一些时间生成。"
+
+msgid "Generating..."
+msgstr "生成中…"
+
+msgid "Add New"
+msgstr "新增"
+
+msgid "Basic Information"
+msgstr "基本信息"
+
+msgid "Number of assets to create in this batch."
+msgstr "本批次要创建的资产数量。"
+
+msgid "Identification"
+msgstr "标识信息"
+
+msgid "#"
+msgstr "#"
+
+msgid ""
+"Enter one row for each item in the amount above. Serial number can be blank."
+msgstr "按上方数量逐件填写一行，序列号可为空。"
+
+msgid "Financial Information"
+msgstr "财务信息"
+
+msgid "Additional Information"
+msgstr "附加信息"
+
+msgid "Current image"
+msgstr "当前图片"
+
+msgid "Current image - select a new file to replace"
+msgstr "当前图片 - 选择新文件以替换"
+
+msgid "Update Asset"
+msgstr "更新资产"
+
+msgid "Create Asset"
+msgstr "创建资产"
+
+msgid "New image preview"
+msgstr "新图片预览"
+
+msgid "Select model"
+msgstr "选择型号"
+
+msgid "Select zone"
+msgstr "选择区"
+
+msgid "Select rack"
+msgstr "选择架"
+
+msgid "Select shelf"
+msgstr "选择层"
+
+msgid ""
+"Duplicate serial numbers are not allowed for the same brand. Check rows:"
+msgstr "同一品牌下不允许重复的序列号。请检查以下行："
+
+msgid "Manage and track your company assets"
+msgstr "管理并跟踪公司资产"
+
+msgid "Maintenance"
+msgstr "维保"
+
+msgid "Customize Columns"
+msgstr "自定义列"
+
+msgid "Clear All Filters"
+msgstr "清除所有过滤"
+
+msgid "Image"
+msgstr "图片"
+
+msgid "Asset Tag"
+msgstr "资产标签"
+
+msgid "Assigned To"
+msgstr "分配给"
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "Assets List"
+msgstr "资产列表"
+
+msgid "Customize View"
+msgstr "自定义视图"
+
+msgid "Drill-down mode: showing individual assets only."
+msgstr "下钻模式：仅显示单个资产。"
+
+msgid "Back to Full List"
+msgstr "返回完整列表"
+
+msgid "Batch Edit Selected Assets"
+msgstr "批量编辑所选资产"
+
+msgid "selected"
+msgstr "已选择"
+
+msgid "Zone"
+msgstr "区"
+
+msgid "Rack"
+msgstr "架"
+
+msgid "Shelf"
+msgstr "层"
+
+msgid "Warranty End"
+msgstr "保修截止"
+
+msgid "Warranty Provider"
+msgstr "保修服务商"
+
+msgid "Apply Batch Edit"
+msgstr "应用批量编辑"
+
+msgid "Select all visible rows"
+msgstr "选择所有可见行"
+
+msgid "Serial / Qty"
+msgstr "序列号 / 数量"
+
+msgid "Filter by name..."
+msgstr "按名称过滤…"
+
+msgid "Filter by serial/qty..."
+msgstr "按序列号/数量过滤…"
+
+msgid "All Categories"
+msgstr "所有类别"
+
+msgid "All Statuses"
+msgstr "所有状态"
+
+msgid "Retired"
+msgstr "已退役"
+
+msgid "All Locations"
+msgstr "所有地点"
+
+msgid "Filter by user..."
+msgstr "按用户过滤…"
+
+msgid "Select grouped assets"
+msgstr "选择分组资产"
+
+msgid "Grouped (no serial)"
+msgstr "分组（无序列号）"
+
+msgid "Drill Into Group"
+msgstr "下钻到分组"
+
+msgid "Select asset"
+msgstr "选择资产"
+
+msgid "No assets match your search criteria or no assets have been added yet."
+msgstr "没有符合搜索条件的资产，或尚未添加任何资产。"
+
+msgid "Add First Asset"
+msgstr "添加第一个资产"
+
+msgid "Asset pagination"
+msgstr "资产分页"
+
+msgid "First"
+msgstr "首页"
+
+msgid "Page"
+msgstr "页"
+
+msgid "Last"
+msgstr "末页"
+
+msgid "Column preferences saved!"
+msgstr "列偏好已保存！"
+
+msgid "Columns reset to default!"
+msgstr "列已重置为默认！"
+
+msgid "All filters cleared!"
+msgstr "已清除所有过滤！"
+
+msgid "No change"
+msgstr "无变化"
+
+msgid "Select at least one asset before batch edit."
+msgstr "批量编辑前请至少选择一个资产。"
+
+msgid "Review the complete details for this asset change entry."
+msgstr "查看此资产变更条目的完整详情。"
+
+msgid "Back to Asset Change Logs"
+msgstr "返回资产变更日志"
+
+msgid "Entry Summary"
+msgstr "条目摘要"
+
+msgid "Timestamp"
+msgstr "时间戳"
+
+msgid "Operation"
+msgstr "操作"
+
+msgid "System"
+msgstr "系统"
+
+msgid "Metadata"
+msgstr "元数据"
+
+msgid "No metadata recorded for this entry."
+msgstr "此条目未记录元数据。"
+
+msgid "Field Changes"
+msgstr "字段变更"
+
+msgid "Field"
+msgstr "字段"
+
+msgid "Old Value"
+msgstr "旧值"
+
+msgid "New Value"
+msgstr "新值"
+
+msgid "Related Asset"
+msgstr "相关资产"
+
+msgid "Open Related Asset"
+msgstr "打开相关资产"
+
+msgid "Bulk operation (no single asset)."
+msgstr "批量操作（无单一资产）。"
+
+msgid "Request Context"
+msgstr "请求上下文"
+
+msgid "User Agent"
+msgstr "用户代理"
+
+msgid "Search asset change logs..."
+msgstr "搜索资产变更日志…"
+
+msgid "Details"
+msgstr "详情"
+
+msgid "Bulk operation"
+msgstr "批量操作"
+
+msgid "Asset logs pagination"
+msgstr "资产日志分页"
+
+msgid "No asset change logs found"
+msgstr "未找到资产变更日志"
+
+msgid "Asset change logs will appear here as asset actions are performed."
+msgstr "执行资产操作后，资产变更日志将显示在此处。"
+
+msgid "Delete Brand"
+msgstr "删除品牌"
+
+msgid "Confirm Deletion"
+msgstr "确认删除"
+
+msgid "Are you sure you want to delete the brand"
+msgstr "确定要删除该品牌吗"
+
+msgid "Warning:"
+msgstr "警告："
+
+msgid ""
+"This brand has associated models. You cannot delete it until all models are "
+"reassigned or deleted."
+msgstr "该品牌下存在关联型号。需先重新分配或删除所有型号后才能删除。"
+
+msgid "Edit Instead"
+msgstr "改为编辑"
+
+msgid "Yes, Delete"
+msgstr "是，删除"
+
+msgid "Edit Brand"
+msgstr "编辑品牌"
+
+msgid "Add Brand"
+msgstr "添加品牌"
+
+msgid "Brands & Models"
+msgstr "品牌与型号"
+
+msgid "Brands"
+msgstr "品牌"
+
+msgid "Add New Brand"
+msgstr "新增品牌"
+
+msgid "Brand Information"
+msgstr "品牌信息"
+
+msgid "Update Brand"
+msgstr "更新品牌"
+
+msgid "Create Brand"
+msgstr "创建品牌"
+
+msgid "Asset Brands"
+msgstr "资产品牌"
+
+msgid "Search brands..."
+msgstr "搜索品牌…"
+
+msgid "Models"
+msgstr "型号"
+
+msgid "No brands found"
+msgstr "未找到品牌"
+
+msgid "Search and manage model catalog with brand and unit filters"
+msgstr "使用品牌与单位过滤搜索并管理型号目录"
+
+msgid "Manage Brands"
+msgstr "管理品牌"
+
+msgid "Add Model"
+msgstr "添加型号"
+
+msgid "Search model name, number, brand..."
+msgstr "搜索型号名称、编号、品牌…"
+
+msgid "All Brands"
+msgstr "所有品牌"
+
+msgid "All Units"
+msgstr "所有单位"
+
+msgid "Model List"
+msgstr "型号列表"
+
+msgid "Model Number"
+msgstr "型号编号"
+
+msgid "No models found"
+msgstr "未找到型号"
+
+msgid "Try different filters or add a new model."
+msgstr "请尝试其他过滤条件或添加新型号。"
+
+msgid "Delete Category"
+msgstr "删除类别"
+
+msgid "Categories"
+msgstr "类别"
+
+msgid "Are you sure you want to delete the category"
+msgstr "确定要删除该类别吗"
+
+msgid "This category is currently assigned to"
+msgstr "该类别当前已分配给"
+
+msgid ""
+"asset(s). You cannot delete this category until all assets are reassigned to"
+" other categories."
+msgstr "个资产。需先将所有资产重新分配到其他类别后才能删除该类别。"
+
+msgid "Back to Categories"
+msgstr "返回类别"
+
+msgid "Edit Category Instead"
+msgstr "改为编辑类别"
+
+msgid ""
+"This action cannot be undone. The category will be permanently deleted."
+msgstr "此操作不可撤销，该类别将被永久删除。"
+
+msgid "Yes, Delete Category"
+msgstr "是，删除类别"
+
+msgid "Edit Category"
+msgstr "编辑类别"
+
+msgid "Add Category"
+msgstr "添加类别"
+
+msgid "Add New Category"
+msgstr "新增类别"
+
+msgid "Category Information"
+msgstr "类别信息"
+
+msgid "Update Category"
+msgstr "更新类别"
+
+msgid "Create Category"
+msgstr "创建类别"
+
+msgid "Asset Categories"
+msgstr "资产类别"
+
+msgid "Manage asset categories and classification"
+msgstr "管理资产类别与分类"
+
+msgid "Search categories..."
+msgstr "搜索类别…"
+
+msgid "Parent"
+msgstr "父级"
+
+msgid "Depreciation Rate"
+msgstr "折旧率"
+
+msgid "Assets Count"
+msgstr "资产数量"
+
+msgid "Categories pagination"
+msgstr "类别分页"
+
+msgid "No categories match your search criteria."
+msgstr "没有符合搜索条件的类别。"
+
+msgid "Clear search"
+msgstr "清除搜索"
+
+msgid "Start by creating your first asset category."
+msgstr "从创建第一个资产类别开始。"
+
+msgid "Rollback latest import for this module?"
+msgstr "回滚此模块的最近一次导入？"
+
+msgid "Rollback Latest Import"
+msgstr "回滚最近导入"
+
+msgid "Download Sample CSV"
+msgstr "下载示例 CSV"
+
+msgid "Import Instructions"
+msgstr "导入说明"
+
+msgid "Supported formats: CSV (.csv), Excel (.xlsx, .xls)"
+msgstr "支持格式：CSV (.csv)、Excel (.xlsx, .xls)"
+
+msgid "Maximum file size: 10MB"
+msgstr "最大文件大小：10MB"
+
+msgid "Required columns: category, brand"
+msgstr "必填列：category, brand"
+
+msgid ""
+"Optional columns: asset_number, model, serial_number, barcode, description, "
+"purchase_price, purchase_date, warranty_end_date, location_name, "
+"location_zone, location_rack, location_shelf, current_location, status, "
+"condition, notes"
+msgstr ""
+"可选列：asset_number, model, serial_number, barcode, description, "
+"purchase_price, purchase_date, warranty_end_date, location_name, "
+"location_zone, location_rack, location_shelf, current_location, status, "
+"condition, notes"
+
+msgid "Use 'Validation Only' mode to preview import results before committing"
+msgstr "使用“仅校验”模式在提交前预览导入结果"
+
+msgid "Asset Import Configuration"
+msgstr "资产导入配置"
+
+msgid "CSV Format Example"
+msgstr "CSV 格式示例"
+
+msgid "Status & Condition Values"
+msgstr "状态与成色取值"
+
+msgid "Asset Import Preview"
+msgstr "资产导入预览"
+
+msgid "Back to Import"
+msgstr "返回导入"
+
+msgid "Valid Assets"
+msgstr "有效资产"
+
+msgid "Errors"
+msgstr "错误"
+
+msgid "Warnings"
+msgstr "警告"
+
+msgid "Total Rows"
+msgstr "总行数"
+
+msgid "Import Errors"
+msgstr "导入错误"
+
+msgid "Processed Assets"
+msgstr "已处理资产"
+
+msgid "Success"
+msgstr "成功"
+
+msgid "Error"
+msgstr "错误"
+
+msgid "Warning"
+msgstr "警告"
+
+msgid "No issues"
+msgstr "无问题"
+
+msgid "No assets were processed."
+msgstr "未处理任何资产。"
+
+msgid "Proceed with Import"
+msgstr "继续导入"
+
+msgid "Delete Model"
+msgstr "删除型号"
+
+msgid "Are you sure you want to delete the model"
+msgstr "确定要删除该型号吗"
+
+msgid "Model Details:"
+msgstr "型号详情："
+
+msgid "Model Number:"
+msgstr "型号编号："
+
+msgid "Yes, Delete Model"
+msgstr "是，删除型号"
+
+msgid "Edit Model"
+msgstr "编辑型号"
+
+msgid "Add New Model"
+msgstr "新增型号"
+
+msgid "Model Information"
+msgstr "型号信息"
+
+msgid "Enter technical specifications as JSON format, e.g.:"
+msgstr "以 JSON 格式填写技术规格，例如："
+
+msgid "Update Model"
+msgstr "更新型号"
+
+msgid "Create Model"
+msgstr "创建型号"
+
+msgid "Asset Models"
+msgstr "资产型号"
+
+msgid "Search models..."
+msgstr "搜索型号…"
+
+msgid "Toggle navigation"
+msgstr "切换导航"
+
+msgid "Asset Change Logs"
+msgstr "资产变更日志"
+
+msgid "Manage Models"
+msgstr "管理型号"
+
+msgid "Company Contacts"
+msgstr "公司联系人"
+
+msgid "Inspections"
+msgstr "巡检"
+
+msgid "Batches"
+msgstr "批次"
+
+msgid "All Inspections"
+msgstr "所有巡检"
+
+msgid "Review"
+msgstr "审核"
+
+msgid "Order Management"
+msgstr "订单管理"
+
+msgid "Email Module"
+msgstr "邮件模块"
+
+msgid "More"
+msgstr "更多"
+
+msgid "Pending tasks"
+msgstr "待办任务"
+
+msgid "Pending Tasks"
+msgstr "待办任务"
+
+msgid "No pending tasks"
+msgstr "暂无待办任务"
+
+msgid "Pagination"
+msgstr "分页"
+
+msgid "Coming Soon"
+msgstr "即将推出"
+
+msgid "Feature Coming Soon"
+msgstr "功能即将推出"
+
+msgid ""
+"This feature is currently under development and will be available in the "
+"next release."
+msgstr "该功能正在开发中，将在下一个版本提供。"
+
+msgid "Back to Dashboard"
+msgstr "返回仪表板"
+
+msgid "Import completed. Review the summary below."
+msgstr "导入完成，请查看以下汇总。"
+
+msgid "Processed Rows"
+msgstr "已处理行数"
+
+msgid "Skipped"
+msgstr "已跳过"
+
+msgid "Row-Level Issues"
+msgstr "行级问题"
+
+msgid "Updated Entries"
+msgstr "已更新条目"
+
+msgid "Identifier"
+msgstr "标识"
+
+msgid "Changes"
+msgstr "变更"
+
+msgid "Done"
+msgstr "完成"
+
+msgid "Delete Company"
+msgstr "删除公司"
+
+msgid "Confirm company deletion and review impact"
+msgstr "确认删除公司并查看影响"
+
+msgid "Back to Companies"
+msgstr "返回公司"
+
+msgid "Are you sure you want to delete this company?"
+msgstr "确定要删除该公司吗？"
+
+msgid ""
+"This action cannot be undone. All related data will be permanently deleted."
+msgstr "此操作不可撤销，所有相关数据将被永久删除。"
+
+msgid "Company Information"
+msgstr "公司信息"
+
+msgid "Name:"
+msgstr "名称："
+
+msgid "Code:"
+msgstr "代码："
+
+msgid "Phone:"
+msgstr "电话："
+
+msgid "Website:"
+msgstr "网站："
+
+msgid "Deletion Impact Analysis"
+msgstr "删除影响分析"
+
+msgid "Deleting this company will also permanently delete:"
+msgstr "删除该公司还将永久删除："
+
+msgid "All associated assets and audit records"
+msgstr "所有关联资产与审计记录"
+
+msgid "All related reports and logs"
+msgstr "所有相关报表与日志"
+
+msgid ""
+"This operation cannot be reversed. Consider deactivating the company instead"
+" if you might need this data in the future."
+msgstr "此操作不可逆。若将来可能还需要这些数据，请考虑改为停用该公司。"
+
+msgid "Are you absolutely sure? This cannot be undone!"
+msgstr "您确定吗？此操作不可撤销！"
+
+msgid "Yes, Delete Company"
+msgstr "是，删除公司"
+
+msgid "Alternative action:"
+msgstr "替代操作："
+
+msgid "Deactivate Instead"
+msgstr "改为停用"
+
+msgid "Type the company name to confirm deletion:"
+msgstr "输入公司名称以确认删除："
+
+msgid "Company name does not match. Deletion cancelled."
+msgstr "公司名称不匹配，删除已取消。"
+
+msgid ""
+"This will permanently delete the company and ALL related data. Are you "
+"absolutely certain?"
+msgstr "这将永久删除该公司及所有相关数据。您确定吗？"
+
+msgid "%(divisions)s division"
+msgid_plural "%(divisions)s divisions"
+msgstr[0] "%(divisions)s 个部门"
+msgstr[1] "%(divisions)s 个部门"
+
+msgid "%(locations)s location"
+msgid_plural "%(locations)s locations"
+msgstr[0] "%(locations)s 个地点"
+msgstr[1] "%(locations)s 个地点"
+
+msgid "%(users)s company user assignment"
+msgid_plural "%(users)s company user assignments"
+msgstr[0] "%(users)s 个公司用户分配"
+msgstr[1] "%(users)s 个公司用户分配"
+
+msgid "User Assignment"
+msgid_plural "User Assignments"
+msgstr[0] "用户分配"
+msgstr[1] "用户分配"
+
+msgid "Manage company information and settings"
+msgstr "管理公司信息与设置"
+
+msgid "Company Name"
+msgstr "公司名称"
+
+msgid "Company Code"
+msgstr "公司代码"
+
+msgid "Unique identifier code for the company"
+msgstr "公司的唯一标识代码"
+
+msgid "Website"
+msgstr "网站"
+
+msgid "Company addresses are managed under Locations."
+msgstr "公司地址在“地点”中管理。"
+
+msgid "Company Settings"
+msgstr "公司设置"
+
+msgid "Asset Prefix"
+msgstr "资产前缀"
+
+msgid "Prefix for asset numbering (e.g., COMP-)"
+msgstr "资产编号前缀（如 COMP-）"
+
+msgid "Primary Contact"
+msgstr "主要联系人"
+
+msgid "Select one company contact as the default contact."
+msgstr "选择一位公司联系人作为默认联系人。"
+
+msgid "Company Logo"
+msgstr "公司 Logo"
+
+msgid "Logo"
+msgstr "Logo"
+
+msgid "Upload company logo (optional)"
+msgstr "上传公司 Logo（可选）"
+
+msgid "Current Logo"
+msgstr "当前 Logo"
+
+msgid "Current logo"
+msgstr "当前 Logo"
+
+msgid "Logo Preview"
+msgstr "Logo 预览"
+
+msgid "New logo preview"
+msgstr "新 Logo 预览"
+
+msgid "Manage organizations, users, and locations"
+msgstr "管理组织、用户与地点"
+
+msgid "Import CSV"
+msgstr "导入 CSV"
+
+msgid "Add Company"
+msgstr "添加公司"
+
+msgid "Search Companies"
+msgstr "搜索公司"
+
+msgid "Search by name, code, or description..."
+msgstr "按名称、代码或描述搜索…"
+
+msgid "Suspended"
+msgstr "已停用"
+
+msgid "No Companies Found"
+msgstr "未找到公司"
+
+msgid "No companies match your search criteria."
+msgstr "没有符合搜索条件的公司。"
+
+msgid "No companies have been created yet."
+msgstr "尚未创建任何公司。"
+
+msgid "Companies pagination"
+msgstr "公司分页"
+
+msgid "Create company contacts for asset/quotation/PO recipients"
+msgstr "为资产/报价单/采购单接收人创建公司联系人"
+
+msgid "Back to Company Contacts"
+msgstr "返回公司联系人"
+
+msgid "Required:"
+msgstr "必填："
+
+msgid "Primary Location"
+msgstr "主要地点"
+
+msgid "Authorized RFQ Sender"
+msgstr "授权询价发送人"
+
+msgid ""
+"Only authorized contacts can trigger quotation auto-generation from RFQ "
+"emails."
+msgstr "仅授权联系人可触发由询价邮件自动生成报价单。"
+
+msgid "Add Company Contact"
+msgstr "添加公司联系人"
+
+msgid "Search company contacts..."
+msgstr "搜索公司联系人…"
+
+msgid "RFQ Sender"
+msgstr "询价发送人"
+
+msgid "All Contacts"
+msgstr "所有联系人"
+
+msgid "Authorized Only"
+msgstr "仅授权"
+
+msgid "Unauthorized Only"
+msgstr "仅未授权"
+
+msgid "Start Date"
+msgstr "开始日期"
+
+msgid "Linked User:"
+msgstr "关联用户："
+
+msgid "Authorized"
+msgstr "已授权"
+
+msgid "No"
+msgstr "否"
+
+msgid "Remove this company contact?"
+msgstr "移除此公司联系人？"
+
+msgid "Remove"
+msgstr "移除"
+
+msgid "No company contacts found"
+msgstr "未找到公司联系人"
+
+msgid "Try adjusting your search criteria."
+msgstr "请调整搜索条件。"
+
+msgid "Company contacts pagination"
+msgstr "公司联系人分页"
+
+msgid "Confirm division deletion"
+msgstr "确认删除部门"
+
+msgid "Back to Divisions"
+msgstr "返回部门"
+
+msgid "Delete Division"
+msgstr "删除部门"
+
+msgid "Warning!"
+msgstr "警告！"
+
+msgid ""
+"You are about to delete this division permanently. This action cannot be "
+"undone."
+msgstr "您即将永久删除该部门，此操作不可撤销。"
+
+msgid "Division Details:"
+msgstr "部门详情："
+
+msgid "Division Name:"
+msgstr "部门名称："
+
+msgid "Division Code:"
+msgstr "部门代码："
+
+msgid "Manager:"
+msgstr "负责人："
+
+msgid "Impact of Deletion:"
+msgstr "删除影响："
+
+msgid "Subdivisions:"
+msgstr "子部门："
+
+msgid "This division has"
+msgstr "该部门有"
+
+msgid "subdivision(s). They will also be deleted."
+msgstr "个子部门，它们也将被删除。"
+
+msgid "Locations:"
+msgstr "地点："
+
+msgid "location(s). They will also be deleted."
+msgstr "个地点，它们也将被删除。"
+
+msgid ""
+"All associated assets and company users will be reassigned or updated "
+"accordingly."
+msgstr "所有关联资产与公司用户将被相应重新分配或更新。"
+
+msgid "Yes, Delete Division"
+msgstr "是，删除部门"
+
+msgid "Manage division information and structure"
+msgstr "管理部门信息与结构"
+
+msgid "Division Name"
+msgstr "部门名称"
+
+msgid "Division Code"
+msgstr "部门代码"
+
+msgid "Optional: Unique code for this division (e.g., IT, HR, FIN)"
+msgstr "可选：该部门的唯一代码（如 IT、HR、FIN）"
+
+msgid "Parent Division"
+msgstr "上级部门"
+
+msgid "Select parent division if this is a sub-division"
+msgstr "若为子部门请选择上级部门"
+
+msgid "Division Manager"
+msgstr "部门负责人"
+
+msgid "Location Information"
+msgstr "地点信息"
+
+msgid "Building"
+msgstr "楼栋"
+
+msgid "Floor"
+msgstr "楼层"
+
+msgid "Room"
+msgstr "房间"
+
+msgid "Budget Code"
+msgstr "预算代码"
+
+msgid "Budget or cost center code for this division"
+msgstr "该部门的预算或成本中心代码"
+
+msgid "Select parent division (optional)"
+msgstr "选择上级部门（可选）"
+
+msgid "Add Division"
+msgstr "添加部门"
+
+msgid "Search divisions..."
+msgstr "搜索部门…"
+
+msgid "No actions available"
+msgstr "无可用操作"
+
+msgid "No divisions found"
+msgstr "未找到部门"
+
+msgid "Divisions pagination"
+msgstr "部门分页"
+
+msgid "Upload UTF-8 CSV file to import records"
+msgstr "上传 UTF-8 CSV 文件以导入记录"
+
+msgid "Expected Columns"
+msgstr "预期列"
+
+msgid "Required"
+msgstr "必填"
+
+msgid "Optional"
+msgstr "可选"
+
+msgid "Accepted values"
+msgstr "可接受取值"
+
+msgid "Preview (First 20 Rows)"
+msgstr "预览（前 20 行）"
+
+msgid "Update existing matched entries instead of skipping duplicates"
+msgstr "更新已匹配的现有条目而非跳过重复项"
+
+msgid "Confirm Import"
+msgstr "确认导入"
+
+msgid ""
+"Uploaded %(total)s rows. Please review the first 20 rows and confirm import."
+msgstr "已上传 %(total)s 行。请核对前 20 行并确认导入。"
+
+msgid "Confirm location deletion"
+msgstr "确认删除地点"
+
+msgid "Back to Locations"
+msgstr "返回地点"
+
+msgid "Delete Location"
+msgstr "删除地点"
+
+msgid ""
+"You are about to delete this location permanently. This action cannot be "
+"undone."
+msgstr "您即将永久删除该地点，此操作不可撤销。"
+
+msgid "Location Details:"
+msgstr "地点详情："
+
+msgid "Location Name:"
+msgstr "地点名称："
+
+msgid "Division:"
+msgstr "部门："
+
+msgid "Location Code:"
+msgstr "地点代码："
+
+msgid "Location Type:"
+msgstr "地点类型："
+
+msgid "Area Size:"
+msgstr "面积："
+
+msgid "sq meters"
+msgstr "平方米"
+
+msgid "Capacity:"
+msgstr "容量："
+
+msgid "Address:"
+msgstr "地址："
+
+msgid "Child Locations:"
+msgstr "子地点："
+
+msgid "This location has"
+msgstr "该地点有"
+
+msgid "child location(s). They will also be deleted."
+msgstr "个子地点，它们也将被删除。"
+
+msgid "Yes, Delete Location"
+msgstr "是，删除地点"
+
+msgid "Manage location information and details"
+msgstr "管理地点信息与详情"
+
+msgid "Location Code"
+msgstr "地点代码"
+
+msgid "Optional location code."
+msgstr "可选的地点代码。"
+
+msgid "Warehouse only: use ranges like Z1-Z2, R1-R3, S1-S4."
+msgstr "仅仓库：使用如 Z1-Z2、R1-R3、S1-S4 的范围。"
+
+msgid "Location Type"
+msgstr "地点类型"
+
+msgid "Parent Location"
+msgstr "上级地点"
+
+msgid "Parent location in hierarchy"
+msgstr "层级中的上级地点"
+
+msgid "Physical Details"
+msgstr "物理详情"
+
+msgid "Area Size (sq meters)"
+msgstr "面积（平方米）"
+
+msgid "Capacity"
+msgstr "容量"
+
+msgid "Maximum capacity (people, assets, etc.)"
+msgstr "最大容量（人数、资产等）"
+
+msgid "Address Information (English)"
+msgstr "地址信息（英文）"
+
+msgid "Address Line 1"
+msgstr "地址行 1"
+
+msgid "Address Line 2"
+msgstr "地址行 2"
+
+msgid "City"
+msgstr "城市"
+
+msgid "State/Province"
+msgstr "省/州"
+
+msgid "Postal Code"
+msgstr "邮政编码"
+
+msgid "Country"
+msgstr "国家"
+
+msgid "Chinese Address"
+msgstr "中文地址"
+
+msgid "Select parent location (optional)"
+msgstr "选择上级地点（可选）"
+
+msgid "Select company contact (optional)"
+msgstr "选择公司联系人（可选）"
+
+msgid "Add Location"
+msgstr "添加地点"
+
+msgid "Search locations..."
+msgstr "搜索地点…"
+
+msgid "Total Locations"
+msgstr "地点总数"
+
+msgid "Warehouse Slots"
+msgstr "仓库货位"
+
+msgid "slots"
+msgstr "货位"
+
+msgid "No locations found"
+msgstr "未找到地点"
+
+msgid "Locations pagination"
+msgstr "地点分页"
+
+msgid "Purchase Orders"
+msgstr "采购单"
+
+msgid "Asset / Line"
+msgstr "资产 / 行"
+
+msgid "Service"
+msgstr "服务"
+
+msgid "Mark Delivered"
+msgstr "标记为已交付"
+
+msgid "Select Hardware Assets (Serial Numbers)"
+msgstr "选择硬件资产（序列号）"
+
+msgid ""
+"Service lines from the quotation will be added to the delivery "
+"automatically."
+msgstr "报价单中的服务行将自动加入交付单。"
+
+msgid "No hardware asset selection is required for this delivery."
+msgstr "此交付无需选择硬件资产。"
+
+msgid "New Inspection Batch"
+msgstr "新建巡检批次"
+
+msgid "Create Inspection Batch"
+msgstr "创建巡检批次"
+
+msgid "Choose how to populate the batch."
+msgstr "选择批次的生成方式。"
+
+msgid "Back to Batches"
+msgstr "返回批次"
+
+msgid ""
+"Pick a brand and a date range. The system creates one inspection per active "
+"store under that brand, spreading dates evenly across the range."
+msgstr "选择品牌与日期范围。系统将为该品牌下每个活跃门店创建一次巡检，并在范围内均匀分布日期。"
+
+msgid "Fast bulk-create without a spreadsheet"
+msgstr "无需表格的快速批量创建"
+
+msgid "Round-robin scheduling across stores"
+msgstr "跨门店轮询排期"
+
+msgid "Assign a primary engineer for the batch"
+msgstr "为批次指派主工程师"
+
+msgid "Continue"
+msgstr "继续"
+
+msgid "Schedule Upload"
+msgstr "排期上传"
+
+msgid ""
+"Upload a schedule.xlsx (and optionally a master asset list) to create "
+"inspections from the Kering master dataset."
+msgstr "上传 schedule.xlsx（可选主资产清单）以基于 Kering 主数据创建巡检。"
+
+msgid "Columns: Brand, Store Name, JDA code, inspection_date"
+msgstr "列：Brand、Store Name、JDA code、inspection_date"
+
+msgid "Optional asset list populates expected devices"
+msgstr "可选资产清单用于填充预期设备"
+
+msgid "Tracked as an ImportRun (rollback supported)"
+msgstr "记录为 ImportRun（支持回滚）"
+
+msgid ""
+"Both flows produce the same underlying StoreInspection records. The batch is"
+" just a grouping handle for the calendar dashboard and the cross-store "
+"asset-list export."
+msgstr "两种流程生成相同的底层 StoreInspection 记录；批次仅作为日历看板与跨门店资产清单导出的分组句柄。"
+
+msgid "View on Calendar"
+msgstr "在日历中查看"
+
+msgid "Export Asset List"
+msgstr "导出资产清单"
+
+msgid "Devices Collected"
+msgstr "已采集设备"
+
+msgid "Starts"
+msgstr "开始"
+
+msgid "Ends"
+msgstr "结束"
+
+msgid "Store Inspections"
+msgstr "门店巡检"
+
+msgid "total"
+msgstr "总计"
+
+msgid "Store"
+msgstr "门店"
+
+msgid "JDA"
+msgstr "JDA"
+
+msgid "Engineer"
+msgstr "工程师"
+
+msgid "Progress"
+msgstr "进度"
+
+msgid "Download report"
+msgstr "下载报告"
+
+msgid "Download photos"
+msgstr "下载照片"
+
+msgid "No inspections in this batch"
+msgstr "该批次暂无巡检"
+
+msgid "Inspections will appear here once they are scheduled or imported."
+msgstr "巡检排期或导入后将显示在此处。"
+
+msgid "Import Run"
+msgstr "导入批次"
+
+msgid "Run"
+msgstr "批次"
+
+msgid "Created at"
+msgstr "创建时间"
+
+msgid "Update batch metadata. Existing inspections are not rescheduled."
+msgstr "更新批次元数据；现有巡检不会重新排期。"
+
+msgid ""
+"One inspection will be created per active store under the selected brand, "
+"spread across the date range."
+msgstr "将为所选品牌下每个活跃门店创建一次巡检，并在日期范围内分布。"
+
+msgid "Only active STORE-type locations under this brand will be scheduled."
+msgstr "仅该品牌下活跃的门店类型地点会被排期。"
+
+msgid "Preview:"
+msgstr "预览："
+
+msgid ""
+"The number of inspections created equals the number of active store "
+"locations under the selected brand. Dates are assigned round-robin across "
+"the range."
+msgstr "创建的巡检数等于所选品牌下活跃门店地点数；日期在范围内轮询分配。"
+
+msgid ""
+"Upload a Kering schedule workbook to create a batch of store inspections."
+msgstr "上传 Kering 排期工作簿以创建门店巡检批次。"
+
+msgid "Optional default onsite engineer."
+msgstr "可选的默认现场工程师。"
+
+msgid "Import & Create Batch"
+msgstr "导入并创建批次"
+
+msgid "Expected Schedule Columns"
+msgstr "预期排期列"
+
+msgid "Column"
+msgstr "列"
+
+msgid "Yes"
+msgstr "是"
+
+msgid "Mapped to Division"
+msgstr "映射到部门"
+
+msgid "Mapped to Location.name"
+msgstr "映射到 Location.name"
+
+msgid "Mapped to Location.code"
+msgstr "映射到 Location.code"
+
+msgid "Any parseable date"
+msgstr "任意可解析日期"
+
+msgid "Ignored by importer"
+msgstr "导入器忽略"
+
+msgid "Informational only"
+msgstr "仅供参考"
+
+msgid "Asset List Columns (optional)"
+msgstr "资产清单列（可选）"
+
+msgid "If you upload a master asset list, it should have these columns:"
+msgstr "若上传主资产清单，应包含以下列："
+
+msgid ""
+"Schedule-only imports create empty inspections; engineers add devices onsite"
+" via the mini program. Uploading both files pre-populates the expected "
+"device list."
+msgstr "仅排期导入会创建空巡检，工程师在现场通过小程序添加设备；同时上传两个文件可预填预期设备清单。"
+
+msgid "Inspection Batches"
+msgstr "巡检批次"
+
+msgid ""
+"Group store inspections into planning cycles for scheduling and export."
+msgstr "将门店巡检按规划周期分组，用于排期与导出。"
+
+msgid "New Batch"
+msgstr "新建批次"
+
+msgid "Batch name, description, or brand"
+msgstr "批次名称、描述或品牌"
+
+msgid "Source"
+msgstr "来源"
+
+msgid "All sources"
+msgstr "所有来源"
+
+msgid "Apply"
+msgstr "应用"
+
+msgid ""
+"They still appear on the dashboard, list and review pages, but batch-scoped "
+"scheduling and export need a batch."
+msgstr "它们仍会显示在看板、列表与审核页，但按批次的排期与导出需要批次。"
+
+msgid "Adopt them by re-importing the same schedule through New Batch, or run"
+msgstr "通过“新建批次”重新导入同一排期以接收它们，或运行"
+
+msgid "Date Range"
+msgstr "日期范围"
+
+msgid "Export asset list"
+msgstr "导出资产清单"
+
+msgid "No batches yet"
+msgstr "暂无批次"
+
+msgid "Create a batch to start scheduling store inspections."
+msgstr "创建批次以开始门店巡检排期。"
+
+msgid ""
+"\n"
+"                        %(count)s inspection is not assigned to any batch\n"
+"                    "
+msgid_plural ""
+"\n"
+"                        %(count)s inspections are not assigned to any batch\n"
+"                    "
+msgstr[0] "有 %(count)s 次巡检未分配到任何批次"
+msgstr[1] "有 %(count)s 次巡检未分配到任何批次"
+
+msgid "Inspection Dashboard"
+msgstr "巡检看板"
+
+msgid "Monthly arrangement of store inspections (AM / PM slots)."
+msgstr "门店巡检的月度安排（上午 / 下午时段）。"
+
+msgid "All batches"
+msgstr "所有批次"
+
+msgid "List View"
+msgstr "列表视图"
+
+msgid "Planned"
+msgstr "已计划"
+
+msgid "In Progress"
+msgstr "进行中"
+
+msgid "Completed"
+msgstr "已完成"
+
+msgid "Submitted"
+msgstr "已提交"
+
+msgid "Legend:"
+msgstr "图例："
+
+msgid "Drag a site card between AM/PM cells to rearrange."
+msgstr "在上午/下午单元格之间拖动门店卡片以重新安排。"
+
+msgid "Previous month"
+msgstr "上个月"
+
+msgid "Next month"
+msgstr "下个月"
+
+msgid "This month"
+msgstr "本月"
+
+msgid "AM (Morning)"
+msgstr "上午"
+
+msgid "PM (Afternoon)"
+msgstr "下午"
+
+msgid "Monthly arrangement for batch \"%(name)s\"."
+msgstr "批次“%(name)s”的月度安排。"
+
+msgid ""
+"Download a cross-store asset list in the GUCCI_资产表 format (17 columns)."
+msgstr "以 GUCCI_资产表 格式（17 列）下载跨门店资产清单。"
+
+msgid "Back to Inspections"
+msgstr "返回巡检"
+
+msgid "Export every inspection in the selected batch."
+msgstr "导出所选批次中的每一次巡检。"
+
+msgid "Contents"
+msgstr "内容"
+
+msgid ""
+"Selecting photos or reports produces a ZIP bundle; asset-list only downloads"
+" a single XLSX."
+msgstr "选择照片或报告将生成 ZIP 包；仅资产清单则下载单个 XLSX。"
+
+msgid ""
+"Select at least one filter. Filters combine with AND. The ISO week filter "
+"overrides the date range when both are set."
+msgstr "请至少选择一个过滤条件；条件之间为“与”关系。同时设置时，ISO 周过滤优先于日期范围。"
+
+msgid "Download"
+msgstr "下载"
+
+msgid "Export Columns"
+msgstr "导出列"
+
+msgid "The exported workbook contains a single sheet named"
+msgstr "导出的工作簿包含一个名为"
+
+msgid "with these 17 columns:"
+msgstr "的工作表，含以下 17 列："
+
+msgid "Filename"
+msgstr "文件名"
+
+msgid "Single brand + single ISO week:"
+msgstr "单品牌 + 单 ISO 周："
+
+msgid "Batch export spanning multiple weeks:"
+msgstr "跨多周的批次导出："
+
+msgid "Fallback:"
+msgstr "回退："
+
+msgid "Status column:"
+msgstr "状态列："
+
+msgid "Devices the engineer never touched are reported as"
+msgstr "工程师未触碰的设备将报告为"
+
+msgid "(missing). Newly-found devices are reported as"
+msgstr "（缺失）。新发现的设备将报告为"
+
+msgid "Report"
+msgstr "报告"
+
+msgid "Photos"
+msgstr "照片"
+
+msgid "Collected"
+msgstr "已采集"
+
+msgid "Errors Fixed"
+msgstr "已修复错误"
+
+msgid "Issues Found"
+msgstr "发现问题"
+
+msgid "To Follow Up"
+msgstr "待跟进"
+
+msgid "Inspection Summary"
+msgstr "巡检摘要"
+
+msgid "Arriving"
+msgstr "到场"
+
+msgid "Leaving"
+msgstr "离场"
+
+msgid "WiFi Coverage"
+msgstr "WiFi 覆盖"
+
+msgid "WiFi Weak Points"
+msgstr "WiFi 弱点"
+
+msgid "None recorded (good coverage)"
+msgstr "未记录（覆盖良好）"
+
+msgid "IT Support Rating"
+msgstr "IT 支持评分"
+
+msgid "IT Comment"
+msgstr "IT 备注"
+
+msgid "Signed At"
+msgstr "签字时间"
+
+msgid "Confirmation Counts"
+msgstr "确认计数"
+
+msgid "Field Engineer"
+msgstr "现场工程师"
+
+msgid "Rating"
+msgstr "评分"
+
+msgid "Chinese name / phone / WeChat id / invite code"
+msgstr "中文姓名 / 电话 / 微信 ID / 邀请码"
+
+msgid "Assign"
+msgstr "分配"
+
+msgid "Create if not exists"
+msgstr "不存在则创建"
+
+msgid "Store Photos"
+msgstr "门店照片"
+
+msgid "Devices"
+msgstr "设备"
+
+msgid "inspected"
+msgstr "已巡检"
+
+msgid "Columns"
+msgstr "列"
+
+msgid "Version"
+msgstr "版本"
+
+msgid "IP"
+msgstr "IP"
+
+msgid "CPU/Mem/HDD"
+msgstr "CPU/内存/硬盘"
+
+msgid "C Free"
+msgstr "C 盘剩余"
+
+msgid "Comment"
+msgstr "备注"
+
+msgid "Brand-Model"
+msgstr "品牌-型号"
+
+msgid "SN"
+msgstr "SN"
+
+msgid "Asset ID"
+msgstr "资产 ID"
+
+msgid "Usage"
+msgstr "用途"
+
+msgid "Tag"
+msgstr "标签"
+
+msgid "NEW"
+msgstr "新"
+
+msgid "No devices recorded yet."
+msgstr "尚未记录设备。"
+
+msgid "Issues"
+msgstr "问题"
+
+msgid "Back to Inspection"
+msgstr "返回巡检"
+
+msgid "Onsite Capture (editable)"
+msgstr "现场采集（可编辑）"
+
+msgid "Auto-collected when the FE starts; editable here."
+msgstr "现场工程师开始时自动采集，可在此编辑。"
+
+msgid "Auto-collected when the FE ends; editable here."
+msgstr "现场工程师结束时自动采集，可在此编辑。"
+
+msgid "Re-derived from weak points on save."
+msgstr "保存时由弱点重新推导。"
+
+msgid "Issue Description"
+msgstr "问题描述"
+
+msgid ""
+"Zero weak points means good coverage; each weak point needs a location and a"
+" short description."
+msgstr "弱点为零表示覆盖良好；每个弱点需填写位置与简短描述。"
+
+msgid "All store inspections you have access to."
+msgstr "您有权访问的所有门店巡检。"
+
+msgid "Calendar"
+msgstr "日历"
+
+msgid "Batch"
+msgstr "批次"
+
+msgid "No inspections found"
+msgstr "未找到巡检"
+
+msgid "Try adjusting the filters, or create a batch to schedule inspections."
+msgstr "请调整过滤条件，或创建批次以安排巡检。"
+
+msgid "Inspection Review"
+msgstr "巡检审核"
+
+msgid "Period"
+msgstr "期间"
+
+msgid "This week"
+msgstr "本周"
+
+msgid "Custom range"
+msgstr "自定义范围"
+
+msgid "Select all"
+msgstr "全选"
+
+msgid "Expected"
+msgstr "预期"
+
+msgid "New"
+msgstr "新增"
+
+msgid "Not Found"
+msgstr "未找到"
+
+msgid "With the selected sites:"
+msgstr "对所选门店："
+
+msgid "Mark outstanding devices Not Found"
+msgstr "将未完成设备标记为“未找到”"
+
+msgid "Mark outstanding devices In Store"
+msgstr "将未完成设备标记为“在店”"
+
+msgid "Update the outstanding devices of the selected sites?"
+msgstr "更新所选门店的未完成设备？"
+
+msgid "Outstanding = expected devices with no onsite reading yet."
+msgstr "未完成 = 尚无现场读数的预期设备。"
+
+msgid "No inspections in the selected period."
+msgstr "所选期间内没有巡检。"
+
+msgid "Batch-review asset status for %(start)s – %(end)s."
+msgstr "批量审核 %(start)s – %(end)s 的资产状态。"
+
+msgid "Mobile Dashboard"
+msgstr "移动看板"
+
+msgid "Scan Asset"
+msgstr "扫描资产"
+
+msgid "Find Asset"
+msgstr "查找资产"
+
+msgid "Scan"
+msgstr "扫描"
+
+msgid "Scan Asset Barcode"
+msgstr "扫描资产条码"
+
+msgid "Scan Method"
+msgstr "扫描方式"
+
+msgid "Camera"
+msgstr "摄像头"
+
+msgid "Manual Entry"
+msgstr "手动输入"
+
+msgid "Enter Barcode"
+msgstr "输入条码"
+
+msgid "Enter or scan barcode"
+msgstr "输入或扫描条码"
+
+msgid "Look Up"
+msgstr "查询"
+
+msgid "Camera access denied or not available"
+msgstr "摄像头访问被拒绝或不可用"
+
+msgid "Error looking up barcode"
+msgstr "查询条码时出错"
+
+msgid "Approval Request"
+msgstr "审批请求"
+
+msgid "Review the request payload before applying it to the live price list."
+msgstr "在应用到生效价格表前审核请求内容。"
+
+msgid "Back to Approval Requests"
+msgstr "返回审批请求"
+
+msgid "Request Type"
+msgstr "请求类型"
+
+msgid "Catalog Type"
+msgstr "目录类型"
+
+msgid "Requested By"
+msgstr "申请人"
+
+msgid "Created At"
+msgstr "创建时间"
+
+msgid "Review Notes"
+msgstr "审核备注"
+
+msgid "Reviewed By"
+msgstr "审核人"
+
+msgid "Reviewed At"
+msgstr "审核时间"
+
+msgid "Current Live Snapshot"
+msgstr "当前生效快照"
+
+msgid "No current snapshot was stored for this request."
+msgstr "此请求未存储当前快照。"
+
+msgid "Proposed Snapshot"
+msgstr "提议快照"
+
+msgid "No proposed snapshot was stored for this request."
+msgstr "此请求未存储提议快照。"
+
+msgid "Review Decision"
+msgstr "审核决定"
+
+msgid "Optional notes for the requester"
+msgstr "给申请人的可选备注"
+
+msgid "Reject"
+msgstr "驳回"
+
+msgid "Approve and Apply"
+msgstr "批准并应用"
+
+msgid "Price Approval Requests"
+msgstr "价格审批请求"
+
+msgid "Review pending specialist requests and inspect historical approvals."
+msgstr "审核待处理的专员请求并查看历史审批。"
+
+msgid "Track the status of your submitted price change requests."
+msgstr "跟踪您已提交的价格变更请求状态。"
+
+msgid "Back to Price List"
+msgstr "返回价格表"
+
+msgid "Pending Approval"
+msgstr "待审批"
+
+msgid "Approved"
+msgstr "已批准"
+
+msgid "Rejected"
+msgstr "已驳回"
+
+msgid "Cancelled"
+msgstr "已取消"
+
+msgid "Request"
+msgstr "请求"
+
+msgid "Catalog Item"
+msgstr "目录项"
+
+msgid "Approval request pagination"
+msgstr "审批请求分页"
+
+msgid "No approval requests found for the selected filter."
+msgstr "所选过滤条件下未找到审批请求。"
+
+msgid "Import Product Prices"
+msgstr "导入产品价格"
+
+msgid "Select Excel File"
+msgstr "选择 Excel 文件"
+
+msgid "Supported format: .xlsx (Excel 2007+)"
+msgstr "支持格式：.xlsx（Excel 2007+）"
+
+msgid "Download Template"
+msgstr "下载模板"
+
+msgid "Instructions"
+msgstr "说明"
+
+msgid "File Format"
+msgstr "文件格式"
+
+msgid "The Excel file should have the following columns:"
+msgstr "Excel 文件应包含以下列："
+
+msgid "Brand code (e.g., DELL, HP)"
+msgstr "品牌代码（如 DELL、HP）"
+
+msgid "Model number"
+msgstr "型号编号"
+
+msgid "Unit (e.g., PCS)"
+msgstr "单位（如 PCS）"
+
+msgid "Price before tax"
+msgstr "税前价格"
+
+msgid "Tax percentage (e.g., 13)"
+msgstr "税率百分比（如 13）"
+
+msgid "First row should be headers"
+msgstr "首行应为表头"
+
+msgid "Brand and Model must already exist in the system"
+msgstr "品牌与型号必须已存在于系统中"
+
+msgid "Existing prices will be updated, new prices will be created"
+msgstr "已有价格将被更新，新价格将被创建"
+
+msgid "Tax rate should be a number (e.g., 13 for 13%)"
+msgstr "税率应为数字（如 13 表示 13%）"
+
+msgid "Delete Product Price"
+msgstr "删除产品价格"
+
+msgid "Confirm Delete Request"
+msgstr "确认删除请求"
+
+msgid ""
+"This delete request will be submitted for manager approval. The current live"
+" price will remain effective until the request is approved."
+msgstr "此删除请求将提交经理审批；在批准前当前生效价格继续有效。"
+
+msgid ""
+"Are you sure you want to submit a delete request for this product price?"
+msgstr "确定要为此产品价格提交删除请求吗？"
+
+msgid "Are you sure you want to delete this product price?"
+msgstr "确定要删除此产品价格吗？"
+
+msgid "Price (excl. tax)"
+msgstr "价格（不含税）"
+
+msgid "Price (incl. tax)"
+msgstr "价格（含税）"
+
+msgid "Submit Delete Request"
+msgstr "提交删除请求"
+
+msgid "Edit Product Price"
+msgstr "编辑产品价格"
+
+msgid "Add Product Price"
+msgstr "添加产品价格"
+
+msgid ""
+"Your changes will be submitted for Order Management Manager approval before "
+"they become effective in the live price list."
+msgstr "您的更改将提交订单管理经理审批，批准后才会生效于价格表。"
+
+msgid "Type to filter models..."
+msgstr "输入以过滤型号…"
+
+msgid "Brand is derived automatically from the selected model."
+msgstr "品牌将根据所选型号自动推导。"
+
+msgid "Price Without Tax"
+msgstr "不含税价格"
+
+msgid "Price With Tax"
+msgstr "含税价格"
+
+msgid "Auto-calculated if empty"
+msgstr "留空时自动计算"
+
+msgid "Valid From"
+msgstr "生效起始"
+
+msgid "Current Price"
+msgstr "当前价格"
+
+msgid "Submit Update Request"
+msgstr "提交更新请求"
+
+msgid "Submit Create Request"
+msgstr "提交创建请求"
+
+msgid "Help"
+msgstr "帮助"
+
+msgid "Pricing Fields"
+msgstr "定价字段"
+
+msgid "Search and select the asset model for this price."
+msgstr "搜索并选择此价格对应的资产型号。"
+
+msgid "Filled automatically from the selected model."
+msgstr "根据所选型号自动填写。"
+
+msgid "Imported automatically from the selected asset model."
+msgstr "根据所选资产型号自动导入。"
+
+msgid "Base price before tax"
+msgstr "税前基础价格"
+
+msgid "Percentage (e.g., 13 for 13%)"
+msgstr "百分比（如 13 表示 13%）"
+
+msgid "Auto-calculated, can be overridden"
+msgstr "自动计算，可覆盖"
+
+msgid "Validity"
+msgstr "有效期"
+
+msgid "Set date range for price validity. Leave empty for indefinite."
+msgstr "设置价格有效期；留空表示长期有效。"
+
+msgid ""
+"Specialists can prepare price changes here, but they will not affect "
+"quotations or RFQs until a manager approves the request."
+msgstr "专员可在此准备价格变更，但在经理批准前不会影响报价单或询价单。"
+
+msgid "Approval Requests"
+msgstr "审批请求"
+
+msgid "Add Service Item"
+msgstr "添加服务项"
+
+msgid "Add Price"
+msgstr "添加价格"
+
+msgid "All Types"
+msgstr "所有类型"
+
+msgid "Hardware"
+msgstr "硬件"
+
+msgid "Current Only"
+msgstr "仅当前"
+
+msgid "Inactive Only"
+msgstr "仅停用"
+
+msgid "Search by brand or model..."
+msgstr "按品牌或型号搜索…"
+
+msgid "Default Models By Category"
+msgstr "按类别的默认型号"
+
+msgid "Expand"
+msgstr "展开"
+
+msgid "Default Model"
+msgstr "默认型号"
+
+msgid "No default model"
+msgstr "无默认型号"
+
+msgid "Update Request Pending"
+msgstr "更新请求待处理"
+
+msgid "Delete Request Pending"
+msgstr "删除请求待处理"
+
+msgid "Update Request Approved"
+msgstr "更新请求已批准"
+
+msgid "Delete Request Approved"
+msgstr "删除请求已批准"
+
+msgid "Update Request Rejected"
+msgstr "更新请求已驳回"
+
+msgid "Delete Request Rejected"
+msgstr "删除请求已驳回"
+
+msgid "Update Request Cancelled"
+msgstr "更新请求已取消"
+
+msgid "Delete Request Cancelled"
+msgstr "删除请求已取消"
+
+msgid "View request"
+msgstr "查看请求"
+
+msgid "No products found."
+msgstr "未找到产品。"
+
+msgid "Add First Price"
+msgstr "添加第一个价格"
+
+msgid "Edit Service Item"
+msgstr "编辑服务项"
+
+msgid ""
+"Your service item changes will be submitted for Order Management Manager "
+"approval before they become effective in the live price list."
+msgstr "您的服务项更改将提交订单管理经理审批，批准后才会生效于价格表。"
+
+msgid "Service Group"
+msgstr "服务组"
+
+msgid "Service items are managed in the shared product/service catalog."
+msgstr "服务项在共享的产品/服务目录中管理。"
+
+msgid "Service Name"
+msgstr "服务名称"
+
+msgid "Submit Service Update Request"
+msgstr "提交服务更新请求"
+
+msgid "Update Service Item"
+msgstr "更新服务项"
+
+msgid "Submit Service Create Request"
+msgstr "提交服务创建请求"
+
+msgid "Create Service Item"
+msgstr "创建服务项"
+
+msgid "Service item workflow"
+msgstr "服务项工作流"
+
+msgid ""
+"This form stores the service definition separately from hardware asset "
+"models."
+msgstr "此表单将服务定义与硬件资产型号分开存储。"
+
+msgid ""
+"Service items still appear in the same price list and quotation selector as "
+"hardware items."
+msgstr "服务项仍与硬件项出现在同一价格表与报价选择器中。"
+
+msgid ""
+"Use Service Group to keep related offerings together without placing them in"
+" the Assets app."
+msgstr "使用服务组将相关服务归类，而无需放入资产应用。"
+
+msgid ""
+"Specialist submissions stay pending until an Order Management Manager "
+"approves them."
+msgstr "专员提交的内容在订单管理经理批准前保持待处理。"
+
+msgid "PO number, quotation, customer..."
+msgstr "采购单号、报价单、客户…"
+
+msgid "PO #"
+msgstr "采购单号"
+
+msgid "Next Step"
+msgstr "下一步"
+
+msgid "Open Delivery"
+msgstr "打开交付单"
+
+msgid "Purchase order list pagination"
+msgstr "采购单列表分页"
+
+msgid "No purchase orders found."
+msgstr "未找到采购单。"
+
+msgid "Purchase orders created from confirmed quotations will appear here."
+msgstr "由已确认报价单创建的采购单将显示在此处。"
+
+msgid "Only internal warehouse locations are available for purchase receipts."
+msgstr "采购收货仅可选择内部仓库地点。"
+
+msgid "Default Quotation Templates"
+msgstr "默认报价单模板"
+
+msgid ""
+"Choose which PDF template should be preselected when creating quotations for"
+" each active company."
+msgstr "为每个活跃公司选择创建报价单时预选的 PDF 模板。"
+
+msgid "Back to Quotations"
+msgstr "返回报价单"
+
+msgid "Default PDF Template"
+msgstr "默认 PDF 模板"
+
+msgid "No active companies found."
+msgstr "未找到活跃公司。"
+
+msgid "Save Default Templates"
+msgstr "保存默认模板"
+
+msgid "Continue Fulfillment"
+msgstr "继续履约"
+
+msgid "Source RFQ Email"
+msgstr "来源询价邮件"
+
+msgid "RFQ Email"
+msgstr "询价邮件"
+
+msgid "This RFQ-generated draft quotation is pending confirmation."
+msgstr "此由询价生成的草稿报价单待确认。"
+
+msgid "Remarks"
+msgstr "备注"
+
+msgid "RFQ item matching needs review"
+msgstr "询价项匹配需审核"
+
+msgid ""
+"%(requested)s matched by default model for category %(category)s: %(model)s."
+msgstr "%(requested)s 已按类别 %(category)s 的默认型号匹配：%(model)s。"
+
+msgid ""
+"%(requested)s matched model %(model)s, but no current product price is "
+"configured for it."
+msgstr "%(requested)s 已匹配型号 %(model)s，但未配置当前产品价格。"
+
+msgid ""
+"%(requested)s mapped to category %(category)s, but the default model "
+"%(model)s has no current product price."
+msgstr "%(requested)s 已映射到类别 %(category)s，但默认型号 %(model)s 无当前产品价格。"
+
+msgid ""
+"%(requested)s matched category %(category)s, but no default model is "
+"configured."
+msgstr "%(requested)s 已匹配类别 %(category)s，但未配置默认型号。"
+
+msgid ""
+"%(requested)s matched multiple catalog items and still needs manual review."
+msgstr "%(requested)s 匹配到多个目录项，仍需人工审核。"
+
+msgid " Candidates: %(candidates)s."
+msgstr " 候选：%(candidates)s。"
+
+msgid "No product match was found for %(requested)s."
+msgstr "未找到 %(requested)s 的产品匹配。"
+
+msgid "Search and select customer..."
+msgstr "搜索并选择客户…"
+
+msgid "Select customer"
+msgstr "选择客户"
+
+msgid "Select or enter attention"
+msgstr "选择或输入联系人"
+
+msgid "Attention Email"
+msgstr "联系人邮箱"
+
+msgid "PDF Template"
+msgstr "PDF 模板"
+
+msgid "Item"
+msgstr "项目"
+
+msgid "Tax %"
+msgstr "税率 %"
+
+msgid "Line Total"
+msgstr "行合计"
+
+msgid "Save as Draft"
+msgstr "保存为草稿"
+
+msgid "Create and Download PDF"
+msgstr "创建并下载 PDF"
+
+msgid "Totals"
+msgstr "合计"
+
+msgid "Subtotal"
+msgstr "小计"
+
+msgid "Total (Incl. Tax)"
+msgstr "合计（含税）"
+
+msgid "Select Product / Service"
+msgstr "选择产品 / 服务"
+
+msgid "Search and select catalog item..."
+msgstr "搜索并选择目录项…"
+
+msgid "Select a catalog item"
+msgstr "选择目录项"
+
+msgid "Select or enter user brand"
+msgstr "选择或输入用户品牌"
+
+msgid "Select or enter user"
+msgstr "选择或输入用户"
+
+msgid "No matching contacts found"
+msgstr "未找到匹配的联系人"
+
+msgid "No matching users found"
+msgstr "未找到匹配的用户"
+
+msgid "No matching brands found"
+msgstr "未找到匹配的品牌"
+
+msgid "Price"
+msgstr "价格"
+
+msgid "Update Item"
+msgstr "更新项目"
+
+msgid "No customers found"
+msgstr "未找到客户"
+
+msgid "No products found"
+msgstr "未找到产品"
+
+msgid "Please select a catalog item"
+msgstr "请选择一个目录项"
+
+msgid "Default Templates"
+msgstr "默认模板"
+
+msgid "RFQ Review"
+msgstr "询价审核"
+
+msgid "No Action"
+msgstr "无操作"
+
+msgid "Asset Inventory Report"
+msgstr "资产库存报表"
+
+msgid "View and filter assets with detailed information"
+msgstr "查看并过滤资产详细信息"
+
+msgid "All Companies"
+msgstr "所有公司"
+
+msgid "Assignment"
+msgstr "分配"
+
+msgid "Unassigned"
+msgstr "未分配"
+
+msgid "Apply Filters"
+msgstr "应用过滤"
+
+msgid "Clear Filters"
+msgstr "清除过滤"
+
+msgid "Export CSV"
+msgstr "导出 CSV"
+
+msgid "Results"
+msgstr "结果"
+
+msgid "Condition"
+msgstr "成色"
+
+msgid "No assets found matching your criteria."
+msgstr "未找到符合条件的资产。"
+
+msgid "Reports & Analytics"
+msgstr "报表与分析"
+
+msgid "Overview of your asset data and analytics"
+msgstr "资产数据与分析概览"
+
+msgid "Warranty Expiring"
+msgstr "保修即将到期"
+
+msgid "Available Reports"
+msgstr "可用报表"
+
+msgid "Asset Inventory"
+msgstr "资产库存"
+
+msgid ""
+"View and filter all assets with detailed information including status, "
+"category, brand, and assignment."
+msgstr "查看并过滤所有资产的详细信息，包括状态、类别、品牌与分配。"
+
+msgid "Open Report"
+msgstr "打开报表"
+
+msgid "Assigned Assets"
+msgstr "已分配资产"
+
+msgid "View all assigned assets and their current assignments."
+msgstr "查看所有已分配资产及其当前分配。"
+
+msgid "Maintenance Report"
+msgstr "维保报表"
+
+msgid "Assets currently under maintenance or repair."
+msgstr "当前处于维保或维修中的资产。"
+
+msgid "Personal info"
+msgstr "个人信息"
+
+msgid "Administrator Role System"
+msgstr "管理员角色体系"
+
+msgid "Configure administrator access levels and scope"
+msgstr "配置管理员访问级别与范围"
+
+msgid "Field Engineer (Mini Program)"
+msgstr "现场工程师（小程序）"
+
+msgid ""
+"Cities/regions this field engineer covers; used by the WeChat mini program."
+msgstr "该现场工程师负责的城市/区域；供微信小程序使用。"
+
+msgid "Company Association"
+msgstr "公司关联"
+
+msgid "Associate user with company and division"
+msgstr "将用户与公司及部门关联"
+
+msgid "Work Information"
+msgstr "工作信息"
+
+msgid "Important dates"
+msgstr "重要日期"
+
+msgid "Administrator Roles"
+msgstr "管理员角色"
+
+msgid "Session Info"
+msgstr "会话信息"
+
+msgid "Timestamps"
+msgstr "时间戳"
+
+msgid "Select one or more administrator roles (hold Ctrl/Cmd for multiple)."
+msgstr "选择一个或多个管理员角色（按住 Ctrl/Cmd 可多选）。"
+
+msgid "English (US)"
+msgstr "英语（美国）"
+
+msgid "Please enter correct username and password."
+msgstr "请输入正确的用户名和密码。"
+
+msgid "This account is inactive."
+msgstr "此账户已停用。"
+
+msgid "Email Address"
+msgstr "邮箱地址"
+
+msgid "Chinese Name (optional)"
+msgstr "中文姓名（可选）"
+
+msgid "Chinese Name"
+msgstr "中文姓名"
+
+msgid "Service Cities"
+msgstr "服务城市"
+
+msgid "Cities/regions this field engineer covers (hold Ctrl/Cmd for multiple)"
+msgstr "该现场工程师负责的城市/区域（按住 Ctrl/Cmd 可多选）"
+
+msgid "A user with that username already exists."
+msgstr "该用户名已存在。"
+
+msgid ""
+"Simplified-Chinese name; the mini program login looks engineers up by this."
+msgstr "简体中文姓名；小程序登录据此查找工程师。"
+
+msgid "Employee ID (optional)"
+msgstr "工号（可选）"
+
+msgid "Unique employee identification number"
+msgstr "唯一的员工识别号"
+
+msgid "Department (optional)"
+msgstr "部门（可选）"
+
+msgid "Job Title (optional)"
+msgstr "职位（可选）"
+
+msgid "Company this user belongs to"
+msgstr "该用户所属公司"
+
+msgid "Division this user belongs to"
+msgstr "该用户所属部门"
+
+msgid "Direct supervisor for this user"
+msgstr "该用户的直属上级"
+
+msgid "Company this IT administrator has access to"
+msgstr "该 IT 管理员可访问的公司"
+
+msgid ""
+"Divisions this IT administrator has access to (hold Ctrl/Cmd for multiple)"
+msgstr "该 IT 管理员可访问的部门（按住 Ctrl/Cmd 可多选）"
+
+msgid ""
+"Locations this viewer has read-only access to (hold Ctrl/Cmd for multiple)"
+msgstr "该查看者只读访问的地点（按住 Ctrl/Cmd 可多选）"
+
+msgid "User can log in and access the system"
+msgstr "用户可登录并访问系统"
+
+msgid "Staff Status"
+msgstr "员工状态"
+
+msgid "User can access Django admin interface"
+msgstr "用户可访问 Django 管理后台"
+
+msgid "Upload a profile image (optional)"
+msgstr "上传头像（可选）"
+
+msgid "SMTP Password"
+msgstr "SMTP 密码"
+
+msgid "Leave blank to keep the currently stored password."
+msgstr "留空以保留当前存储的密码。"
+
+msgid "SMTP password is required for an active SMTP configuration."
+msgstr "启用 SMTP 配置时必须填写 SMTP 密码。"
+
+msgid "Connection timeout must be at least 1 second."
+msgstr "连接超时至少为 1 秒。"
+
+msgid "Mailbox Password"
+msgstr "邮箱密码"
+
+msgid "Mailbox password is required for a new mailbox configuration."
+msgstr "新建邮箱配置时必须填写邮箱密码。"
+
+msgid "IMAP host is required when IMAP is selected."
+msgstr "选择 IMAP 时必须填写 IMAP 主机。"
+
+msgid "POP3 host is required when POP3 is selected."
+msgstr "选择 POP3 时必须填写 POP3 主机。"
+
+msgid "SMTP host is required."
+msgstr "必须填写 SMTP 主机。"
+
+msgid "Sync lookback must be at least 1 month."
+msgstr "同步回溯至少为 1 个月。"
+
+msgid "Mailbox password is required before testing the connection."
+msgstr "测试连接前必须填写邮箱密码。"
+
+msgid "Mailbox connection test succeeded."
+msgstr "邮箱连接测试成功。"
+
+msgid "Token must be 6 digits"
+msgstr "令牌必须为 6 位数字"
+
+msgid "Token must be exactly 6 digits"
+msgstr "令牌必须恰好为 6 位数字"
+
+msgid "6-digit code or backup token"
+msgstr "6 位验证码或备份令牌"
+
+msgid "Enter the 6-digit code from your authenticator app or a backup token"
+msgstr "输入验证器应用中的 6 位验证码或备份令牌"
+
+msgid "6-digit code must contain only numbers"
+msgstr "6 位验证码只能包含数字"
+
+msgid "Token is too short"
+msgstr "令牌过短"
+
+msgid "Search users by username, name, or email..."
+msgstr "按用户名、姓名或邮箱搜索用户…"
+
+msgid "Role Code"
+msgstr "角色代码"
+
+msgid "Role Name"
+msgstr "角色名称"
+
+msgid "Updated At"
+msgstr "更新时间"
+
+msgid "City (English)"
+msgstr "城市（英文）"
+
+msgid "City (Chinese)"
+msgstr "城市（中文）"
+
+msgid "Service City"
+msgstr "服务城市"
+
+msgid "IT Administrator"
+msgstr "IT 管理员"
+
+msgid "Order Management Specialist"
+msgstr "订单管理专员"
+
+msgid "Order Management Manager"
+msgstr "订单管理经理"
+
+msgid "Chinese (Simplified)"
+msgstr "简体中文"
+
+msgid "Roles for administrator access levels"
+msgstr "管理员访问级别角色"
+
+msgid "WeChat ID"
+msgstr "微信 ID"
+
+msgid "WeChat account id used to look up field engineers."
+msgstr "用于查找现场工程师的微信账号 ID。"
+
+msgid "Invite Code"
+msgstr "邀请码"
+
+msgid ""
+"One-time invite id offered to a field engineer on first mini-program use."
+msgstr "现场工程师首次使用小程序时提供的一次性邀请 ID。"
+
+msgid "Field Engineer Rating"
+msgstr "现场工程师评分"
+
+msgid "1-5 quality rating tracked for field engineers."
+msgstr "针对现场工程师的 1-5 质量评分。"
+
+msgid "Field Engineer Notes"
+msgstr "现场工程师备注"
+
+msgid "Free-form notes tracking field-engineer quality."
+msgstr "记录现场工程师质量的自由备注。"
+
+msgid "Two-Factor Authentication Enabled"
+msgstr "已启用双因素认证"
+
+msgid "Force 2FA Setup"
+msgstr "强制设置 2FA"
+
+msgid "User must set up 2FA on next login"
+msgstr "用户下次登录时必须设置 2FA"
+
+msgid "2FA Backup Tokens"
+msgstr "2FA 备份令牌"
+
+msgid "Must Change Password"
+msgstr "必须修改密码"
+
+msgid "User must change password on next login"
+msgstr "用户下次登录时必须修改密码"
+
+msgid "Divisions this IT administrator has access to"
+msgstr "该 IT 管理员可访问的部门"
+
+msgid "Locations this viewer has read-only access to"
+msgstr "该查看者只读访问的地点"
+
+msgid "Cities/regions this field engineer covers (select multiple)."
+msgstr "该现场工程师负责的城市/区域（可多选）。"
+
+msgid "Standard User"
+msgstr "标准用户"
+
+msgid "Order management workflows"
+msgstr "订单管理工作流"
+
+msgid "Order management management and price approvals"
+msgstr "订单管理与价格审批"
+
+msgid "IMAP"
+msgstr "IMAP"
+
+msgid "POP3"
+msgstr "POP3"
+
+msgid "None"
+msgstr "无"
+
+msgid "SSL/TLS"
+msgstr "SSL/TLS"
+
+msgid "STARTTLS"
+msgstr "STARTTLS"
+
+msgid "Display Name"
+msgstr "显示名称"
+
+msgid "Login Username"
+msgstr "登录用户名"
+
+msgid "Encrypted Password"
+msgstr "加密密码"
+
+msgid "Receive Protocol"
+msgstr "接收协议"
+
+msgid "IMAP Host"
+msgstr "IMAP 主机"
+
+msgid "IMAP Port"
+msgstr "IMAP 端口"
+
+msgid "IMAP Security"
+msgstr "IMAP 安全"
+
+msgid "POP3 Host"
+msgstr "POP3 主机"
+
+msgid "POP3 Port"
+msgstr "POP3 端口"
+
+msgid "POP3 Security"
+msgstr "POP3 安全"
+
+msgid "SMTP Host"
+msgstr "SMTP 主机"
+
+msgid "SMTP Port"
+msgstr "SMTP 端口"
+
+msgid "SMTP Security"
+msgstr "SMTP 安全"
+
+msgid "Sync Lookback Months"
+msgstr "同步回溯月数"
+
+msgid "IMAP Sent Folder"
+msgstr "IMAP 已发送文件夹"
+
+msgid "Sync Outbox"
+msgstr "同步发件箱"
+
+msgid "Auto Sync Enabled"
+msgstr "已启用自动同步"
+
+msgid "Last Mailbox Sync At"
+msgstr "上次邮箱同步时间"
+
+msgid "Last Connection Test At"
+msgstr "上次连接测试时间"
+
+msgid "Last Connection Status"
+msgstr "上次连接状态"
+
+msgid "Last Connection Message"
+msgstr "上次连接消息"
+
+msgid "User Mailbox Settings"
+msgstr "用户邮箱设置"
+
+msgid "From Email"
+msgstr "发件邮箱"
+
+msgid "From Display Name"
+msgstr "发件显示名称"
+
+msgid "SMTP Username"
+msgstr "SMTP 用户名"
+
+msgid "Connection Timeout"
+msgstr "连接超时"
+
+msgid "Unreviewed"
+msgstr "未审核"
+
+msgid "Classified RFQ"
+msgstr "已分类为询价"
+
+msgid "Classified Non-RFQ"
+msgstr "已分类为非询价"
+
+msgid "Quotation Drafted"
+msgstr "已生成报价草稿"
+
+msgid "Quotation Confirmed"
+msgstr "报价已确认"
+
+msgid "Classification Failed"
+msgstr "分类失败"
+
+msgid "Mailbox"
+msgstr "邮箱"
+
+msgid "External ID"
+msgstr "外部 ID"
+
+msgid "Message-ID"
+msgstr "Message-ID"
+
+msgid "Folder"
+msgstr "文件夹"
+
+msgid "Received At"
+msgstr "接收时间"
+
+msgid "Body Preview"
+msgstr "正文预览"
+
+msgid "Body Text"
+msgstr "正文文本"
+
+msgid "RFQ Summary"
+msgstr "询价摘要"
+
+msgid "RFQ Extracted Data"
+msgstr "询价提取数据"
+
+msgid "RFQ Error"
+msgstr "询价错误"
+
+msgid "RFQ Processed At"
+msgstr "询价处理时间"
+
+msgid "Read"
+msgstr "已读"
+
+msgid "Synced At"
+msgstr "同步时间"
+
+msgid "Received Email Message"
+msgstr "接收的邮件"
+
+msgid "Received Email Messages"
+msgstr "接收的邮件"
+
+msgid "Session Key"
+msgstr "会话键"
+
+msgid "User Session"
+msgstr "用户会话"
+
+msgid "Successful"
+msgstr "成功"
+
+msgid "Failure Reason"
+msgstr "失败原因"
+
+msgid "Login Attempt"
+msgstr "登录尝试"
+
+msgid "Login Attempts"
+msgstr "登录尝试"
+
+msgid "WeChat AppID"
+msgstr "微信 AppID"
+
+msgid "Mini-program AppID this openid belongs to."
+msgstr "此 openid 所属的小程序 AppID。"
+
+msgid "OpenID"
+msgstr "OpenID"
+
+msgid "UnionID"
+msgstr "UnionID"
+
+msgid "WeChat Identity"
+msgstr "微信身份"
+
+msgid "WeChat Identities"
+msgstr "微信身份"
+
+msgid "Two-factor authentication is already enabled."
+msgstr "双因素认证已启用。"
+
+msgid "This user does not have an email address."
+msgstr "该用户没有邮箱地址。"
+
+msgid "Hello {name},nn"
+msgstr "您好 {name}，"
+
+msgid "You do not have access to Order Management."
+msgstr "您无权访问订单管理。"
+
+msgid "Please verify your identity with two-factor authentication."
+msgstr "请通过双因素认证验证身份。"
+
+msgid "You are required to set up two-factor authentication."
+msgstr "您需要设置双因素认证。"
+
+msgid "Your account is disabled."
+msgstr "您的账户已停用。"
+
+msgid "Invalid username or password."
+msgstr "用户名或密码无效。"
+
+msgid "Two-factor authentication has been set up successfully."
+msgstr "双因素认证设置成功。"
+
+msgid "Invalid token. Please try again."
+msgstr "令牌无效，请重试。"
+
+msgid "Welcome back, {user}!"
+msgstr "欢迎回来，{user}！"
+
+msgid "You used a backup token. Please generate new backup tokens."
+msgstr "您使用了备份令牌，请重新生成备份令牌。"
+
+msgid "Verify Two-Factor Authentication"
+msgstr "验证双因素认证"
+
+msgid "Profile updated successfully."
+msgstr "资料更新成功。"
+
+msgid "Mailbox connection test failed: {error}"
+msgstr "邮箱连接测试失败：{error}"
+
+msgid "Mailbox settings updated successfully."
+msgstr "邮箱设置更新成功。"
+
+msgid "System SMTP settings updated successfully."
+msgstr "系统 SMTP 设置更新成功。"
+
+msgid "Select a settings section to save."
+msgstr "请选择要保存的设置分区。"
+
+msgid "Preferences updated successfully."
+msgstr "偏好设置更新成功。"
+
+msgid "Order Management Email"
+msgstr "订单管理邮件"
+
+msgid "Configure and activate your mailbox settings first."
+msgstr "请先配置并激活邮箱设置。"
+
+msgid "Mailbox sync failed: {error}"
+msgstr "邮箱同步失败：{error}"
+
+msgid "Mailbox synchronized. Inbox: {inbox}, Outbox: {outbox}."
+msgstr "邮箱已同步。收件箱：{inbox}，发件箱：{outbox}。"
+
+msgid "RFQ email reprocessed."
+msgstr "询价邮件已重新处理。"
+
+msgid "Password changed successfully."
+msgstr "密码修改成功。"
+
+msgid "Administrator Details"
+msgstr "管理员详情"
+
+msgid "Unable to send the initial password email. The user was not created."
+msgstr "无法发送初始密码邮件，用户未创建。"
+
+msgid ""
+"User created successfully. A temporary password was emailed to {email}."
+msgstr "用户创建成功，临时密码已发送至 {email}。"
+
+msgid "User updated successfully."
+msgstr "用户更新成功。"
+
+msgid "Reset your own password from your profile settings instead."
+msgstr "请改为在个人资料设置中重置自己的密码。"
+
+msgid ""
+"Cannot reset password because this user does not have an email address."
+msgstr "无法重置密码，因为该用户没有邮箱地址。"
+
+msgid ""
+"Unable to send the password reset email. No password changes were saved."
+msgstr "无法发送密码重置邮件，未保存任何密码更改。"
+
+msgid "A temporary password was emailed to {email}."
+msgstr "临时密码已发送至 {email}。"
+
+msgid "Session terminated successfully."
+msgstr "会话终止成功。"
+
+msgid "Two-factor authentication has been enabled successfully!"
+msgstr "双因素认证启用成功！"
+
+msgid "Invalid verification code. Please try again."
+msgstr "验证码无效，请重试。"
+
+msgid "Please enter a verification code."
+msgstr "请输入验证码。"
+
+msgid "Two-factor authentication has been disabled."
+msgstr "双因素认证已停用。"
+
+msgid "You have been successfully logged out."
+msgstr "您已成功退出登录。"
+
+msgid "Asset Identification"
+msgstr "资产标识"
+
+msgid "Classification"
+msgstr "分类"
+
+msgid "Warranty"
+msgstr "保修"
+
+msgid "Status and Condition"
+msgstr "状态与成色"
+
+msgid "Photos and Documentation"
+msgstr "照片与文档"
+
+msgid "Purchase Details"
+msgstr "采购详情"
+
+msgid "Specifications"
+msgstr "规格"
+
+msgid "Assignment Details"
+msgstr "分配详情"
+
+msgid "Return Details"
+msgstr "归还详情"
+
+msgid "Maintenance Details"
+msgstr "维保详情"
+
+msgid "Scheduling"
+msgstr "排期"
+
+msgid "Cost"
+msgstr "费用"
+
+msgid "Leave blank for auto-generation"
+msgstr "留空以自动生成"
+
+msgid "Enter serial number"
+msgstr "输入序列号"
+
+msgid "Enter asset description"
+msgstr "输入资产描述"
+
+msgid "0.00"
+msgstr "0.00"
+
+msgid "Enter warranty provider"
+msgstr "输入保修服务商"
+
+msgid "Additional notes"
+msgstr "附加备注"
+
+msgid "Select category"
+msgstr "选择类别"
+
+msgid "Select brand"
+msgstr "选择品牌"
+
+msgid "No locations available. Please create locations first."
+msgstr "暂无可用地点，请先创建地点。"
+
+msgid "Leave blank for auto-generation based on company and category"
+msgstr "留空时根据公司与类别自动生成"
+
+msgid "Purchase price in company currency"
+msgstr "以公司货币计的采购价格"
+
+msgid "Optional. Choose if you need exact warehouse slot."
+msgstr "可选；需要精确仓库货位时选择。"
+
+msgid "Selected model does not belong to selected brand."
+msgstr "所选型号不属于所选品牌。"
+
+msgid "Selected model does not belong to selected category."
+msgstr "所选型号不属于所选类别。"
+
+msgid ""
+"The selected warehouse does not have valid zone/rack/shelf ranges "
+"configured."
+msgstr "所选仓库未配置有效的区/架/层范围。"
+
+msgid "Please select a valid zone."
+msgstr "请选择有效的区。"
+
+msgid "Please select a valid rack."
+msgstr "请选择有效的架。"
+
+msgid "Please select a valid shelf."
+msgstr "请选择有效的层。"
+
+msgid "Search by asset number or serial number"
+msgstr "按资产编号或序列号搜索"
+
+msgid "Apply To Quantity"
+msgstr "应用数量"
+
+msgid "All selected"
+msgstr "全部所选"
+
+msgid "Please select at least one asset."
+msgstr "请至少选择一个资产。"
+
+msgid "Apply quantity cannot exceed selected assets."
+msgstr "应用数量不能超过所选资产数。"
+
+msgid "Please select a location when setting zone/rack/shelf."
+msgstr "设置区/架/层时请选择地点。"
+
+msgid "Please enter a valid zone for the selected warehouse."
+msgstr "请为所选仓库输入有效的区。"
+
+msgid "Please enter a valid rack for the selected warehouse."
+msgstr "请为所选仓库输入有效的架。"
+
+msgid "Please enter a valid shelf for the selected warehouse."
+msgstr "请为所选仓库输入有效的层。"
+
+msgid "Please provide at least one field to update."
+msgstr "请至少提供一个要更新的字段。"
+
+msgid "Newest First"
+msgstr "最新优先"
+
+msgid "Oldest First"
+msgstr "最早优先"
+
+msgid "Asset Number A-Z"
+msgstr "资产编号 A-Z"
+
+msgid "Asset Number Z-A"
+msgstr "资产编号 Z-A"
+
+msgid "Optional assignment notes"
+msgstr "可选的分配备注"
+
+msgid "Select user to assign"
+msgstr "选择要分配的用户"
+
+msgid "Select Action"
+msgstr "选择操作"
+
+msgid "Update Status"
+msgstr "更新状态"
+
+msgid "Assign to User"
+msgstr "分配给用户"
+
+msgid "Export to CSV"
+msgstr "导出为 CSV"
+
+msgid "Delete Assets"
+msgstr "删除资产"
+
+msgid "Preventive Maintenance"
+msgstr "预防性维保"
+
+msgid "Corrective Maintenance"
+msgstr "纠正性维保"
+
+msgid "Emergency Repair"
+msgstr "紧急维修"
+
+msgid "Inspection"
+msgstr "巡检"
+
+msgid "Calibration"
+msgstr "校准"
+
+msgid "Upgrade"
+msgstr "升级"
+
+msgid "Describe the maintenance work performed"
+msgstr "描述所执行的维保工作"
+
+msgid "Technician or company name"
+msgstr "技术员或公司名称"
+
+msgid "When is the next maintenance due?"
+msgstr "下次维保到期时间？"
+
+msgid "Import File"
+msgstr "导入文件"
+
+msgid ""
+"Upload CSV or Excel file (.csv, .xlsx). Required columns: category, brand."
+msgstr "上传 CSV 或 Excel 文件（.csv、.xlsx）。必填列：category、brand。"
+
+msgid "Default Company"
+msgstr "默认公司"
+
+msgid "Company to assign all imported assets to (can be overridden in file)"
+msgstr "所有导入资产将分配到的公司（可在文件中覆盖）"
+
+msgid "Auto-generate asset numbers"
+msgstr "自动生成资产编号"
+
+msgid "Use asset numbers from file"
+msgstr "使用文件中的资产编号"
+
+msgid "Add prefix to existing numbers"
+msgstr "为现有编号添加前缀"
+
+msgid "Asset Number Generation"
+msgstr "资产编号生成"
+
+msgid "Asset Number Prefix"
+msgstr "资产编号前缀"
+
+msgid "Prefix to add to asset numbers (e.g., \"ACME-\")"
+msgstr "添加到资产编号的前缀（如 \"ACME-\"）"
+
+msgid "ACME-"
+msgstr "ACME-"
+
+msgid "Skip duplicates (recommended)"
+msgstr "跳过重复项（推荐）"
+
+msgid "Update existing assets"
+msgstr "更新现有资产"
+
+msgid "Create new assets with different numbers"
+msgstr "以不同编号创建新资产"
+
+msgid "Duplicate Handling"
+msgstr "重复项处理"
+
+msgid "How to handle assets that already exist (based on serial number)"
+msgstr "如何处理已存在的资产（基于序列号）"
+
+msgid "Validation Only"
+msgstr "仅校验"
+
+msgid "Check this to validate the file without importing (preview mode)"
+msgstr "勾选以仅校验文件而不导入（预览模式）"
+
+msgid "File size must be less than 10MB"
+msgstr "文件大小必须小于 10MB"
+
+msgid ""
+"Invalid file format. Please upload CSV (.csv) or Excel (.xlsx, .xls) files "
+"only."
+msgstr "文件格式无效，请仅上传 CSV (.csv) 或 Excel (.xlsx, .xls) 文件。"
+
+msgid "Prefix is required when using prefix mode"
+msgstr "使用前缀模式时必须填写前缀"
+
+msgid "CSV (Comma Separated Values)"
+msgstr "CSV（逗号分隔值）"
+
+msgid "Excel Workbook (.xlsx)"
+msgstr "Excel 工作簿 (.xlsx)"
+
+msgid "PDF Report"
+msgstr "PDF 报表"
+
+msgid "Status Filter"
+msgstr "状态过滤"
+
+msgid "Category Filter"
+msgstr "类别过滤"
+
+msgid "Brand Filter"
+msgstr "品牌过滤"
+
+msgid "Created Date From"
+msgstr "创建日期起"
+
+msgid "Created Date To"
+msgstr "创建日期止"
+
+msgid "Purchase Date From"
+msgstr "采购日期起"
+
+msgid "Purchase Date To"
+msgstr "采购日期止"
+
+msgid "Warranty End Date"
+msgstr "保修截止日期"
+
+msgid "Fields to Include"
+msgstr "包含字段"
+
+msgid "Enter brand name"
+msgstr "输入品牌名称"
+
+msgid "Enter brand code (e.g., DELL, HP)"
+msgstr "输入品牌代码（如 DELL、HP）"
+
+msgid "Enter brand description (optional)"
+msgstr "输入品牌描述（可选）"
+
+msgid "Enter website URL (optional)"
+msgstr "输入网站 URL（可选）"
+
+msgid "Enter support email (optional)"
+msgstr "输入支持邮箱（可选）"
+
+msgid "Enter support phone (optional)"
+msgstr "输入支持电话（可选）"
+
+msgid "Enter category name"
+msgstr "输入类别名称"
+
+msgid "Enter category code (e.g., LAPTOP, PHONE)"
+msgstr "输入类别代码（如 LAPTOP、PHONE）"
+
+msgid "Enter category description (optional)"
+msgstr "输入类别描述（可选）"
+
+msgid "Enter depreciation rate (0-100%)"
+msgstr "输入折旧率（0-100%）"
+
+msgid "Save the category first, then assign a default model."
+msgstr "请先保存类别，再分配默认型号。"
+
+msgid "Default asset model must belong to this category."
+msgstr "默认资产型号必须属于此类别。"
+
+msgid "Enter model name"
+msgstr "输入型号名称"
+
+msgid "Enter official model number (optional)"
+msgstr "输入官方型号编号（可选）"
+
+msgid "Enter default unit (e.g., PCS)"
+msgstr "输入默认单位（如 PCS）"
+
+msgid "Enter model description (optional)"
+msgstr "输入型号描述（可选）"
+
+msgid "Enter technical specifications as JSON (optional)"
+msgstr "以 JSON 输入技术规格（可选）"
+
+msgid "Category Name"
+msgstr "类别名称"
+
+msgid "Category Code"
+msgstr "类别代码"
+
+msgid "Unique code for the category (e.g., LAPTOP, PHONE)"
+msgstr "类别的唯一代码（如 LAPTOP、PHONE）"
+
+msgid "Parent Category"
+msgstr "父类别"
+
+msgid "Default Asset Model"
+msgstr "默认资产型号"
+
+msgid ""
+"Used when RFQ requests only specify a generic device type for this category."
+msgstr "当询价仅指定该类别的通用设备类型时使用。"
+
+msgid "Item Type"
+msgstr "项目类型"
+
+msgid "Determines whether this category represents hardware or a service."
+msgstr "决定该类别代表硬件还是服务。"
+
+msgid "Requires Serial Number"
+msgstr "需要序列号"
+
+msgid "Whether assets in this category must have a serial number"
+msgstr "该类别下的资产是否必须有序列号"
+
+msgid "Default Warranty (Months)"
+msgstr "默认保修（月）"
+
+msgid "Default warranty period in months for this category"
+msgstr "该类别的默认保修期（月）"
+
+msgid "Depreciation Rate (%)"
+msgstr "折旧率（%）"
+
+msgid "Annual depreciation rate as percentage"
+msgstr "年折旧率（百分比）"
+
+msgid "Asset Category"
+msgstr "资产类别"
+
+msgid "Brand Name"
+msgstr "品牌名称"
+
+msgid "Brand Code"
+msgstr "品牌代码"
+
+msgid "Short code for the brand (e.g., DELL, HP, APPLE)"
+msgstr "品牌的短代码（如 DELL、HP、APPLE）"
+
+msgid "Support Email"
+msgstr "支持邮箱"
+
+msgid "Support Phone"
+msgstr "支持电话"
+
+msgid "Asset Brand"
+msgstr "资产品牌"
+
+msgid "Default category used for filtering in asset create forms"
+msgstr "资产创建表单中用于过滤的默认类别"
+
+msgid "Model Name"
+msgstr "型号名称"
+
+msgid "Official model number from manufacturer"
+msgstr "制造商的官方型号编号"
+
+msgid "Default unit for this model (e.g., PCS, SET, KG)"
+msgstr "该型号的默认单位（如 PCS、SET、KG）"
+
+msgid "Technical specifications as JSON"
+msgstr "以 JSON 表示的技术规格"
+
+msgid "Asset Model"
+msgstr "资产型号"
+
+msgid "Under Maintenance"
+msgstr "维保中"
+
+msgid "Under Repair"
+msgstr "维修中"
+
+msgid "Disposed"
+msgstr "已处置"
+
+msgid "Lost"
+msgstr "遗失"
+
+msgid "Stolen"
+msgstr "被盗"
+
+msgid "Excellent"
+msgstr "极佳"
+
+msgid "Good"
+msgstr "良好"
+
+msgid "Fair"
+msgstr "一般"
+
+msgid "Poor"
+msgstr "较差"
+
+msgid "Damaged"
+msgstr "损坏"
+
+msgid "Unique identifier for the asset (auto-generated if left blank)"
+msgstr "资产的唯一标识（留空时自动生成）"
+
+msgid "Barcode"
+msgstr "条码"
+
+msgid "Barcode for scanning"
+msgstr "用于扫描的条码"
+
+msgid "User to whom this asset is assigned"
+msgstr "该资产分配到的用户"
+
+msgid "Physical location where the asset is located"
+msgstr "资产所在的物理地点"
+
+msgid "Location Zone"
+msgstr "地点区"
+
+msgid "Exact warehouse zone for this asset"
+msgstr "该资产的精确仓库区"
+
+msgid "Location Rack"
+msgstr "地点架"
+
+msgid "Exact warehouse rack for this asset"
+msgstr "该资产的精确仓库架"
+
+msgid "Location Shelf"
+msgstr "地点层"
+
+msgid "Exact warehouse shelf for this asset"
+msgstr "该资产的精确仓库层"
+
+msgid "Current Location (Legacy)"
+msgstr "当前地点（旧）"
+
+msgid "Physical location of the asset - deprecated, use Location field"
+msgstr "资产的物理地点 - 已弃用，请使用 Location 字段"
+
+msgid "Current Value"
+msgstr "当前价值"
+
+msgid "Warranty Start Date"
+msgstr "保修开始日期"
+
+msgid "Photo"
+msgstr "照片"
+
+msgid "Created By"
+msgstr "创建人"
+
+msgid "Last Audit Date"
+msgstr "上次盘点日期"
+
+msgid "No warranty information"
+msgstr "无保修信息"
+
+msgid "Warranty expired"
+msgstr "保修已过期"
+
+msgid "Warranty expiring soon"
+msgstr "保修即将到期"
+
+msgid "Under warranty"
+msgstr "保修期内"
+
+msgid "Location Assignment"
+msgstr "地点分配"
+
+msgid "Assigned To User"
+msgstr "分配给用户"
+
+msgid "Assignment Type"
+msgstr "分配类型"
+
+msgid "Assigned By"
+msgstr "分配人"
+
+msgid "Assigned Date"
+msgstr "分配日期"
+
+msgid "Expected Return Date"
+msgstr "预计归还日期"
+
+msgid "Returned Date"
+msgstr "归还日期"
+
+msgid "Returned By"
+msgstr "归还人"
+
+msgid "Condition at Assignment"
+msgstr "分配时成色"
+
+msgid "Condition at Return"
+msgstr "归还时成色"
+
+msgid "Assignment Notes"
+msgstr "分配备注"
+
+msgid "Return Notes"
+msgstr "归还备注"
+
+msgid "Asset Assignment"
+msgstr "资产分配"
+
+msgid "Asset Assignments"
+msgstr "资产分配"
+
+msgid "Routine Maintenance"
+msgstr "例行维保"
+
+msgid "Repair"
+msgstr "维修"
+
+msgid "Scheduled"
+msgstr "已排期"
+
+msgid "Maintenance Type"
+msgstr "维保类型"
+
+msgid "Title"
+msgstr "标题"
+
+msgid "Scheduled Date"
+msgstr "排期日期"
+
+msgid "Started Date"
+msgstr "开始日期"
+
+msgid "Completed Date"
+msgstr "完成日期"
+
+msgid "Vendor/Service Provider"
+msgstr "供应商/服务商"
+
+msgid "Estimated Cost"
+msgstr "预估费用"
+
+msgid "Actual Cost"
+msgstr "实际费用"
+
+msgid "Work Performed"
+msgstr "执行的工作"
+
+msgid "Parts Replaced"
+msgstr "更换的部件"
+
+msgid "Next Maintenance Date"
+msgstr "下次维保日期"
+
+msgid "Asset Maintenance"
+msgstr "资产维保"
+
+msgid "Asset Maintenance Records"
+msgstr "资产维保记录"
+
+msgid "Data Export"
+msgstr "数据导出"
+
+msgid "Data Import"
+msgstr "数据导入"
+
+msgid "Null for bulk export/import events."
+msgstr "批量导出/导入事件为空。"
+
+msgid "Asset Activity Log"
+msgstr "资产活动日志"
+
+msgid "Asset Activity Logs"
+msgstr "资产活动日志"
+
+msgid "bulk"
+msgstr "批量"
+
+msgid "Activity Log"
+msgstr "活动日志"
+
+msgid "Field Name"
+msgstr "字段名"
+
+msgid "Field Type"
+msgstr "字段类型"
+
+msgid "Asset Field Change"
+msgstr "资产字段变更"
+
+msgid "Asset Field Changes"
+msgstr "资产字段变更"
+
+msgid "No rollback-eligible import run was found."
+msgstr "未找到可回滚的导入批次。"
+
+msgid "Rollback completed with warnings: %(count)s issue(s)."
+msgstr "回滚完成，带有警告：%(count)s 个问题。"
+
+msgid ""
+"Rollback completed. Deleted %(deleted)s created records and restored "
+"%(restored)s updated records."
+msgstr "回滚完成：删除 %(deleted)s 条新建记录，恢复 %(restored)s 条更新记录。"
+
+msgid "Asset Change Log Details"
+msgstr "资产变更日志详情"
+
+msgid "Bulk update failed. Please check the input values."
+msgstr "批量更新失败，请检查输入值。"
+
+msgid "No selected assets are available for update."
+msgstr "所选资产中没有可更新的项。"
+
+msgid "Successfully updated %(count)s assets."
+msgstr "成功更新 %(count)s 个资产。"
+
+msgid "No assets changed."
+msgstr "没有资产被更改。"
+
+msgid ""
+"Duplicate serial number detected in rows %(row1)s and %(row2)s. Serial "
+"numbers must be unique within the same brand regardless of status."
+msgstr "在第 %(row1)s 行与第 %(row2)s 行检测到重复序列号。同一品牌下序列号必须唯一，与状态无关。"
+
+msgid "Please provide status for each item in the batch."
+msgstr "请为批次中的每一件提供状态。"
+
+msgid "Invalid status at row %(row)s."
+msgstr "第 %(row)s 行状态无效。"
+
+msgid "Serial number at row %(row)s is invalid. Please re-enter it manually."
+msgstr "第 %(row)s 行序列号无效，请手动重新输入。"
+
+msgid ""
+"Serial number \"%(serial)s\" is duplicated for brand %(brand)s in rows "
+"%(row1)s and %(row2)s."
+msgstr "序列号 \"%(serial)s\" 在品牌 %(brand)s 下的第 %(row1)s 行与第 %(row2)s 行重复。"
+
+msgid ""
+"Serial number \"%(serial)s\" already exists under brand %(brand)s (row "
+"%(row)s)."
+msgstr "序列号 \"%(serial)s\" 在品牌 %(brand)s 下已存在（第 %(row)s 行）。"
+
+msgid ""
+"Unable to determine company for this asset. Please choose a location linked "
+"to a company."
+msgstr "无法确定该资产的公司，请选择关联到公司的地点。"
+
+msgid "Asset \"{}\" has been created successfully."
+msgstr "资产 \"{}\" 创建成功。"
+
+msgid ""
+"Unable to create asset because of duplicate unique fields. Check serial "
+"number/barcode for this brand and try again."
+msgstr "因唯一字段重复无法创建资产，请检查该品牌下的序列号/条码后重试。"
+
+msgid "Leave asset number blank when creating multiple assets."
+msgstr "创建多个资产时请将资产编号留空。"
+
+msgid ""
+"Batch creation failed because one or more serial number/barcode values are "
+"duplicated. Serial numbers must be unique within each brand."
+msgstr "批量创建失败：存在重复的序列号/条码。每个品牌内序列号必须唯一。"
+
+msgid "Successfully created %(count)s assets in batch."
+msgstr "批量成功创建 %(count)s 个资产。"
+
+msgid "Asset \"{}\" has been updated successfully."
+msgstr "资产 \"{}\" 更新成功。"
+
+msgid "Asset \"{}\" has been deleted successfully."
+msgstr "资产 \"{}\" 删除成功。"
+
+msgid "Asset \"{}\" has been assigned to {}."
+msgstr "资产 \"{}\" 已分配给 {}。"
+
+msgid "This asset is not currently assigned."
+msgstr "该资产当前未分配。"
+
+msgid "Asset \"{}\" has been returned successfully."
+msgstr "资产 \"{}\" 归还成功。"
+
+msgid "Excel export requires openpyxl package. Please contact administrator."
+msgstr "Excel 导出需要 openpyxl 包，请联系管理员。"
+
+msgid "PDF export requires reportlab package. Please contact administrator."
+msgstr "PDF 导出需要 reportlab 包，请联系管理员。"
+
+msgid "File validation completed. Review the results below."
+msgstr "文件校验完成，请查看以下结果。"
+
+msgid "Asset Import Result"
+msgstr "资产导入结果"
+
+msgid "Import failed. Please check the errors below."
+msgstr "导入失败，请检查以下错误。"
+
+msgid "Import failed: {error}"
+msgstr "导入失败：{error}"
+
+msgid "Please correct the errors below."
+msgstr "请更正以下错误。"
+
+msgid ""
+"Unable to decode CSV file. Please save it as UTF-8, GBK/GB18030, or Big5."
+msgstr "无法解码 CSV 文件，请保存为 UTF-8、GBK/GB18030 或 Big5。"
+
+msgid "File is empty or has no data rows."
+msgstr "文件为空或没有数据行。"
+
+msgid "Missing required columns: {columns}"
+msgstr "缺少必填列：{columns}"
+
+msgid "Asset with serial number {sn} already exists"
+msgstr "序列号为 {sn} 的资产已存在"
+
+msgid "Category is required."
+msgstr "类别为必填。"
+
+msgid "Category \"{category}\" not found"
+msgstr "未找到类别 \"{category}\""
+
+msgid "Brand is required."
+msgstr "品牌为必填。"
+
+msgid "Brand \"{brand}\" not found"
+msgstr "未找到品牌 \"{brand}\""
+
+msgid "Model requires valid category and brand."
+msgstr "型号需要有效的类别与品牌。"
+
+msgid "Model \"{model}\" not found for brand \"{brand}\" and category \"{category}\"."
+msgstr "在品牌 \"{brand}\" 与类别 \"{category}\" 下未找到型号 \"{model}\"。"
+
+msgid "Model \"{model}\" is ambiguous for brand \"{brand}\"."
+msgstr "型号 \"{model}\" 在品牌 \"{brand}\" 下不唯一。"
+
+msgid "Model \"{model}\" has no category assigned in admin."
+msgstr "型号 \"{model}\" 未在后台分配类别。"
+
+msgid "Asset with barcode {barcode} already exists"
+msgstr "条码为 {barcode} 的资产已存在"
+
+msgid "Invalid purchase price: {price}"
+msgstr "采购价格无效：{price}"
+
+msgid "Invalid date format for {field}: {value}"
+msgstr "{field} 的日期格式无效：{value}"
+
+msgid "Location \"{location}\" is ambiguous in company \"{company}\"."
+msgstr "地点 \"{location}\" 在公司 \"{company}\" 下不唯一。"
+
+msgid "Location \"{location}\" not found in company \"{company}\"."
+msgstr "在公司 \"{company}\" 下未找到地点 \"{location}\"。"
+
+msgid "Unknown status \"{status}\""
+msgstr "未知状态 \"{status}\""
+
+msgid "Unknown condition \"{condition}\""
+msgstr "未知成色 \"{condition}\""
+
+msgid "Category created successfully."
+msgstr "类别创建成功。"
+
+msgid "Category updated successfully."
+msgstr "类别更新成功。"
+
+msgid "Category deleted successfully."
+msgstr "类别删除成功。"
+
+msgid "Brand created successfully."
+msgstr "品牌创建成功。"
+
+msgid "Brand updated successfully."
+msgstr "品牌更新成功。"
+
+msgid "Brand deleted successfully."
+msgstr "品牌删除成功。"
+
+msgid "Model created successfully."
+msgstr "型号创建成功。"
+
+msgid "Model updated successfully."
+msgstr "型号更新成功。"
+
+msgid "Please correct the highlighted errors and try again."
+msgstr "请更正高亮的错误后重试。"
+
+msgid "Model deleted successfully."
+msgstr "型号删除成功。"
+
+msgid ""
+"Cannot delete model \"%(model)s\" because it is referenced by existing "
+"records "
+msgstr "无法删除型号 \"%(model)s\"，因为它被现有记录引用"
+
+msgid "Asset Numbering"
+msgstr "资产编号"
+
+msgid "Type and Hierarchy"
+msgstr "类型与层级"
+
+msgid "Coordinates"
+msgstr "坐标"
+
+msgid "User & Company"
+msgstr "用户与公司"
+
+msgid "Work Assignment"
+msgstr "工作分配"
+
+msgid "Employee Details"
+msgstr "员工详情"
+
+msgid "Enter company name"
+msgstr "输入公司名称"
+
+msgid "Enter company description"
+msgstr "输入公司描述"
+
+msgid "+1234567890"
+msgstr "+1234567890"
+
+msgid "company@example.com"
+msgstr "company@example.com"
+
+msgid "https://www.company.com"
+msgstr "https://www.company.com"
+
+msgid "Asset numbering prefix (e.g., COMP-)"
+msgstr "资产编号前缀（如 COMP-）"
+
+msgid "Select primary contact (optional)"
+msgstr "选择主要联系人（可选）"
+
+msgid "Selected contact must belong to this company."
+msgstr "所选联系人必须属于此公司。"
+
+msgid "Enter division name"
+msgstr "输入部门名称"
+
+msgid "Enter division code (optional, e.g., IT, HR, FIN)"
+msgstr "输入部门代码（可选，如 IT、HR、FIN）"
+
+msgid "Enter division description"
+msgstr "输入部门描述"
+
+msgid "division@company.com"
+msgstr "division@company.com"
+
+msgid "Enter location"
+msgstr "输入地点"
+
+msgid "Building name or number"
+msgstr "楼栋名称或编号"
+
+msgid "Floor number"
+msgstr "楼层号"
+
+msgid "Room number"
+msgstr "房间号"
+
+msgid "Budget or cost center code"
+msgstr "预算或成本中心代码"
+
+msgid "Select manager (optional)"
+msgstr "选择负责人（可选）"
+
+msgid "Optional: Unique identifier code for the division within the company"
+msgstr "可选：部门在公司内的唯一标识代码"
+
+msgid "Location Name (Chinese)"
+msgstr "地点名称（中文）"
+
+msgid "Location Name (English)"
+msgstr "地点名称（英文）"
+
+msgid "Location Code 2"
+msgstr "地点代码 2"
+
+msgid "Contact for Location"
+msgstr "地点联系人"
+
+msgid "E-mail Address"
+msgstr "电子邮箱地址"
+
+msgid "Enter location name in Chinese"
+msgstr "输入中文地点名称"
+
+msgid "Enter location name in English (optional)"
+msgstr "输入英文地点名称（可选）"
+
+msgid "Enter location code (optional)"
+msgstr "输入地点代码（可选）"
+
+msgid "Enter location code 2 (optional)"
+msgstr "输入地点代码 2（可选）"
+
+msgid "Zone range (e.g., Z1-Z2)"
+msgstr "区范围（如 Z1-Z2）"
+
+msgid "Rack range (e.g., R1-R3)"
+msgstr "架范围（如 R1-R3）"
+
+msgid "Shelf range (e.g., S1-S4)"
+msgstr "层范围（如 S1-S4）"
+
+msgid "Enter location description"
+msgstr "输入地点描述"
+
+msgid "Area in square meters"
+msgstr "面积（平方米）"
+
+msgid "Maximum capacity"
+msgstr "最大容量"
+
+msgid "Address line 1"
+msgstr "地址行 1"
+
+msgid "Address line 2 (optional)"
+msgstr "地址行 2（可选）"
+
+msgid "Postal code"
+msgstr "邮政编码"
+
+msgid "Enter Chinese address"
+msgstr "输入中文地址"
+
+msgid "location@example.com"
+msgstr "location@example.com"
+
+msgid "+8613800000000"
+msgstr "+8613800000000"
+
+msgid "Optional: location code is not required for create or import."
+msgstr "可选：创建或导入时不需要地点代码。"
+
+msgid "Warehouse only. Supports ranges like Z1-Z2, Z4."
+msgstr "仅仓库。支持如 Z1-Z2、Z4 的范围。"
+
+msgid "Warehouse only. Supports ranges like R1-R3."
+msgstr "仅仓库。支持如 R1-R3 的范围。"
+
+msgid "Warehouse only. Supports ranges like S1-S4."
+msgstr "仅仓库。支持如 S1-S4 的范围。"
+
+msgid "Selected contact must belong to the selected company."
+msgstr "所选联系人必须属于所选公司。"
+
+msgid "Select location (optional)"
+msgstr "选择地点（可选）"
+
+msgid "Name is required."
+msgstr "名称为必填。"
+
+msgid "Selected location must belong to the selected company."
+msgstr "所选地点必须属于所选公司。"
+
+msgid "CSV File"
+msgstr "CSV 文件"
+
+msgid "Upload a CSV file encoded as UTF-8."
+msgstr "上传 UTF-8 编码的 CSV 文件。"
+
+msgid "Only CSV files are supported."
+msgstr "仅支持 CSV 文件。"
+
+msgid "File too large. Maximum size is 10MB."
+msgstr "文件过大，最大 10MB。"
+
+msgid "Official name of the company"
+msgstr "公司官方名称"
+
+msgid "Unique identifier code for the company (used in asset numbering)"
+msgstr "公司的唯一标识代码（用于资产编号）"
+
+msgid "Brief description of the company"
+msgstr "公司简要描述"
+
+msgid ""
+"Phone number must be entered in the format: '+999999999'. Up to 15 digits "
+"allowed."
+msgstr "电话号码必须按 '+999999999' 格式输入，最多 15 位。"
+
+msgid "Company contact email"
+msgstr "公司联系邮箱"
+
+msgid "Primary business contact selected from company users"
+msgstr "从公司用户中选择的主要业务联系人"
+
+msgid "Default Quotation Template"
+msgstr "默认报价单模板"
+
+msgid "Default PDF template used for new quotations for this company"
+msgstr "该公司新建报价单使用的默认 PDF 模板"
+
+msgid "Company website URL"
+msgstr "公司网站 URL"
+
+msgid "Current status of the company"
+msgstr "公司当前状态"
+
+msgid "Prefix used for asset numbering (e.g., \"COMP-\")"
+msgstr "用于资产编号的前缀（如 \"COMP-\"）"
+
+msgid "Next Asset Number"
+msgstr "下一个资产编号"
+
+msgid "Next number to be used for asset numbering"
+msgstr "资产编号将使用的下一个编号"
+
+msgid "Merged"
+msgstr "已合并"
+
+msgid "Company this division belongs to"
+msgstr "该部门所属公司"
+
+msgid "Name of the division or department"
+msgstr "部门或科室名称"
+
+msgid "Unique identifier code for the division within the company (optional)"
+msgstr "部门在公司内的唯一标识代码（可选）"
+
+msgid "Brief description of the division"
+msgstr "部门简要描述"
+
+msgid "Parent division if this is a sub-division"
+msgstr "若为子部门则为上级部门"
+
+msgid "User responsible for managing this division"
+msgstr "负责管理该部门的用户"
+
+msgid "Division contact email"
+msgstr "部门联系邮箱"
+
+msgid "Physical location of the division"
+msgstr "部门的物理地点"
+
+msgid "Floor number or name"
+msgstr "楼层号或名称"
+
+msgid "Room number or name"
+msgstr "房间号或名称"
+
+msgid "Current status of the division"
+msgstr "部门当前状态"
+
+msgid "Warehouse"
+msgstr "仓库"
+
+msgid "Office"
+msgstr "办公室"
+
+msgid "Other"
+msgstr "其他"
+
+msgid "Closed"
+msgstr "已关闭"
+
+msgid "Under Construction"
+msgstr "建设中"
+
+msgid "Location Name"
+msgstr "地点名称"
+
+msgid "Name of the location"
+msgstr "地点名称"
+
+msgid "English name of the location"
+msgstr "地点英文名称"
+
+msgid "Unique code for the location (e.g., B1-F3-R101)"
+msgstr "地点的唯一代码（如 B1-F3-R101）"
+
+msgid "Secondary code for the location (optional)"
+msgstr "地点的次要代码（可选）"
+
+msgid "Optional zone identifier"
+msgstr "可选的区标识"
+
+msgid "Optional rack identifier"
+msgstr "可选的架标识"
+
+msgid "Optional shelf identifier"
+msgstr "可选的层标识"
+
+msgid "Detailed description of the location"
+msgstr "地点的详细描述"
+
+msgid "Parent location in hierarchy (e.g., floor for room)"
+msgstr "层级中的上级地点（如房间的楼层）"
+
+msgid "Size of the location in square meters"
+msgstr "地点面积（平方米）"
+
+msgid "Location Manager"
+msgstr "地点负责人"
+
+msgid "Location Contact"
+msgstr "地点联系人"
+
+msgid "Latitude"
+msgstr "纬度"
+
+msgid "GPS latitude coordinate"
+msgstr "GPS 纬度坐标"
+
+msgid "Longitude"
+msgstr "经度"
+
+msgid "GPS longitude coordinate"
+msgstr "GPS 经度坐标"
+
+msgid "Linked User"
+msgstr "关联用户"
+
+msgid "Primary contact/recipient name"
+msgstr "主要联系人/接收人姓名"
+
+msgid "User role within the company"
+msgstr "用户在公司内的角色"
+
+msgid "Primary division for this user"
+msgstr "该用户的主要部门"
+
+msgid "Primary work location for this user"
+msgstr "该用户的主要工作地点"
+
+msgid "Company employee identification number"
+msgstr "公司员工识别号"
+
+msgid "Department or team within the company"
+msgstr "公司内的部门或团队"
+
+msgid "Direct manager for this user"
+msgstr "该用户的直属经理"
+
+msgid "Date when user joined this company in the system"
+msgstr "用户在系统中加入该公司的日期"
+
+msgid "Date when user left the company"
+msgstr "用户离开公司的日期"
+
+msgid "Company email address if different from user email"
+msgstr "若与用户邮箱不同则填写公司邮箱"
+
+msgid "Company Contact"
+msgstr "公司联系人"
+
+msgid "Failed"
+msgstr "失败"
+
+msgid "Rolled Back"
+msgstr "已回滚"
+
+msgid "Module"
+msgstr "模块"
+
+msgid "Import Type"
+msgstr "导入类型"
+
+msgid "Created Count"
+msgstr "创建数"
+
+msgid "Updated Count"
+msgstr "更新数"
+
+msgid "Skipped Count"
+msgstr "跳过数"
+
+msgid "Error Count"
+msgstr "错误数"
+
+msgid "Rolled Back At"
+msgstr "回滚时间"
+
+msgid "Import Runs"
+msgstr "导入批次"
+
+msgid "Sequence"
+msgstr "序号"
+
+msgid "Source Row"
+msgstr "源行"
+
+msgid "App Label"
+msgstr "应用标签"
+
+msgid "Object PK"
+msgstr "对象主键"
+
+msgid "Before Data"
+msgstr "变更前数据"
+
+msgid "After Data"
+msgstr "变更后数据"
+
+msgid "Import Run Change"
+msgstr "导入批次变更"
+
+msgid "Import Run Changes"
+msgstr "导入批次变更"
+
+msgid "Company created successfully."
+msgstr "公司创建成功。"
+
+msgid "Create Company"
+msgstr "创建公司"
+
+msgid "Company updated successfully."
+msgstr "公司更新成功。"
+
+msgid "Edit Company"
+msgstr "编辑公司"
+
+msgid "Company deleted successfully."
+msgstr "公司删除成功。"
+
+msgid "Division Management"
+msgstr "部门管理"
+
+msgid "Division created successfully."
+msgstr "部门创建成功。"
+
+msgid "Create Division"
+msgstr "创建部门"
+
+msgid "Division updated successfully."
+msgstr "部门更新成功。"
+
+msgid "Edit Division"
+msgstr "编辑部门"
+
+msgid "Division deleted successfully."
+msgstr "部门删除成功。"
+
+msgid "Location Management"
+msgstr "地点管理"
+
+msgid "Location created successfully."
+msgstr "地点创建成功。"
+
+msgid "Create Location"
+msgstr "创建地点"
+
+msgid "Location updated successfully."
+msgstr "地点更新成功。"
+
+msgid "Edit Location"
+msgstr "编辑地点"
+
+msgid "Location deleted successfully."
+msgstr "地点删除成功。"
+
+msgid "Company Contact Management"
+msgstr "公司联系人管理"
+
+msgid "Company contact added successfully."
+msgstr "公司联系人添加成功。"
+
+msgid "Company contact updated successfully."
+msgstr "公司联系人更新成功。"
+
+msgid "Edit Company Contact"
+msgstr "编辑公司联系人"
+
+msgid ""
+"Unable to decode CSV file. Please save it as UTF-8, GBK/GB18030, or Big5 and"
+" try again."
+msgstr "无法解码 CSV 文件，请保存为 UTF-8、GBK/GB18030 或 Big5 后重试。"
+
+msgid "You do not have permission to remove company contacts."
+msgstr "您没有移除公司联系人的权限。"
+
+msgid ""
+"Company contact \"%(name)s\" was removed. User database records were not "
+"modified."
+msgstr "公司联系人 \"%(name)s\" 已移除；用户数据库记录未被修改。"
+
+msgid "You do not have permission to rollback imports."
+msgstr "您没有回滚导入的权限。"
+
+msgid "You do not have permission to import companies."
+msgstr "您没有导入公司的权限。"
+
+msgid "Import preview expired. Please upload the CSV again."
+msgstr "导入预览已过期，请重新上传 CSV。"
+
+msgid "Row %(row)s: name and code are required."
+msgstr "第 %(row)s 行：名称与代码为必填。"
+
+msgid "Imported %(count)s companies."
+msgstr "已导入 %(count)s 家公司。"
+
+msgid "Skipped %(count)s duplicate companies."
+msgstr "已跳过 %(count)s 家重复公司。"
+
+msgid "Company Import Result"
+msgstr "公司导入结果"
+
+msgid "Import Companies from CSV"
+msgstr "从 CSV 导入公司"
+
+msgid "Accepted values: status = active, inactive, suspended."
+msgstr "可接受取值：status = active, inactive, suspended。"
+
+msgid "CSV file is missing a header row."
+msgstr "CSV 文件缺少表头行。"
+
+msgid "CSV file has no data rows."
+msgstr "CSV 文件没有数据行。"
+
+msgid "You do not have permission to import locations."
+msgstr "您没有导入地点的权限。"
+
+msgid "Row %(row)s: company and name are required."
+msgstr "第 %(row)s 行：公司与名称为必填。"
+
+msgid "Row %(row)s: company \"%(company)s\" not found."
+msgstr "第 %(row)s 行：未找到公司 \"%(company)s\"。"
+
+msgid "Row %(row)s: invalid location_type \"%(value)s\"."
+msgstr "第 %(row)s 行：location_type \"%(value)s\" 无效。"
+
+msgid "Row %(row)s: invalid status \"%(value)s\"."
+msgstr "第 %(row)s 行：status \"%(value)s\" 无效。"
+
+msgid "Row %(row)s: duplicate location match found (%(identifier)s); skipped."
+msgstr "第 %(row)s 行：发现重复地点匹配（%(identifier)s），已跳过。"
+
+msgid "Row %(row)s: duplicate found but no field changes detected."
+msgstr "第 %(row)s 行：发现重复但未检测到字段变更。"
+
+msgid "Imported %(count)s locations."
+msgstr "已导入 %(count)s 个地点。"
+
+msgid "Updated %(count)s existing locations."
+msgstr "已更新 %(count)s 个现有地点。"
+
+msgid "Skipped %(count)s duplicate locations."
+msgstr "已跳过 %(count)s 个重复地点。"
+
+msgid "Location Import Result"
+msgstr "地点导入结果"
+
+msgid "Import Locations from CSV"
+msgstr "从 CSV 导入地点"
+
+msgid ""
+"Accepted values: location_type = warehouse, office, store, other; status = "
+"active, closed, under_construction. Contact can be matched by contact_email "
+"or contact_name/contact_phone; unmatched contacts are created in company "
+"contacts."
+msgstr ""
+"可接受取值：location_type = warehouse, office, store, other；status = active, "
+"closed, under_construction。联系人可通过 contact_email 或 contact_name/contact_phone"
+" 匹配；未匹配的联系人将在公司联系人中创建。"
+
+msgid "You do not have permission to import company contacts."
+msgstr "您没有导入公司联系人的权限。"
+
+msgid "Row %(row)s: invalid role \"%(value)s\"."
+msgstr "第 %(row)s 行：role \"%(value)s\" 无效。"
+
+msgid "Imported %(count)s company contacts."
+msgstr "已导入 %(count)s 个公司联系人。"
+
+msgid "Skipped %(count)s duplicate company contacts."
+msgstr "已跳过 %(count)s 个重复公司联系人。"
+
+msgid "Company Contact Import Result"
+msgstr "公司联系人导入结果"
+
+msgid "Import Company Contacts from CSV"
+msgstr "从 CSV 导入公司联系人"
+
+msgid ""
+"Accepted values: role = employee, manager, admin, viewer; status = active, "
+"inactive, suspended."
+msgstr ""
+"可接受取值：role = employee, manager, admin, viewer；status = active, inactive, "
+"suspended。"
+
+msgid "You do not have permission to download sample files."
+msgstr "您没有下载示例文件的权限。"
+
+msgid "Dispatched"
+msgstr "已发货"
+
+msgid "Delivered"
+msgstr "已交付"
+
+msgid "Delivery Number"
+msgstr "交付单号"
+
+msgid "Delivery Date"
+msgstr "交付日期"
+
+msgid "Receiver Name"
+msgstr "收货人姓名"
+
+msgid "Receiver Phone"
+msgstr "收货人电话"
+
+msgid "Delivery Address"
+msgstr "交付地址"
+
+msgid "Delivery Method"
+msgstr "交付方式"
+
+msgid "Delivery Order"
+msgstr "交付单"
+
+msgid "Quotation Item"
+msgstr "报价单项"
+
+msgid "Product Description"
+msgstr "产品描述"
+
+msgid "User Name"
+msgstr "用户名称"
+
+msgid "Delivery Item"
+msgstr "交付项"
+
+msgid "Schedule"
+msgstr "排期"
+
+msgid "Provenance"
+msgstr "来源"
+
+msgid "Cover Page"
+msgstr "封面页"
+
+msgid "Confirmation Page"
+msgstr "确认页"
+
+msgid "Signoff"
+msgstr "签字确认"
+
+msgid "Deliverables"
+msgstr "交付物"
+
+msgid "Completion %"
+msgstr "完成度 %"
+
+msgid "Unsupported file type. Upload an .xlsx, .xls, or .csv file."
+msgstr "不支持的文件类型，请上传 .xlsx、.xls 或 .csv 文件。"
+
+msgid "e.g. Gucci August 2026 Rollout"
+msgstr "例如 Gucci August 2026 Rollout"
+
+msgid "The selected brand does not belong to the chosen company."
+msgstr "所选品牌不属于所选公司。"
+
+msgid "End date must be on or after the start date."
+msgstr "结束日期必须不早于开始日期。"
+
+msgid "Select a brand to schedule inspections for."
+msgstr "选择要安排巡检的品牌。"
+
+msgid "Batch Name"
+msgstr "批次名称"
+
+msgid "e.g. Kering 2026 W34 Master Import"
+msgstr "例如 Kering 2026 W34 Master Import"
+
+msgid "Schedule File"
+msgstr "排期文件"
+
+msgid "Excel/CSV with columns: Brand, Store Name, JDA code, inspection_date."
+msgstr "含以下列的 Excel/CSV：Brand、Store Name、JDA code、inspection_date。"
+
+msgid "Master Asset List (optional)"
+msgstr "主资产清单（可选）"
+
+msgid ""
+"Excel/CSV with per-store device rows. Leave blank for a schedule-only "
+"import."
+msgstr "含每门店设备行的 Excel/CSV；仅导入排期时留空。"
+
+msgid "Default Engineer"
+msgstr "默认工程师"
+
+msgid "Auto-arrange dates"
+msgstr "自动安排日期"
+
+msgid "If the schedule has no inspection_date, cluster sites by city and "
+msgstr "若排期没有 inspection_date，则按城市聚类门店并"
+
+msgid "Arrange From"
+msgstr "安排起始"
+
+msgid "Arrange To"
+msgstr "安排截止"
+
+msgid "Provide both Arrange From and Arrange To when auto-arrange is on."
+msgstr "开启自动安排时需同时填写安排起始与安排截止。"
+
+msgid "Arrange To must be on or after Arrange From."
+msgstr "安排截止必须不早于安排起始。"
+
+msgid "Brand / Division"
+msgstr "品牌 / 部门"
+
+msgid "ISO Week"
+msgstr "ISO 周"
+
+msgid "e.g. 2026-W05 or 2026W5. Overrides the date range when set."
+msgstr "例如 2026-W05 或 2026W5；设置后将覆盖日期范围。"
+
+msgid "Include asset list (xlsx)"
+msgstr "包含资产清单 (xlsx)"
+
+msgid "Include photos (zip bundle)"
+msgstr "包含照片 (zip 包)"
+
+msgid "Include per-store reports (zip bundle)"
+msgstr "包含每门店报告 (zip 包)"
+
+msgid "Enter an ISO week as YYYY-Www (e.g. 2026-W05)."
+msgstr "以 YYYY-Www 格式输入 ISO 周（如 2026-W05）。"
+
+msgid "Week number must be between 1 and 53."
+msgstr "周数必须介于 1 与 53 之间。"
+
+msgid "Week %(week)s does not exist in ISO year %(year)s."
+msgstr "ISO 年 %(year)s 中不存在第 %(week)s 周。"
+
+msgid "Select at least one filter (batch, brand, date range, or ISO week)."
+msgstr "请至少选择一个过滤条件（批次、品牌、日期范围或 ISO 周）。"
+
+msgid "\"To\" date must be on or after \"From\" date."
+msgstr "\"To\" 日期必须不早于 \"From\" 日期。"
+
+msgid "All statuses"
+msgstr "所有状态"
+
+msgid "Search store label, JDA, or store name"
+msgstr "搜索门店标签、JDA 或门店名称"
+
+msgid "Match by Chinese name, phone number, WeChat id, or invite code."
+msgstr "按中文姓名、手机号、微信 ID 或邀请码匹配。"
+
+msgid "e.g. 张三 / 13800000000 / invite code"
+msgstr "例如 张三 / 13800000000 / 邀请码"
+
+msgid "Manual"
+msgstr "手动"
+
+msgid "Primary Engineer"
+msgstr "主工程师"
+
+msgid "Inspection Batch"
+msgstr "巡检批次"
+
+msgid "Weak"
+msgstr "弱"
+
+msgid "Satisfied"
+msgstr "满意"
+
+msgid "Normal"
+msgstr "正常"
+
+msgid "Unsatisfied"
+msgstr "不满意"
+
+msgid "Morning"
+msgstr "上午"
+
+msgid "Afternoon"
+msgstr "下午"
+
+msgid "Store / Location"
+msgstr "门店 / 地点"
+
+msgid "Store JDA Code"
+msgstr "门店 JDA 代码"
+
+msgid "Store Name"
+msgstr "门店名称"
+
+msgid "Store Label"
+msgstr "门店标签"
+
+msgid "Full label used on reports, e.g. \"22149 Gucci SZOL\"."
+msgstr "报告上使用的完整标签，如 \"22149 Gucci SZOL\"。"
+
+msgid "Inspection Date"
+msgstr "巡检日期"
+
+msgid "Time Slot"
+msgstr "时段"
+
+msgid "AM or PM batch within the inspection date."
+msgstr "巡检日期内的上午或下午批次。"
+
+msgid "Onsite Engineer"
+msgstr "现场工程师"
+
+msgid "Arriving Time"
+msgstr "到场时间"
+
+msgid "Leaving Time"
+msgstr "离场时间"
+
+msgid "Error Setting Fixed"
+msgstr "错误设置已修复"
+
+msgid "Store Issue Found"
+msgstr "发现门店问题"
+
+msgid "Issue To Be Followed Up"
+msgstr "待跟进问题"
+
+msgid "IT Support Service Rating"
+msgstr "IT 支持服务评分"
+
+msgid "IT Support Comment"
+msgstr "IT 支持备注"
+
+msgid "Confirmation Device Counts"
+msgstr "确认设备计数"
+
+msgid "Engineer-confirmed counts keyed by confirmation_page label."
+msgstr "以 confirmation_page 标签为键的工程师确认计数。"
+
+msgid "Cover Page Extras"
+msgstr "封面页附加项"
+
+msgid ""
+"WiFi SSID, Redwood/store-WiFi flags, rack size, music/ShopperTrak, etc."
+msgstr "WiFi SSID、Redwood/门店 WiFi 标志、机柜尺寸、音乐/ShopperTrak 等。"
+
+msgid "Store Signature"
+msgstr "门店签字"
+
+msgid "Engineer Signature"
+msgstr "工程师签字"
+
+msgid "Report Workbook"
+msgstr "报告工作簿"
+
+msgid "Photo Archive"
+msgstr "照片档案"
+
+msgid "Report Generated At"
+msgstr "报告生成时间"
+
+msgid "Store Inspection"
+msgstr "门店巡检"
+
+msgid "In Store"
+msgstr "在店"
+
+msgid "Not In Store"
+msgstr "不在店"
+
+msgid "Linked Asset"
+msgstr "关联资产"
+
+msgid "Client Device UID"
+msgstr "客户端设备 UID"
+
+msgid "Idempotency key from the mini program; auto-filled when absent."
+msgstr "来自小程序的幂等键；缺失时自动填充。"
+
+msgid "Row Order"
+msgstr "行顺序"
+
+msgid "Warranty Start"
+msgstr "保修开始"
+
+msgid "Photo Required"
+msgstr "需要照片"
+
+msgid "Outline"
+msgstr "外观"
+
+msgid "Device Notes"
+msgstr "设备备注"
+
+msgid "CPU"
+msgstr "CPU"
+
+msgid "Memory"
+msgstr "内存"
+
+msgid "HDD"
+msgstr "硬盘"
+
+msgid "Windows Version"
+msgstr "Windows 版本"
+
+msgid "iOS Version"
+msgstr "iOS 版本"
+
+msgid "Company Phone"
+msgstr "公司电话"
+
+msgid "User (Email)"
+msgstr "用户（邮箱）"
+
+msgid "Company-phone user; stored in email format."
+msgstr "公司电话用户；以邮箱格式存储。"
+
+msgid "Drive C Free Space"
+msgstr "C 盘剩余空间"
+
+msgid "Intact Asset Tag"
+msgstr "资产标签完好"
+
+msgid "New Device"
+msgstr "新设备"
+
+msgid "Collected By"
+msgstr "采集人"
+
+msgid "Collected At"
+msgstr "采集时间"
+
+msgid "Inspection Device"
+msgstr "巡检设备"
+
+msgid "Inspection Devices"
+msgstr "巡检设备"
+
+msgid "Device Overall"
+msgstr "设备总体"
+
+msgid "Rack 1"
+msgstr "机柜 1"
+
+msgid "Rack 2"
+msgstr "机柜 2"
+
+msgid "Rack 3"
+msgstr "机柜 3"
+
+msgid "Router"
+msgstr "路由器"
+
+msgid "Switch"
+msgstr "交换机"
+
+msgid "Patch Panel"
+msgstr "配线架"
+
+msgid "Speedtest Ethernet"
+msgstr "测速（有线）"
+
+msgid "Speedtest WiFi"
+msgstr "测速（WiFi）"
+
+msgid "Issue"
+msgstr "问题"
+
+msgid "Cash Drawer"
+msgstr "钱箱"
+
+msgid "Kind"
+msgstr "种类"
+
+msgid "Client Photo UID"
+msgstr "客户端照片 UID"
+
+msgid "Final business filename assigned at report time."
+msgstr "报告生成时分配的最终业务文件名。"
+
+msgid "Sort Index"
+msgstr "排序索引"
+
+msgid "Captured At"
+msgstr "拍摄时间"
+
+msgid "Uploaded By"
+msgstr "上传人"
+
+msgid "Inspection Photo"
+msgstr "巡检照片"
+
+msgid "Inspection Photos"
+msgstr "巡检照片"
+
+msgid "Fixed"
+msgstr "已修复"
+
+msgid "To Be Followed"
+msgstr "待跟进"
+
+msgid "Escalated"
+msgstr "已升级"
+
+msgid "Inspection Issue"
+msgstr "巡检问题"
+
+msgid "Inspection Issues"
+msgstr "巡检问题"
+
+msgid "Inspection Signoff Log"
+msgstr "巡检签字日志"
+
+msgid "Inspection Signoff Logs"
+msgstr "巡检签字日志"
+
+msgid "Weak Point Location"
+msgstr "弱点位置"
+
+msgid "WiFi Weak Point"
+msgstr "WiFi 弱点"
+
+msgid "Create Batch by Brand"
+msgstr "按品牌创建批次"
+
+msgid "Create Batch & Schedule Stores"
+msgstr "创建批次并安排门店"
+
+msgid "Batch \"%(name)s\" created with %(count)s store inspections."
+msgstr "批次 \"%(name)s\" 已创建，含 %(count)s 次门店巡检。"
+
+msgid "Import Schedule"
+msgstr "导入排期"
+
+msgid "Import failed: %(error)s"
+msgstr "导入失败：%(error)s"
+
+msgid "Imported %(inspections)s inspections, %(devices)s expected devices, "
+msgstr "已导入 %(inspections)s 次巡检、%(devices)s 台预期设备，"
+
+msgid "Edit Batch"
+msgstr "编辑批次"
+
+msgid "No inspections match the selected filters."
+msgstr "没有符合所选过滤条件的巡检。"
+
+msgid "Edit Inspection"
+msgstr "编辑巡检"
+
+msgid "Inspection updated."
+msgstr "巡检已更新。"
+
+msgid "Issue updated."
+msgstr "问题已更新。"
+
+msgid "Enter a field-engineer identifier."
+msgstr "请输入现场工程师标识。"
+
+msgid "No field engineer matched \"%(q)s\"."
+msgstr "没有匹配 \"%(q)s\" 的现场工程师。"
+
+msgid "Assigned %(fe)s."
+msgstr "已分配 %(fe)s。"
+
+msgid "Invalid status."
+msgstr "状态无效。"
+
+msgid "Select at least one site or device."
+msgstr "请至少选择一个门店或设备。"
+
+msgid "Marked not found during batch review."
+msgstr "批量审核中标记为未找到。"
+
+msgid "Updated %(n)s device(s)."
+msgstr "已更新 %(n)s 台设备。"
+
+msgid "Pricing"
+msgstr "定价"
+
+msgid "Optional. Use this to group related services in the catalog."
+msgstr "可选；用于在目录中对相关服务分组。"
+
+msgid "Tax Rate (%)"
+msgstr "税率（%）"
+
+msgid "Another current price already exists for this service item."
+msgstr "该服务项已存在另一个当前价格。"
+
+msgid "Service Item"
+msgstr "服务项"
+
+msgid "Service Items"
+msgstr "服务项"
+
+msgid "Unit of measure (e.g., PCS, SET, KG)"
+msgstr "计量单位（如 PCS、SET、KG）"
+
+msgid "Tax rate as percentage (e.g., 13.00 for 13%)"
+msgstr "税率百分比（如 13.00 表示 13%）"
+
+msgid "Whether this is the current active price"
+msgstr "是否为当前生效价格"
+
+msgid "Date from which this price is valid"
+msgstr "此价格的生效起始日期"
+
+msgid "Date until which this price is valid"
+msgstr "此价格的生效截止日期"
+
+msgid "Product Price"
+msgstr "产品价格"
+
+msgid "Product Prices"
+msgstr "产品价格"
+
+msgid "Target Product Price"
+msgstr "目标产品价格"
+
+msgid "Target Hardware Model"
+msgstr "目标硬件型号"
+
+msgid "Target Service Item"
+msgstr "目标服务项"
+
+msgid "Requested Service Group"
+msgstr "申请的服务组"
+
+msgid "Requested Service Name"
+msgstr "申请的服务名称"
+
+msgid "Requested Service Unit"
+msgstr "申请的服务单位"
+
+msgid "Current Snapshot"
+msgstr "当前快照"
+
+msgid "Request Notes"
+msgstr "请求备注"
+
+msgid "Product Price Approval Request"
+msgstr "产品价格审批请求"
+
+msgid "Product Price Approval Requests"
+msgstr "产品价格审批请求"
+
+msgid "Hardware Price"
+msgstr "硬件价格"
+
+msgid "Service Price"
+msgstr "服务价格"
+
+msgid ""
+"Hardware approval requests must reference a model or an existing live price."
+msgstr "硬件审批请求必须引用型号或现有生效价格。"
+
+msgid ""
+"Service approval requests must reference an existing service or include a "
+"requested service name."
+msgstr "服务审批请求必须引用现有服务或包含申请的服务名称。"
+
+msgid ""
+"Update and delete approval requests must reference an existing live price."
+msgstr "更新与删除审批请求必须引用现有生效价格。"
+
+msgid ""
+"Create and update approval requests must include the proposed price data."
+msgstr "创建与更新审批请求必须包含提议的价格数据。"
+
+msgid "Delete approval requests must capture the live price being removed."
+msgstr "删除审批请求必须记录被移除的生效价格。"
+
+msgid "Receiving"
+msgstr "收货中"
+
+msgid "Complete"
+msgstr "完成"
+
+msgid "Total Received"
+msgstr "已收总数"
+
+msgid "Purchase Order"
+msgstr "采购单"
+
+msgid "Source Quotation Item"
+msgstr "来源报价单项"
+
+msgid "Quantity Ordered"
+msgstr "订购数量"
+
+msgid "Quantity Received"
+msgstr "已收数量"
+
+msgid "Purchase Order Item"
+msgstr "采购单项"
+
+msgid "Purchase Order Items"
+msgstr "采购单项"
+
+msgid "Partially Received"
+msgstr "部分收货"
+
+msgid "Completely Received"
+msgstr "全部收货"
+
+msgid "Receipt Number"
+msgstr "收货单号"
+
+msgid "Receipt Date"
+msgstr "收货日期"
+
+msgid "Received Count"
+msgstr "收货数量"
+
+msgid "Purchase Receipt"
+msgstr "采购收货"
+
+msgid "Purchase Receipts"
+msgstr "采购收货"
+
+msgid "Quotation Info"
+msgstr "报价单信息"
+
+msgid "Dates"
+msgstr "日期"
+
+msgid "Draft"
+msgstr "草稿"
+
+msgid "Sent"
+msgstr "已发送"
+
+msgid "Confirmed"
+msgstr "已确认"
+
+msgid "Expired"
+msgstr "已过期"
+
+msgid "Total Without Tax"
+msgstr "不含税合计"
+
+msgid "Total With Tax"
+msgstr "含税合计"
+
+msgid "Total Tax"
+msgstr "税额合计"
+
+msgid "Requires Confirmation"
+msgstr "需要确认"
+
+msgid "Tax Amount"
+msgstr "税额"
+
+msgid "Line Total With Tax"
+msgstr "含税行合计"
+
+msgid "Quotation Items"
+msgstr "报价单项"
+
+msgid "Quotation Attachment"
+msgstr "报价单附件"
+
+msgid "Quotation Attachments"
+msgstr "报价单附件"
+
+msgid "V2 Full"
+msgstr "V2 完整版"
+
+msgid "V2 Mini"
+msgstr "V2 精简版"
+
+msgid "V1"
+msgstr "V1"
+
+msgid "Item #"
+msgstr "项目编号"
+
+msgid "Part No."
+msgstr "零件号"
+
+msgid "Amount (RMB)"
+msgstr "金额（人民币）"
+
+msgid "Template Information"
+msgstr "模板信息"
+
+msgid "Configuration"
+msgstr "配置"
+
+msgid "Access Control"
+msgstr "访问控制"
+
+msgid "Report Information"
+msgstr "报表信息"
+
+msgid "Generation Details"
+msgstr "生成详情"
+
+msgid "Timing"
+msgstr "时间"
+
+msgid "File Information"
+msgstr "文件信息"
+
+msgid "Approval"
+msgstr "审批"
+
+msgid "File Size"
+msgstr "文件大小"
+
+msgid "Schedule Information"
+msgstr "排期信息"
+
+msgid "Schedule Configuration"
+msgstr "排期配置"
+
+msgid "Report Parameters"
+msgstr "报表参数"
+
+msgid "Distribution"
+msgstr "分发"
+
+msgid "Status and Control"
+msgstr "状态与控制"
+
+msgid "Error Handling"
+msgstr "错误处理"
+
+msgid "Share Information"
+msgstr "共享信息"
+
+msgid "Tracking"
+msgstr "跟踪"
+
+msgid "Asset Valuation"
+msgstr "资产估值"
+
+msgid "Audit Summary"
+msgstr "盘点汇总"
+
+msgid "Depreciation Report"
+msgstr "折旧报表"
+
+msgid "Warranty Expiry"
+msgstr "保修到期"
+
+msgid "Asset Utilization"
+msgstr "资产利用率"
+
+msgid "Cost Analysis"
+msgstr "成本分析"
+
+msgid "Compliance Report"
+msgstr "合规报表"
+
+msgid "Custom Report"
+msgstr "自定义报表"
+
+msgid "Excel"
+msgstr "Excel"
+
+msgid "CSV"
+msgstr "CSV"
+
+msgid "JSON"
+msgstr "JSON"
+
+msgid "HTML"
+msgstr "HTML"
+
+msgid "Template Name"
+msgstr "模板名称"
+
+msgid "Descriptive name for the report template"
+msgstr "报表模板的描述性名称"
+
+msgid "Template Code"
+msgstr "模板代码"
+
+msgid "Unique code for programmatic reference"
+msgstr "供程序引用的唯一代码"
+
+msgid "Detailed description of what this report contains"
+msgstr "该报表内容的详细描述"
+
+msgid "Report Type"
+msgstr "报表类型"
+
+msgid "Default Output Format"
+msgstr "默认输出格式"
+
+msgid "Template Definition"
+msgstr "模板定义"
+
+msgid "JSON configuration defining report structure, filters, and formatting"
+msgstr "定义报表结构、过滤与格式的 JSON 配置"
+
+msgid "Default Filters"
+msgstr "默认过滤"
+
+msgid "Default filter values for this template"
+msgstr "该模板的默认过滤值"
+
+msgid "Is Public"
+msgstr "是否公开"
+
+msgid "Whether this template is available to all users"
+msgstr "该模板是否对所有用户可用"
+
+msgid "Allowed Roles"
+msgstr "允许的角色"
+
+msgid "List of user roles that can use this template"
+msgstr "可使用该模板的用户角色列表"
+
+msgid "Is Active"
+msgstr "是否启用"
+
+msgid "Whether this template is available for use"
+msgstr "该模板是否可用"
+
+msgid "Requires Approval"
+msgstr "需要审批"
+
+msgid "Whether reports from this template require approval before access"
+msgstr "该模板的报表在访问前是否需要审批"
+
+msgid "Can Be Scheduled"
+msgstr "可排期"
+
+msgid "Whether this report can be scheduled for automatic generation"
+msgstr "该报表是否可排期自动生成"
+
+msgid "Report Template"
+msgstr "报表模板"
+
+msgid "Report Templates"
+msgstr "报表模板"
+
+msgid "Generating"
+msgstr "生成中"
+
+msgid "API"
+msgstr "API"
+
+msgid "Report Number"
+msgstr "报表编号"
+
+msgid "Unique identifier for this generated report"
+msgstr "该生成报表的唯一标识"
+
+msgid "Report Name"
+msgstr "报表名称"
+
+msgid "Descriptive name for this report instance"
+msgstr "该报表实例的描述性名称"
+
+msgid "Filters Applied"
+msgstr "已应用过滤"
+
+msgid "Filters and parameters used to generate this report"
+msgstr "生成该报表所用的过滤与参数"
+
+msgid "Output Format"
+msgstr "输出格式"
+
+msgid "Generation Method"
+msgstr "生成方式"
+
+msgid "Requested At"
+msgstr "请求时间"
+
+msgid "Started At"
+msgstr "开始时间"
+
+msgid "Completed At"
+msgstr "完成时间"
+
+msgid "File Path"
+msgstr "文件路径"
+
+msgid "Path to the generated report file"
+msgstr "生成报表文件的路径"
+
+msgid "Size of the generated file in bytes"
+msgstr "生成文件的大小（字节）"
+
+msgid "Record Count"
+msgstr "记录数"
+
+msgid "Number of records included in the report"
+msgstr "报表包含的记录数"
+
+msgid "Whether this report is accessible to all users in the company"
+msgstr "该报表是否对公司所有用户可访问"
+
+msgid "Shared With"
+msgstr "共享给"
+
+msgid "Users who have access to this report"
+msgstr "有权访问该报表的用户"
+
+msgid "Approved By"
+msgstr "批准人"
+
+msgid "Approved At"
+msgstr "批准时间"
+
+msgid "Error Message"
+msgstr "错误消息"
+
+msgid "Error message if report generation failed"
+msgstr "报表生成失败时的错误消息"
+
+msgid "Expires At"
+msgstr "过期时间"
+
+msgid "When this report will be automatically deleted"
+msgstr "该报表将被自动删除的时间"
+
+msgid "Additional notes about this report"
+msgstr "关于该报表的附加备注"
+
+msgid "Generated Report"
+msgstr "已生成报表"
+
+msgid "Generated Reports"
+msgstr "已生成报表"
+
+msgid "Daily"
+msgstr "每日"
+
+msgid "Weekly"
+msgstr "每周"
+
+msgid "Monthly"
+msgstr "每月"
+
+msgid "Quarterly"
+msgstr "每季"
+
+msgid "Yearly"
+msgstr "每年"
+
+msgid "Paused"
+msgstr "已暂停"
+
+msgid "Schedule Name"
+msgstr "排期名称"
+
+msgid "Descriptive name for this schedule"
+msgstr "该排期的描述性名称"
+
+msgid "Description of what this schedule generates"
+msgstr "该排期生成内容的描述"
+
+msgid "Frequency"
+msgstr "频率"
+
+msgid "When the schedule should start"
+msgstr "排期的开始时间"
+
+msgid "When the schedule should end (optional)"
+msgstr "排期的结束时间（可选）"
+
+msgid "Next Run"
+msgstr "下次运行"
+
+msgid "When the next report should be generated"
+msgstr "下一次报表生成时间"
+
+msgid "Last Run"
+msgstr "上次运行"
+
+msgid "When the last report was generated"
+msgstr "上一次报表生成时间"
+
+msgid "Default filters to apply to scheduled reports"
+msgstr "应用于排期报表的默认过滤"
+
+msgid "Email Recipients"
+msgstr "邮件接收人"
+
+msgid "Email addresses to send generated reports to"
+msgstr "接收生成报表的邮箱地址"
+
+msgid "Email Subject"
+msgstr "邮件主题"
+
+msgid "Subject line for scheduled report emails"
+msgstr "排期报表邮件的主题行"
+
+msgid "Email Body"
+msgstr "邮件正文"
+
+msgid "Body text for scheduled report emails"
+msgstr "排期报表邮件的正文"
+
+msgid "Whether this schedule is currently active"
+msgstr "该排期当前是否启用"
+
+msgid "Consecutive Failures"
+msgstr "连续失败次数"
+
+msgid "Number of consecutive failed generation attempts"
+msgstr "连续生成失败的次数"
+
+msgid "Max Failures"
+msgstr "最大失败次数"
+
+msgid "Maximum failures before schedule is paused"
+msgstr "暂停排期前的最大失败次数"
+
+msgid "Last Error"
+msgstr "最近错误"
+
+msgid "Last error message from failed generation"
+msgstr "最近一次生成失败的错误消息"
+
+msgid "Report Schedule"
+msgstr "报表排期"
+
+msgid "Report Schedules"
+msgstr "报表排期"
+
+msgid "View Only"
+msgstr "仅查看"
+
+msgid "View and Download"
+msgstr "查看与下载"
+
+msgid "Full Access"
+msgstr "完全访问"
+
+msgid "Share Type"
+msgstr "共享类型"
+
+msgid "Can Reshare"
+msgstr "可再共享"
+
+msgid "Whether the recipient can share this report with others"
+msgstr "接收者是否可将该报表共享给他人"
+
+msgid "When this share expires (optional)"
+msgstr "该共享的过期时间（可选）"
+
+msgid "Shared By"
+msgstr "共享人"
+
+msgid "Shared At"
+msgstr "共享时间"
+
+msgid "First Accessed At"
+msgstr "首次访问时间"
+
+msgid "Access Count"
+msgstr "访问次数"
+
+msgid "Number of times this share has been accessed"
+msgstr "该共享被访问的次数"
+
+msgid "Notes about this share"
+msgstr "关于该共享的备注"
+
+msgid "Report Share"
+msgstr "报表共享"
+
+msgid "Report Shares"
+msgstr "报表共享"
+
+msgid "Uncategorized"
+msgstr "未分类"
+
+msgid "Unknown Brand"
+msgstr "未知品牌"
+
+msgid "Expiring Soon"
+msgstr "即将到期"
+
+msgid "No Warranty"
+msgstr "无保修"
+
+msgid "Quotation Value"
+msgstr "报价金额"
+
+msgid "Purchased Value"
+msgstr "采购金额"
+
+msgid "Pending Value"
+msgstr "待处理金额"
+
+msgid "Comma separated recipients"
+msgstr "逗号分隔的收件人"
+
+msgid "Comma separated CC recipients"
+msgstr "逗号分隔的抄送收件人"
+
+msgid "Comma separated BCC recipients"
+msgstr "逗号分隔的密送收件人"
+
+msgid "Assets to Dispatch"
+msgstr "要发货的资产"
+
+msgid "Sharepoint Excel File"
+msgstr "Sharepoint Excel 文件"
+
+msgid "Upload an .xlsx file exported from Sharepoint."
+msgstr "上传从 Sharepoint 导出的 .xlsx 文件。"

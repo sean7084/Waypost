@@ -105,7 +105,7 @@
                                             {{ quote.quotation_number }}
                                         </a>
                                     </td>
-                                    <td>{{ quote.quotation_date|date:"Y-m-d" }}</td>
+                                    <td>{{ quote.quotation_date|date:"SHORT_DATE_FORMAT" }}</td>
                                     <td>{{ quote.customer.name }}</td>
                                     <td>{{ quote.attn|default:"-" }}</td>
                                     <td>

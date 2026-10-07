@@ -34,7 +34,7 @@
   <view class="card" wx:if="{{stage === 'confirm'}}">
     <view class="field">
       <text class="field-label">请确认您的英文名</text>
-      <view class="input" style="background:#f5f5f5;color:#333;">{{englishName}}</view>
+      <view class="input input-static">{{englishName}}</view>
     </view>
     <view class="field">
       <text class="field-label">密码</text>

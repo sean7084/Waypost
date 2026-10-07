@@ -12,23 +12,25 @@
         border-radius: 8px;
     }
     .status-badge {
-        font-size: 0.875rem;
+        font-size: var(--wp-font-size-sm);
         padding: 0.5rem 1rem;
+        border-radius: var(--wp-radius-pill);
+        font-weight: var(--wp-font-weight-semibold);
     }
-    .status-available { background-color: #28a745; color: white; }
-    .status-assigned { background-color: #007bff; color: white; }
-    .status-in_use { background-color: #17a2b8; color: white; }
-    .status-maintenance { background-color: #ffc107; color: #000; }
-    .status-repair { background-color: #fd7e14; color: white; }
-    .status-retired { background-color: #6c757d; color: white; }
-    .status-disposed { background-color: #dc3545; color: white; }
-    .status-lost { background-color: #e83e8c; color: white; }
-    .status-stolen { background-color: #6f42c1; color: white; }
+    .status-available { background-color: var(--wp-color-success-subtle); color: var(--wp-color-success); }
+    .status-assigned { background-color: var(--wp-color-primary-subtle); color: var(--wp-color-primary-active); }
+    .status-in_use { background-color: var(--wp-color-info-subtle); color: var(--wp-color-info); }
+    .status-maintenance { background-color: var(--wp-color-warning-subtle); color: var(--wp-color-warning); }
+    .status-repair { background-color: var(--wp-color-warning-subtle); color: var(--wp-color-warning); }
+    .status-retired { background-color: var(--wp-color-surface-sunken); color: var(--wp-color-text-muted); }
+    .status-disposed { background-color: var(--wp-color-danger-subtle); color: var(--wp-color-danger); }
+    .status-lost { background-color: var(--wp-color-danger-subtle); color: var(--wp-color-danger); }
+    .status-stolen { background-color: var(--wp-color-danger-subtle); color: var(--wp-color-danger); }
     .info-card {
-        border-left: 4px solid #007bff;
+        border-left: 4px solid var(--wp-color-primary);
     }
     .timeline-item {
-        border-left: 2px solid #dee2e6;
+        border-left: 2px solid var(--wp-color-border);
         padding-left: 1rem;
         margin-bottom: 1rem;
         position: relative;
@@ -41,7 +43,7 @@
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: #007bff;
+        background: var(--wp-color-primary);
     }
 </style>
 {% endblock %}
@@ -175,7 +177,7 @@
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">{% trans "Purchase Date:" %}</td>
-                                    <td>{{ asset.purchase_date|date:"Y-m-d"|default:"-" }}</td>
+                                    <td>{{ asset.purchase_date|date:"SHORT_DATE_FORMAT"|default:"-" }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">{% trans "Purchase Price:" %}</td>
@@ -189,15 +191,15 @@
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">{% trans "Warranty End Date:" %}</td>
-                                    <td>{{ asset.warranty_end_date|date:"Y-m-d"|default:"-" }}</td>
+                                    <td>{{ asset.warranty_end_date|date:"SHORT_DATE_FORMAT"|default:"-" }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">{% trans "Created At:" %}</td>
-                                    <td>{{ asset.created_at|date:"Y-m-d H:i"|default:"-" }}</td>
+                                    <td>{{ asset.created_at|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">{% trans "Updated At:" %}</td>
-                                    <td>{{ asset.updated_at|date:"Y-m-d H:i"|default:"-" }}</td>
+                                    <td>{{ asset.updated_at|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -239,9 +241,9 @@
                                 </h6>
                                 <p class="text-muted small mb-1">
                                     {% trans "Assigned by" %} {{ assignment.assigned_by.get_display_name }}
-                                    {% trans "on" %} {{ assignment.assigned_date|date:"M d, Y" }}
+                                    {% trans "on" %} {{ assignment.assigned_date|date:"DATE_FORMAT" }}
                                     {% if assignment.returned_date %}
-                                        | {% trans "Returned on" %} {{ assignment.returned_date|date:"M d, Y" }}
+                                        | {% trans "Returned on" %} {{ assignment.returned_date|date:"DATE_FORMAT" }}
                                     {% endif %}
                                 </p>
                                 {% if assignment.notes %}
@@ -278,11 +280,11 @@
                                 <h6 class="mb-1">{{ record.get_maintenance_type_display }}</h6>
                                 <p class="text-muted small mb-1">
                                     {% if record.status == 'completed' and record.completed_date %}
-                                        {% trans "Completed:" %} {{ record.completed_date|date:"M d, Y" }}
+                                        {% trans "Completed:" %} {{ record.completed_date|date:"DATE_FORMAT" }}
                                     {% elif record.status == 'in_progress' and record.started_date %}
-                                        {% trans "Started:" %} {{ record.started_date|date:"M d, Y" }}
+                                        {% trans "Started:" %} {{ record.started_date|date:"DATE_FORMAT" }}
                                     {% else %}
-                                        {% trans "Scheduled:" %} {{ record.scheduled_date|date:"M d, Y" }}
+                                        {% trans "Scheduled:" %} {{ record.scheduled_date|date:"DATE_FORMAT" }}
                                     {% endif %}
                                     {% if record.assigned_to %}
                                         | {% trans "Assigned to" %} {{ record.assigned_to.get_display_name }}
@@ -315,7 +317,7 @@
                     {% if asset.photo %}
                         <img src="{{ asset.photo.url }}" class="asset-image" alt="{{ asset.asset_number }}">
                     {% else %}
-                        <div class="d-flex align-items-center justify-content-center" style="height: 300px; background: #f8f9fa; border-radius: 8px;">
+                        <div class="d-flex align-items-center justify-content-center" style="height: 300px; background: var(--wp-color-surface-sunken); border-radius: 8px;">
                             <div class="text-center">
                                 <i class="fas fa-camera fa-3x text-muted mb-2"></i>
                                 <p class="text-muted">{% trans "No image available" %}</p>
@@ -378,7 +380,7 @@
                                     {% trans "by" %} {{ log.user.get_display_name }}
                                 {% endif %}
                             </div>
-                            <div class="text-muted small">{{ log.timestamp|date:"M d, Y H:i" }}</div>
+                            <div class="text-muted small">{{ log.timestamp|date:"SHORT_DATETIME_FORMAT" }}</div>
                         </div>
                     </div>
                     {% endfor %}
@@ -401,7 +403,7 @@ function printAssetLabel() {
             <title>Asset Label - {{ asset.asset_number }}</title>
             <style>
                 body { font-family: Arial, sans-serif; padding: 20px; }
-                .label { border: 2px solid #000; padding: 15px; text-align: center; }
+                .label { border: 2px solid var(--wp-color-text); padding: 15px; text-align: center; }
                 .asset-tag { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
                 .asset-name { font-size: 14px; margin-bottom: 5px; }
                 .details { font-size: 10px; }

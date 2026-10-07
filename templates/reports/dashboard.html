@@ -6,30 +6,44 @@
 {% block extra_css %}
 <style>
     .report-card {
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: transform var(--wp-motion-duration-base) var(--wp-motion-easing-standard),
+                    box-shadow var(--wp-motion-duration-base) var(--wp-motion-easing-standard);
         cursor: pointer;
     }
     .report-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: var(--wp-shadow-2);
     }
     .chart-container {
         position: relative;
         height: 300px;
     }
+    /* Stat cards: solid surface + coloured left accent (no decorative
+       gradient, no opacity-dimmed text). See docs/DESIGN_SYSTEM.md. */
     .stat-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: var(--wp-color-surface);
+        border: 1px solid var(--wp-color-border);
+        border-left: 4px solid var(--wp-color-primary);
+        color: var(--wp-color-text);
     }
-    .stat-card.warning {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    .stat-card .stat-label {
+        color: var(--wp-color-text-muted);
+        font-size: var(--wp-font-size-sm);
+        font-weight: var(--wp-font-weight-semibold);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
     }
-    .stat-card.success {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    .stat-card h2 {
+        color: var(--wp-color-text);
+        font-weight: var(--wp-font-weight-bold);
     }
-    .stat-card.info {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
+    .stat-card .stat-icon { color: var(--wp-color-primary); }
+    .stat-card.success { border-left-color: var(--wp-color-success); }
+    .stat-card.success .stat-icon { color: var(--wp-color-success); }
+    .stat-card.warning { border-left-color: var(--wp-color-warning); }
+    .stat-card.warning .stat-icon { color: var(--wp-color-warning); }
+    .stat-card.info { border-left-color: var(--wp-color-info); }
+    .stat-card.info .stat-icon { color: var(--wp-color-info); }
 </style>
 {% endblock %}
 
@@ -49,11 +63,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2 opacity-75">{% trans "Total Assets" %}</h6>
+                            <h6 class="card-subtitle mb-2 stat-label">{% trans "Total Assets" %}</h6>
                             <h2 class="mb-0">{{ total_assets|default:0 }}</h2>
                         </div>
                         <div>
-                            <i class="fas fa-boxes fa-3x opacity-50"></i>
+                            <i class="fas fa-boxes fa-2x stat-icon"></i>
                         </div>
                     </div>
                 </div>
@@ -64,11 +78,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2 opacity-75">{% trans "Available" %}</h6>
+                            <h6 class="card-subtitle mb-2 stat-label">{% trans "Available" %}</h6>
                             <h2 class="mb-0">{{ available|default:0 }}</h2>
                         </div>
                         <div>
-                            <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                            <i class="fas fa-check-circle fa-2x stat-icon"></i>
                         </div>
                     </div>
                 </div>
@@ -79,11 +93,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2 opacity-75">{% trans "Maintenance Due" %}</h6>
+                            <h6 class="card-subtitle mb-2 stat-label">{% trans "Maintenance Due" %}</h6>
                             <h2 class="mb-0">{{ maintenance_due|default:0 }}</h2>
                         </div>
                         <div>
-                            <i class="fas fa-wrench fa-3x opacity-50"></i>
+                            <i class="fas fa-wrench fa-2x stat-icon"></i>
                         </div>
                     </div>
                 </div>
@@ -94,11 +108,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2 opacity-75">{% trans "Warranty Expiring" %}</h6>
+                            <h6 class="card-subtitle mb-2 stat-label">{% trans "Warranty Expiring" %}</h6>
                             <h2 class="mb-0">{{ warranty_expiring|default:0 }}</h2>
                         </div>
                         <div>
-                            <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+                            <i class="fas fa-exclamation-triangle fa-2x stat-icon"></i>
                         </div>
                     </div>
                 </div>

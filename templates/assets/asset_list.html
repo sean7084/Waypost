@@ -6,19 +6,20 @@
 {% block extra_css %}
 <style>
     .status-badge {
-        font-size: 0.75rem;
+        font-size: var(--wp-font-size-xs);
         padding: 0.25rem 0.5rem;
-        border-radius: 12px;
+        border-radius: var(--wp-radius-pill);
+        font-weight: var(--wp-font-weight-semibold);
     }
-    .status-available { background-color: #28a745; color: white; }
-    .status-assigned { background-color: #007bff; color: white; }
-    .status-in_use { background-color: #17a2b8; color: white; }
-    .status-maintenance { background-color: #ffc107; color: #000; }
-    .status-repair { background-color: #fd7e14; color: white; }
-    .status-retired { background-color: #6c757d; color: white; }
-    .status-disposed { background-color: #dc3545; color: white; }
-    .status-lost { background-color: #e83e8c; color: white; }
-    .status-stolen { background-color: #6f42c1; color: white; }
+    .status-available { background-color: var(--wp-color-success-subtle); color: var(--wp-color-success); }
+    .status-assigned { background-color: var(--wp-color-primary-subtle); color: var(--wp-color-primary-active); }
+    .status-in_use { background-color: var(--wp-color-info-subtle); color: var(--wp-color-info); }
+    .status-maintenance { background-color: var(--wp-color-warning-subtle); color: var(--wp-color-warning); }
+    .status-repair { background-color: var(--wp-color-warning-subtle); color: var(--wp-color-warning); }
+    .status-retired { background-color: var(--wp-color-surface-sunken); color: var(--wp-color-text-muted); }
+    .status-disposed { background-color: var(--wp-color-danger-subtle); color: var(--wp-color-danger); }
+    .status-lost { background-color: var(--wp-color-danger-subtle); color: var(--wp-color-danger); }
+    .status-stolen { background-color: var(--wp-color-danger-subtle); color: var(--wp-color-danger); }
     .asset-image {
         width: 40px;
         height: 40px;
@@ -26,25 +27,30 @@
         border-radius: 6px;
     }
     .stats-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
+        background: var(--wp-color-surface);
+        color: var(--wp-color-text);
+        border: 1px solid var(--wp-color-border);
+        border-left: 4px solid var(--wp-color-primary);
     }
+    .stats-card .display-6 { color: var(--wp-color-text); }
+    .stats-card .small { color: var(--wp-color-text-muted); }
+    .stats-card--success { border-left-color: var(--wp-color-success); }
+    .stats-card--primary { border-left-color: var(--wp-color-primary); }
+    .stats-card--warning { border-left-color: var(--wp-color-warning); }
     .table-responsive {
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: var(--wp-radius-md);
+        box-shadow: var(--wp-shadow-1);
     }
     .table thead th {
         border-top: none;
-        background-color: #f8f9fa;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.875rem;
-        letter-spacing: 0.5px;
+        background-color: var(--wp-color-surface-sunken);
+        font-weight: var(--wp-font-weight-semibold);
+        font-size: var(--wp-font-size-sm);
+        letter-spacing: 0.01em;
         vertical-align: middle;
     }
     .table tbody tr:hover {
-        background-color: rgba(0,123,255,0.1);
+        background-color: var(--wp-color-surface-subtle);
     }
     .asset-row.clickable-row {
         cursor: pointer;
@@ -53,9 +59,9 @@
         width: 44px;
     }
     .bulk-edit-panel {
-        background: #eef6ff;
-        border: 1px solid #cfe2ff;
-        border-radius: 8px;
+        background: var(--wp-color-primary-subtle);
+        border: 1px solid var(--wp-color-primary-subtle-hover);
+        border-radius: var(--wp-radius-md);
     }
     .btn-sm {
         padding: 0.25rem 0.5rem;
@@ -65,14 +71,14 @@
         width: 100%;
         max-width: 120px;
         font-size: 0.875rem;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--wp-color-border);
         border-radius: 4px;
         padding: 0.25rem 0.5rem;
         margin-top: 0.25rem;
     }
     .column-visibility-panel {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
+        background: var(--wp-color-surface-sunken);
+        border: 1px solid var(--wp-color-border);
         border-radius: 8px;
         padding: 1rem;
         margin-bottom: 1rem;
@@ -81,19 +87,19 @@
         margin-bottom: 0.5rem;
     }
     .form-check-input:checked {
-        background-color: #007bff;
-        border-color: #007bff;
+        background-color: var(--wp-color-primary);
+        border-color: var(--wp-color-primary);
     }
     .toggle-panel {
         cursor: pointer;
         user-select: none;
     }
     .toggle-panel:hover {
-        background-color: #e9ecef;
+        background-color: var(--wp-color-surface-sunken);
     }
     .filter-row {
-        background-color: #f8f9fa;
-        border-bottom: 2px solid #dee2e6;
+        background-color: var(--wp-color-surface-sunken);
+        border-bottom: 2px solid var(--wp-color-border);
     }
     .clear-filters-btn {
         position: sticky;
@@ -132,7 +138,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-success text-white">
+            <div class="card stats-card stats-card--success">
                 <div class="card-body text-center">
                     <div class="display-6 fw-bold">{{ available_assets }}</div>
                     <div class="small">{% trans "Available" %}</div>
@@ -140,7 +146,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-primary text-white">
+            <div class="card stats-card stats-card--primary">
                 <div class="card-body text-center">
                     <div class="display-6 fw-bold">{{ assigned_assets }}</div>
                     <div class="small">{% trans "Assigned" %}</div>
@@ -148,7 +154,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-warning text-dark">
+            <div class="card stats-card stats-card--warning">
                 <div class="card-body text-center">
                     <div class="display-6 fw-bold">{{ maintenance_assets }}</div>
                     <div class="small">{% trans "Maintenance" %}</div>
