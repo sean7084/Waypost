@@ -43,6 +43,26 @@ LANGUAGE_PREFERENCE_CHOICES = [
     ('zh-cn', _('Simplified Chinese')),
 ]
 
+# Curated IANA timezones offered in the Timezone dropdown (value = exact zone id,
+# label = the id with underscores replaced by spaces). Asia/Shanghai (CST, UTC+8)
+# is the default for new users.
+COMMON_TIMEZONES = [
+    'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Taipei', 'Asia/Macau',
+    'Asia/Tokyo', 'Asia/Seoul', 'Asia/Singapore', 'Asia/Kuala_Lumpur',
+    'Asia/Bangkok', 'Asia/Jakarta', 'Asia/Manila', 'Asia/Ho_Chi_Minh',
+    'Asia/Kolkata', 'Asia/Dhaka', 'Asia/Karachi', 'Asia/Dubai', 'Asia/Qatar',
+    'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Madrid',
+    'Europe/Rome', 'Europe/Amsterdam', 'Europe/Zurich', 'Europe/Stockholm',
+    'Europe/Moscow', 'Europe/Istanbul',
+    'America/New_York', 'America/Chicago', 'America/Denver',
+    'America/Los_Angeles', 'America/Toronto', 'America/Vancouver',
+    'America/Mexico_City', 'America/Sao_Paulo', 'America/Argentina/Buenos_Aires',
+    'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane',
+    'Australia/Perth', 'Pacific/Auckland',
+    'Africa/Johannesburg', 'Africa/Cairo', 'Africa/Lagos', 'Africa/Nairobi',
+    'UTC',
+]
+
 
 def apply_bootstrap_widget_classes(form):
     """Give every field widget the matching Bootstrap control class.
@@ -53,16 +73,15 @@ def apply_bootstrap_widget_classes(form):
     """
     for field in form.fields.values():
         widget = field.widget
-        existing = widget.attrs.get('class', '')
-        classes = set(existing.split()) if existing else set()
+        existing = set((widget.attrs.get('class') or '').split())
         if isinstance(widget, forms.CheckboxSelectMultiple):
-            pass  # rendered as a group of check boxes; template styles it
+            classes = existing  # rendered as a group of check boxes; template styles it
         elif isinstance(widget, (forms.Select, forms.SelectMultiple)):
-            classes.add('form-select')
+            classes = (existing - {'form-control'}) | {'form-select'}
         elif isinstance(widget, (forms.RadioSelect, forms.CheckboxInput)):
-            classes.add('form-check-input')
+            classes = (existing - {'form-control'}) | {'form-check-input'}
         else:
-            classes.add('form-control')
+            classes = existing | {'form-control'}
         if classes:
             widget.attrs['class'] = ' '.join(sorted(classes))
 
@@ -449,15 +468,12 @@ class SuperuserUserForm(UserCreationForm):
             'class': 'form-control',
         }),
         label=_('Language Preference'),
-        initial='en-us'
+        initial='zh-cn'
     )
-    timezone = forms.CharField(
-        max_length=50,
-        initial='UTC',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'UTC',
-        }),
+    timezone = forms.ChoiceField(
+        choices=[(tz, tz.replace('_', ' ')) for tz in COMMON_TIMEZONES],
+        initial='Asia/Shanghai',
+        widget=forms.Select,
         label=_('Timezone')
     )
     is_active = forms.BooleanField(
@@ -519,6 +535,14 @@ class SuperuserUserForm(UserCreationForm):
         self.fields.pop('password2', None)
         self.fields.pop('use_random_password', None)
         apply_bootstrap_widget_classes(self)
+
+        # Keep any pre-existing (possibly non-common) timezone selectable in edit mode.
+        current_tz = getattr(self.instance, 'timezone', '') or ''
+        if current_tz and current_tz not in dict(self.fields['timezone'].choices):
+            self.fields['timezone'].choices = (
+                [(current_tz, current_tz.replace('_', ' '))]
+                + list(self.fields['timezone'].choices)
+            )
         
         # Import here to avoid circular imports
         from companies.models import Company, Division, Location
@@ -582,8 +606,8 @@ class SuperuserUserForm(UserCreationForm):
             user.division = self.cleaned_data.get('division')
         user.manager = self.cleaned_data.get('manager')
         user.managed_company = self.cleaned_data.get('managed_company')
-        user.language_preference = self.cleaned_data.get('language_preference', 'en-us')
-        user.timezone = self.cleaned_data.get('timezone', 'UTC')
+        user.language_preference = self.cleaned_data.get('language_preference', 'zh-cn')
+        user.timezone = self.cleaned_data.get('timezone', 'Asia/Shanghai')
         user.is_active = self.cleaned_data.get('is_active', True)
         user.is_staff = self.cleaned_data.get('is_staff', False)
         user.must_change_password = self.cleaned_data.get('must_change_password', True)
