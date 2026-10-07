@@ -523,8 +523,16 @@ class Location(models.Model):
         verbose_name=_('Location Contact')
     )
     
+    # Store contact lines, not a single phone number: real rows hold several
+    # numbers with floor/department labels, e.g.
+    #   '1st Floor(Wom):010-6416 0574/2nd Floor(Men):010-6416 0058'
+    #   '2F +86 21 52993072/1F +86 21 52993669/B1 +86 21 54565039'
+    # The previous limit of 17 was silently ignored by SQLite and only became
+    # visible as a DataError when the data was loaded into PostgreSQL, which does
+    # enforce varchar(n). No validator here on purpose - unlike Company and
+    # Division above, this field is free-form contact text.
     phone_number = models.CharField(
-        max_length=17,
+        max_length=100,
         blank=True,
         verbose_name=_('Phone Number')
     )
@@ -829,8 +837,12 @@ class CompanyUser(models.Model):
     )
     
     # Contact within company
+    # Holds one or more named contacts, e.g.
+    #   'Roger Ye 137 1839 4541// Jingjing Xiu 185 1825 4800'
+    # so 20 characters was never enough; see Location.phone_number for how this
+    # surfaced during the SQLite -> PostgreSQL migration.
     work_phone = models.CharField(
-        max_length=20,
+        max_length=100,
         blank=True,
         verbose_name=_('Work Phone')
     )

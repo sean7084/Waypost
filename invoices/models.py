@@ -233,7 +233,12 @@ class EmailDispatch(models.Model):
     bcc = models.TextField(blank=True, help_text='Comma separated BCC recipients')
 
     attachments = models.JSONField(default=list, blank=True)
-    reply_message_id = models.CharField(max_length=255, blank=True)
+    # Copied verbatim from a ReceivedEmailMessage.message_id (accounts/rfq_ai.py,
+    # invoices/views.py) and emitted as the In-Reply-To header
+    # (invoices/services.py), so it has to accept everything that field accepts -
+    # see the note on accounts.ReceivedEmailMessage.message_id. Its sibling
+    # reply_references was already a TextField for the same reason.
+    reply_message_id = models.TextField(blank=True)
     reply_references = models.TextField(blank=True)
 
     status = models.CharField(max_length=30, choices=DispatchStatus.choices, default=DispatchStatus.DRAFT)

@@ -485,8 +485,19 @@ a UID like `10001`.
 # Nginx (www-data) must be able to read media/ without /home/deploy becoming
 # world-readable: traverse permission on the home directory, read on the data.
 sudo setfacl -m g:www-data:x /home/deploy
-setfacl -R -m g:www-data:rX -m d:g:www-data:rX ~/waypost-data/media
+setfacl -R -m g:www-data:rX ~/waypost-data/media
+# The *default* ACL is what makes files the container creates LATER readable too.
+# It is applied to directories only: a default ACL on a regular file is an error,
+# so `setfacl -R -m d:...` over the whole tree aborts part-way.
+find ~/waypost-data/media -type d -exec setfacl -m d:g:www-data:rx {} +
 ```
+
+> ⚠️ **Seeding `media/` from a Windows-produced tarball.** `tar -czf` on Windows
+> (bsdtar) records directory modes without the owner write bit, and GNU tar's
+> `--no-same-permissions` applies the umask as a *mask* — it cannot add that bit
+> back. Extraction as an unprivileged user therefore dies with `Cannot mkdir:
+> Permission denied` part-way through. Extract as root (or re-archive on Linux),
+> then set ownership and modes explicitly.
 
 ### 2.4 Production `.env`
 
