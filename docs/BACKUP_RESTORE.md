@@ -88,22 +88,41 @@ docker compose exec -T db sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"'
 tar czf "${BACKUP_DIR}/media_${STAMP}.tar.gz" -C "$DATA_DIR" media
 tar czf "${BACKUP_DIR}/template_files_${STAMP}.tar.gz" -C "$DATA_DIR" template_files
 
-# 4) Configuration: the env file (encrypted), the compose file, the installed
-#    deploy script and the Nginx site.
-gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase-file "${BACKUP_DIR}/.env-passphrase" \
-  -o "${BACKUP_DIR}/env_${STAMP}.gpg" "${APP_DIR}/.env"
-tar czf "${BACKUP_DIR}/config_${STAMP}.tar.gz" \
-  "${APP_DIR}/docker-compose.yml" \
-  "${APP_DIR}/docker/nginx/waypost.conf" \
-  /srv/waypost/bin/ci-deploy.sh 2>/dev/null || true
+# 4) Configuration. .env holds DJANGO_FIELD_ENCRYPTION_KEY, without which stored
+#    mailbox credentials cannot be decrypted even from a good database dump.
+#    It is copied at mode 600 rather than gpg'd against a passphrase stored next
+#    to the ciphertext, which would be security theatre: an attacker who can read
+#    the backup directory could read the passphrase too. Anything that leaves this
+#    host (object storage, a laptop) must be encrypted in transit/at rest there.
+install -m 600 "${APP_DIR}/.env" "${BACKUP_DIR}/env_${STAMP}"
 
 # 5) Retention
 find "${BACKUP_DIR}/pg" -name 'db_*.dump' -mtime +7 -delete
-find "${BACKUP_DIR}" -maxdepth 1 -name 'media_*.tar.gz' -mtime +28 -delete
-find "${BACKUP_DIR}" -maxdepth 1 -name 'config_*.tar.gz' -mtime +90 -delete
+find "${BACKUP_DIR}" -maxdepth 1 -name 'media_*.tar.gz'          -mtime +28 -delete
+find "${BACKUP_DIR}" -maxdepth 1 -name 'template_files_*.tar.gz' -mtime +28 -delete
+find "${BACKUP_DIR}" -maxdepth 1 -name 'env_*'                   -mtime +28 -delete
 
 echo "$(date -Is) ok ${STAMP}"
 ```
+
+This is installed on the production host as `/srv/waypost/bin/waypost-backup.sh`
+(mode `750`, owner `deploy`) and driven by that account's crontab:
+
+```cron
+40 3 * * *  /srv/waypost/bin/waypost-backup.sh    >> /srv/waypost/backups/backup.log 2>&1
+*/5 * * * * /srv/waypost/bin/waypost-probe.sh     >> /srv/waypost/backups/probe.log 2>&1
+35 9 * * *  /srv/waypost/bin/waypost-cert-check.sh >> /srv/waypost/backups/cert-check.log 2>&1
+```
+
+The minutes are offset from the other application's jobs on the same host (03:15
+and 09:30) so two stacks do not spike the disk together. Cron has no login shell,
+so each script sets its own `PATH`, `XDG_RUNTIME_DIR` and `DOCKER_HOST`.
+
+`waypost-cert-check.sh` deliberately inspects the certificate that is actually
+*served* (`openssl s_client … | openssl x509 -checkend 2592000`) rather than a
+file under `/etc/letsencrypt`: that directory is root-only and the deploy account
+has no sudo, and the served-certificate check also catches Nginx presenting the
+wrong certificate.
 
 The container image itself is **not** backed up: it is reproducible from a git
 tag plus `docker/Dockerfile`. What is not reproducible is the database, the two
