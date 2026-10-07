@@ -44,13 +44,36 @@
 - `docs/BACKUP_RESTORE.md`: §2b/§3a for the containerised stack.
 - `invoices/services.py`: a missing `签收单 template.xlsx` was swallowed by a bare `except FileNotFoundError: pass`, so invoice dispatch emails quietly lost their delivery documents. Now logged as a warning.
 
+6. Verification deploys of a branch (added after the first two PRs merged)
+- `scripts/deploy-dev-to-ecs.ps1`: deploys `origin/main` (or any ref) to the host without cutting a release. Shows the commits and migrations in the range and asks before proceeding, because there is only one database on this host.
+- `docker/bin/ci-deploy.sh`: accepts a non-tag ref behind an explicit `--allow-untagged`. Same code path as a release — one runner, so the two cannot drift — but the image is tagged `waypost-app:dev-<ref>` and the deploy is logged `kind=untagged-ref … DEV_OK`, so a verification deploy can never be mistaken for a release. Without the flag a non-tag ref is still refused, so the CD path cannot deploy a branch by accident.
+- `docs/RELEASE_PROCEDURE.md`: new §4 "What a tag actually ships" (a tag deploys the whole tree, so untagged PRs go out with the next tag — there is no per-PR deploy), new §4 "When to apply the tag", new §6.5 for the verification path, and §5.2 gained the no-tags-yet variant of the migration check (the documented command fails with `unknown revision` while the repository has zero tags).
+
 ### Migration Files Added
 
-None.
+Three, all schema widenings — which is why §2 makes this at least a MINOR bump:
+
+| Migration | Change |
+|-----------|--------|
+| `companies/migrations/0015_alter_companyuser_work_phone_and_more` | `Location.phone_number` 17→100, `CompanyUser.work_phone` 20→100 |
+| `accounts/migrations/0023_alter_receivedemailmessage_message_id` | `ReceivedEmailMessage.message_id` `CharField(255)` → `TextField` |
+| `invoices/migrations/0006_alter_emaildispatch_reply_message_id` | `EmailDispatch.reply_message_id` `CharField(255)` → `TextField` (pre-emptive; it stores the same RFC 5322 Message-ID as the field above) |
+
+Why they exist: SQLite does not enforce `varchar(n)`, PostgreSQL does. Loading the
+real data into PostgreSQL failed with `value too long for type character varying(255)`
+on a Message-ID of 259 characters — legitimate data, so the columns were widened
+rather than the values truncated. Every bounded `CharField` in the project (202 of
+them) was scanned against the real data to find all three at once instead of one
+failed `loaddata` at a time.
+
+Rollback: these are `AlterField` widenings, so Django can generate a real reverse
+(§9.1), but **reversing is only safe while no stored value exceeds the old bound**.
+Once a 259-character Message-ID exists, narrowing back to 255 fails on PostgreSQL.
+Treat them as one-way if the release has been live and used.
 
 ### Validation
 
-- `python manage.py test`: 205 tests, 0 failures (baseline `origin/main` at the time: 193 tests, 0 failures) — the 12 new probe tests, no regressions.
+- `python manage.py test`: 205 tests, 0 failures (baseline `origin/main` at the time: 193 tests, 0 failures) — the 12 new probe tests, no regressions. Re-run on the merged `main` (this PR plus the design-system PR): **215 tests, 0 failures**.
 - `python manage.py check` and `makemigrations --check --dry-run`: clean.
 - `python -m ruff check .`: clean.
 - Production-shaped configuration verified by booting with `DJANGO_DEBUG=False` and printing the resolved settings: proxy header, CSRF origins, SSL redirect, redirect exemption, secure cookies, WhiteNoise manifest storage and middleware, rotating log handler.
