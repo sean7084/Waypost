@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Tag-promoted production deploy for Waypost.
+# Production deploy for Waypost. Tag-promoted; a branch can be deployed only when
+# explicitly asked for.
 #
 # Invoked over SSH by .github/workflows/deploy-ecs.yml:
 #
@@ -8,16 +9,27 @@
 # The SHA is optional and only used for logging and /healthz/; when omitted it is
 # resolved from the tag, which is the more trustworthy source anyway.
 #
+# Invoked by an operator through scripts/deploy-dev-to-ecs.ps1:
+#
+#     ci-deploy.sh origin/main --allow-untagged
+#
+# Without --allow-untagged a non-tag ref is refused, so the CD path can never
+# deploy a branch by accident. An untagged deploy is built as waypost-app:dev-<ref>,
+# logged with kind=untagged-ref and result DEV_OK, and is a VERIFICATION deploy:
+# it is not a release, it gets no CHANGELOG entry and no tag. Releases still go
+# through a tag (RELEASE_PROCEDURE §6.3) so that "what is in production" is always
+# a named, immutable commit.
+#
 # Runs as the `deploy` user on the ECS. That user owns this directory tree and
 # its own rootless Docker daemon, which is a separate daemon from the one running
 # the Helpdesk stack - so nothing this script does can touch that application,
 # and it has no sudo rights either.
 #
 # Sequence:
+#   0. fetch, then resolve the ref to an image tag       (tag, or dev-<ref>)
 #   1. alias the running image as waypost-app:rollback   (the rollback target)
 #   2. pg_dump checkpoint                                (the data safety net)
-#   3. git checkout the tag                              (never main: see
-#                                                         RELEASE_PROCEDURE §6.3)
+#   3. git checkout the ref
 #   4. build + up                                        (the entrypoint runs
 #                                                         migrate/collectstatic)
 #   5. health gate: loopback, then the public URL through Nginx
@@ -27,6 +39,11 @@
 # one-way-door migration (accounts/0019, products/0004, quotations/0007 - see
 # RELEASE_PROCEDURE §9.2), so restoring over a live database is a human decision.
 # This script prints the checkpoint path and stops.
+#
+# NOTE for untagged deploys: `main` may contain migrations, and those are applied
+# to the SAME production database a release would use. There is no separate dev
+# database on this host, so a verification deploy of main is not risk-free - take
+# the checkpoint (automatic) and read the migration list before running it.
 set -euo pipefail
 
 # Docker access must not depend on how this account's CLI context happens to be
@@ -48,11 +65,27 @@ HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-180}"
 DEPLOY_LOG="${BACKUP_DIR}/deploy.log"
 STAMP="$(date +%F-%H%M%S)"
 
-TAG="${1:-}"
-SHA="${2:-}"
+# Argument parsing is order-independent so `--allow-untagged` can be given before
+# or after the ref/sha: a tag deploy (the CD path) and a verification deploy of a
+# branch (scripts/deploy-dev-to-ecs.ps1) share this one code path on purpose, so
+# there are not two deploy scripts to drift apart.
+REF=""
+SHA=""
+ALLOW_UNTAGGED=0
+KIND="tag"
+TAG=""
 PREV_REF=""
 CHECKPOINT=""
 ROLLED_BACK=0
+
+for arg in "$@"; do
+    case "$arg" in
+        --allow-untagged) ALLOW_UNTAGGED=1 ;;
+        *)
+            if [ -z "$REF" ]; then REF="$arg"; elif [ -z "$SHA" ]; then SHA="$arg"; fi
+            ;;
+    esac
+done
 
 log()  { printf '%s %s\n' "$(date -Is)" "$*"; }
 die()  { log "FATAL: $*" >&2; record "ABORTED"; exit 1; }
@@ -77,7 +110,7 @@ fetch_with_retry() {
 
 record() {
     mkdir -p "$BACKUP_DIR"
-    printf '%s\t%s\t%s\t%s\n' "$(date -Is)" "${TAG:-none}" "${SHA:-none}" "${1:-unknown}" >> "$DEPLOY_LOG"
+    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -Is)" "${KIND}" "${TAG:-none}" "${SHA:-none}" "${1:-unknown}" >> "$DEPLOY_LOG"
 }
 
 # Dump the app container's recent logs so a failed deploy is diagnosable straight
@@ -135,7 +168,7 @@ fail() {
 }
 
 # --- pre-flight -------------------------------------------------------------
-[ -n "$TAG" ] || die "usage: ci-deploy.sh <git-tag> [<git-sha>]"
+[ -n "$REF" ] || die "usage: ci-deploy.sh <git-tag|origin/branch> [--allow-untagged] [<git-sha>]"
 command -v docker >/dev/null 2>&1 || die "docker CLI not found for $(id -un)"
 docker compose version >/dev/null 2>&1 || die "'docker compose' plugin unavailable"
 docker info >/dev/null 2>&1 || die "cannot reach this user's Docker daemon (is it rootless and running? try: systemctl --user status docker)"
@@ -145,7 +178,25 @@ cd "$APP_DIR"
 [ -f docker-compose.yml ] || die "docker-compose.yml missing in $APP_DIR"
 [ -d "${BACKUP_DIR}" ] || mkdir -p "${BACKUP_DIR}/pg"
 
-log "=== deploying ${TAG} (${SHA:-unknown sha}) as $(id -un) ==="
+# Fetch first: the ref must be resolved against what origin actually has, and a
+# branch deploy is meaningless against a stale remote-tracking ref.
+fetch_with_retry || die "git fetch failed after 3 attempts (is github.com reachable from this host?)"
+
+if git rev-parse -q --verify "refs/tags/${REF}" >/dev/null 2>&1; then
+    KIND="tag"
+    TAG="$REF"
+elif [ "$ALLOW_UNTAGGED" -eq 1 ] && git rev-parse -q --verify "${REF}^{commit}" >/dev/null 2>&1; then
+    KIND="untagged-ref"
+    # Compose interpolates this into `image: waypost-app:${TAG:-latest}`, so it
+    # must be a valid image tag: strip the remote prefix and anything Docker
+    # would reject. `dev-main` reads clearly in `docker images` next to `v0.2.0`.
+    TAG="dev-$(printf '%s' "${REF##*/}" | tr -c 'A-Za-z0-9._-' '-')"
+    log "WARNING: ${REF} is NOT a tag - this is a verification deploy, not a release"
+else
+    die "${REF} is not a tag in this repository (pass --allow-untagged to deploy a branch for verification)"
+fi
+
+log "=== deploying ${REF} as image ${IMAGE}:${TAG} (${KIND}) as $(id -un) ==="
 
 # --- 1. remember what is running now ---------------------------------------
 PREV_REF="$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)"
@@ -181,14 +232,13 @@ else
     log "database container not running yet - skipping the pre-deploy checkpoint"
 fi
 
-# --- 3. check out the released tag ------------------------------------------
-fetch_with_retry || fail "git fetch failed after 3 attempts (is github.com reachable from this host?)"
-git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null || fail "tag ${TAG} does not exist in origin"
-git checkout -f "$TAG" || fail "git checkout ${TAG} failed"
+# --- 3. check out the released ref ------------------------------------------
+# (fetched and verified in the pre-flight above)
+git checkout -f "$REF" || fail "git checkout ${REF} failed"
 # -ffd, never -x: .env is gitignored and must survive every deploy.
 git clean -ffd || fail "git clean failed"
 if [ -z "$SHA" ]; then
-    SHA="$(git rev-parse --short "${TAG}^{commit}" 2>/dev/null || echo unknown)"
+    SHA="$(git rev-parse --short "${REF}^{commit}" 2>/dev/null || git rev-parse --short HEAD)"
 fi
 log "checked out $(git describe --tags 2>/dev/null || git rev-parse --short HEAD) (${SHA})"
 
@@ -212,12 +262,17 @@ fi
 if [ "${SKIP_PUBLIC_GATE:-0}" != "1" ]; then
     edge_ok=1
     wait_for_health "$PUBLIC_HEALTH_URL" "public healthz" || edge_ok=0
-    login_code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$PUBLIC_LOGIN_URL" || true)"
+    # -L is load-bearing. A bare /accounts/login/ legitimately 302s to the default
+    # language prefix (/en-us/accounts/login/), so demanding 200 on the first hop
+    # fails EVERY deploy even when the edge is fine - it marked a healthy deploy
+    # FAILED_EDGE during bring-up. Following redirects tests the whole path instead:
+    # Nginx, TLS, the locale redirect and the rendered login page.
+    login_code="$(curl -sL -o /dev/null -w '%{http_code}' --max-time 20 "$PUBLIC_LOGIN_URL" || true)"
     if [ "$login_code" != "200" ]; then
-        log "public login page returned ${login_code:-none} (expected 200): ${PUBLIC_LOGIN_URL}"
+        log "public login page returned ${login_code:-none} after following redirects (expected 200): ${PUBLIC_LOGIN_URL}"
         edge_ok=0
     else
-        log "health gate passed (public login): ${PUBLIC_LOGIN_URL}"
+        log "health gate passed (public login, redirects followed): ${PUBLIC_LOGIN_URL}"
     fi
 
     if [ "$edge_ok" -ne 1 ]; then
@@ -234,8 +289,12 @@ if [ "${SKIP_PUBLIC_GATE:-0}" != "1" ]; then
 fi
 
 # --- 6. done ----------------------------------------------------------------
-log "=== ${TAG} deployed and healthy ==="
+if [ "$KIND" = "tag" ]; then
+    log "=== ${TAG} deployed and healthy ==="
+else
+    log "=== ${REF} deployed and healthy (image ${IMAGE}:${TAG}, NOT a release) ==="
+fi
 docker compose ps || true
 curl -s --max-time 10 "$PUBLIC_HEALTH_URL" || curl -s --max-time 10 "$LOCAL_HEALTH_URL" || true
 echo
-record "OK"
+if [ "$KIND" = "tag" ]; then record "OK"; else record "DEV_OK"; fi

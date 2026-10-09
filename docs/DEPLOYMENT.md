@@ -675,12 +675,35 @@ sudo install -d -m 755 -o deploy -g deploy /srv/waypost/bin
 sudo install -m 755 -o deploy -g deploy /srv/waypost/app/docker/bin/ci-deploy.sh /srv/waypost/bin/
 ```
 
-Re-install it by hand whenever `docker/bin/ci-deploy.sh` changes.
+Re-install it by hand whenever `docker/bin/ci-deploy.sh` changes — or just run
+`scripts/deploy-dev-to-ecs.ps1` once, which installs the copy from the ref it is
+deploying before running it.
 
 > ⚠️ **Firewall interaction.** GitHub-hosted runners use dynamic IPs. If SSH is
 > ever restricted to known source addresses at the security-group or `ufw` level,
 > this pipeline stops working — move to a self-hosted runner in that case rather
 > than widening the rule.
+
+#### Updating the server from `main` without cutting a release
+
+Merging a PR does **not** deploy anything — only a `v*` tag does. To put merged
+work on the host for inspection before deciding to release it:
+
+```powershell
+.\scripts\deploy-dev-to-ecs.ps1          # origin/main; shows the diff and asks first
+```
+
+It runs the same `ci-deploy.sh` with `--allow-untagged`, builds `waypost-app:dev-main`
+and logs the deploy as `DEV_OK` rather than `OK`. It needs an SSH key the `deploy`
+account accepts: `/home/deploy/.ssh/authorized_keys` holds two entries — the
+`restrict`ed `waypost-ci-deploy` key (GitHub Secrets only, unusable from a
+workstation) and `operator-waypost-deploy`, which is the **same ed25519 key already
+authorised for `sean`**, so the script needs no `-i` and there is no extra private
+key to look after.
+
+> ⚠️ There is one database on this host, so a `main` deploy applies `main`'s
+> migrations to production data. The script lists them before asking. Full details
+> and the release-vs-verification comparison: `RELEASE_PROCEDURE.md` §6.5.
 
 ### 2.9 Backups, logs and rollback
 
@@ -704,9 +727,21 @@ Re-install it by hand whenever `docker/bin/ci-deploy.sh` changes.
 
 ```bash
 curl -s https://ams.istore-tech.cn/healthz/          # 200, database/cache "ok"
-curl -sI https://ams.istore-tech.cn/login/           # 302 -> /accounts/login/
-curl -s -o /dev/null -w '%{http_code}\n' https://ams.istore-tech.cn/accounts/login/   # 200
+
+# Unprefixed paths 302 to the default language prefix, so follow redirects (-L)
+# rather than expecting 200 on the first hop. Measured values:
+curl -sL -o /dev/null -w '%{http_code} %{url_effective}\n' \
+     https://ams.istore-tech.cn/accounts/login/      # 200 https://.../en-us/accounts/login/
+curl -s -o /dev/null -w '%{http_code} -> %{redirect_url}\n' \
+     https://ams.istore-tech.cn/login/               # 302 -> https://.../en-us/login/
+curl -s -o /dev/null -w '%{http_code} %{size_download}\n' \
+     https://ams.istore-tech.cn/zh-cn/accounts/login/  # 200, ~6 KB of HTML
 ```
+
+> A bare `302` from `/`, `/login/` or `/accounts/login/` is **correct**, not a
+> failure: `LocaleMiddleware` redirects to `/en-us/…`. Anything that asserts on
+> these URLs must either follow redirects or request a language-prefixed path.
+> This trap marked an otherwise healthy deploy `FAILED_EDGE` once already.
 
 Then in a browser: static assets render (an unstyled page means `collectstatic`
 did not run or the manifest is stale), **log in and submit any form** — a 403

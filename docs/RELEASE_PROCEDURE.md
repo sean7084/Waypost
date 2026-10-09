@@ -18,7 +18,7 @@ This procedure is written against what actually exists in the repository today, 
 | **Version source of truth** | No `__version__` anywhere in Python code. Version appears only in `CHANGELOG.md` headings and `README.md` (Project Progress table + "Current Status") | A release is a **manual, two-file** update. Easy to miss one — see §5.3 |
 | **Git tags** | **Zero tags** exist in the repository | `deploy-ecs.yml` deploys on `v*` tags, so **nothing reaches production until the first tag is pushed** (§4). `git describe` and Tier-1 rollback both need tags to exist |
 | **CI** | `.github/workflows/backend-ci.yml` (Django checks, `makemigrations --check`, tests + coverage floor, ruff) and `miniprogram-ci.yml`; `deploy-ecs.yml` builds the image on PRs and deploys on tags | Merging is gated. Deployment is automated **from a tag**, not from `main` |
-| **Automated tests** | 205 tests (measured 2026-10-07, `manage.py test`), coverage floor 40% enforced in `pyproject.toml`; `assets`/`deliveries`/`purchases` still thinly covered | Test suite passing is **necessary but not sufficient**. Smoke-test the workflow manually (§8) |
+| **Automated tests** | 215 tests (measured 2026-10-07, `manage.py test`), coverage floor 40% enforced in `pyproject.toml`; `assets`/`deliveries`/`purchases` still thinly covered | Test suite passing is **necessary but not sufficient**. Smoke-test the workflow manually (§8) |
 | **Branch protection on `main`** | PR required · 1 approval · CODEOWNERS enforced · dismiss stale reviews · `enforce_admins=false` · required status checks: `Django checks + tests`, `Python lint (ruff)` (strict) | A red build blocks the merge. `enforce_admins=false` still lets the owner bypass, so the bypass is a deliberate act |
 | **Production runtime** | Rootless Docker Compose on a shared ECS (`app` + `postgres:16` + `redis:7`), Nginx terminating TLS on the host | Deploy = build image + recreate container; the entrypoint runs `migrate` and `collectstatic` (§6.2) |
 | **Merge style** | Squash preferred (`CONTRIBUTING.md`), though merge commits also appear in history | One commit per PR on `main` is the intent; tags make the deployed state unambiguous either way |
@@ -81,6 +81,42 @@ git tag -a v0.1.8 -m "Separate service catalog adoption, direct-dispatch fulfill
 
 **Tag target:** the **squash-merge commit on `main`** that completed the release — i.e. tag after merging, not before.
 
+### What a tag actually ships (and what happens to untagged PRs)
+
+A deploy ships **the whole tree at the tagged commit** — not one PR. `ci-deploy.sh`
+does `git checkout -f <tag>` and builds an image from that tree, so:
+
+| Situation | Outcome |
+|-----------|---------|
+| PR merged to `main`, no tag pushed | **Nothing is deployed.** Production keeps running the previously tagged image. Merging is not deploying |
+| PR A merged untagged, then PR B merged and `v0.2.0` tagged on B's commit | **A and B ship together.** The tag points at a commit whose tree contains both |
+| PR merged *after* the tag was cut | Not in that release. It waits for the next tag |
+| Two tags pushed in quick succession | Serialized — the workflow's `concurrency: waypost-production` group queues the second run behind the first |
+
+So there is no such thing as a per-PR deployment, and nothing is "left behind" by
+merging without a tag: the next tag picks up everything on `main` up to that point.
+This is also why §5.1 makes "all PRs intended for this release are merged" a
+pre-flight item, and why §5.3 requires the CHANGELOG entry to describe the
+*whole* range since the last release rather than a single PR — if three PRs are
+sitting on `main`, the release notes must cover all three, whether or not they
+were conceived as one iteration.
+
+The flip side is the risk: **tagging ships work nobody explicitly decided to
+release.** Before tagging, run §5.2's migration check over the full range and
+read `git log <last-tag>..main` — not just the PR you have in mind.
+
+### When to apply the tag
+
+1. After the release-prep PR (§5.3 CHANGELOG + §5.4 README) has **merged**. Tagging
+   before it merges ships a tree whose CHANGELOG still says "Unreleased".
+2. From a local `main` that is **up to date** with `origin/main` (§5.1). Tagging a
+   stale local `main` deploys an older tree than you think.
+3. When you can **watch the run** (§6.2). The pipeline health-gates and rolls the
+   image back on its own, but the database is never restored automatically, so a
+   failed run needs a human reading it. Don't tag and walk away.
+4. Not while another deploy is in flight. It will queue rather than conflict, but
+   two back-to-back releases make `deploy.log` harder to read.
+
 ### Back-tagging historical releases
 
 **Decision: do not back-tag.** The repository has no tags for v0.0.1 … v0.1.7, and the squash-merge history does not contain a reliable, unambiguous commit that corresponds to each historical release boundary (several releases predate the current PR workflow). Guessing would create tags that misrepresent what was deployed.
@@ -117,6 +153,17 @@ Apply §2. The deciding question is: **does this release add migration files?**
 ```bash
 # List migrations added since the last release tag (or since a known commit)
 git diff --name-only --diff-filter=A v0.1.7..HEAD -- '*/migrations/*.py'
+```
+
+**If there are no tags yet** (the state as of 2026-10-07 — see §1 and §4), the
+command above fails with `unknown revision`. Compare against the commit that was
+live in production instead, or list every migration in the tree:
+
+```bash
+git tag -l                                   # empty => no releases tagged yet
+# migrations added since the commit production is actually running:
+git diff --name-only --diff-filter=A <deployed-sha>..HEAD -- '*/migrations/*.py'
+# what the host is running is recorded in /srv/waypost/backups/deploy.log
 ```
 
 Any output ⇒ MINOR bump. No output ⇒ PATCH is permitted.
@@ -295,12 +342,53 @@ sudo systemctl status waypost --no-pager
 > `DEPLOYMENT.md` §"Applying Hotfixes" currently includes `python manage.py makemigrations` in its command list. **That is incorrect and should be removed.** Migrations are source code: they must be generated on a workstation, committed, reviewed, and released. Generating them on the server produces untracked schema drift that no tag can reproduce and that silently breaks rollback.
 >
 > 🚫 **Never deploy `main` directly — deploy the tag.** `main` may already contain commits for the *next* release. Deploying a tag is what makes "redeploy the previous release" a well-defined operation.
+>
+> The one sanctioned exception is a **verification** deploy of `main` (§6.5), which
+> is explicitly recorded as a dev deploy and is never a substitute for a release.
 
 ### 6.4 Environment changes
 
 If the release introduces new settings, `settings.py` will fail fast on boot rather than run degraded — production guards raise `ImproperlyConfigured` when `DJANGO_DEBUG=False` and either `DJANGO_SECRET_KEY` is still the insecure dev fallback or `DJANGO_FIELD_ENCRYPTION_KEY` is unset.
 
 So: **check the release notes for new `.env` variables before restarting.** A boot failure with `ImproperlyConfigured` almost always means a missing env var, not a code defect. Update `.env` (and its encrypted backup per `BACKUP_RESTORE.md` §6), then restart again.
+
+### 6.5 Deploying `main` for verification (not a release)
+
+```powershell
+.\scripts\deploy-dev-to-ecs.ps1                 # deploys origin/main, asks first
+.\scripts\deploy-dev-to-ecs.ps1 -Ref origin/feat/some-branch
+```
+
+Use this to look at merged work on the real host — real Nginx, real PostgreSQL,
+real media files — before deciding whether to tag it. It is the answer to "can I
+see #88 on the server without cutting a release?".
+
+It runs the **same** host-side `ci-deploy.sh` as a tag deploy (one code path, so
+the two cannot drift), with `--allow-untagged`, and differs only in how it is
+recorded:
+
+| | Tag release (§6.2) | Verification deploy (this) |
+|---|---|---|
+| Trigger | `git push origin v0.2.0` → GitHub Actions | The script, from an operator's machine |
+| Image | `waypost-app:v0.2.0` | `waypost-app:dev-main` |
+| `deploy.log` | `kind=tag … OK` | `kind=untagged-ref … DEV_OK` |
+| CHANGELOG / GitHub Release | Required (§5.3) | None — it is not a release |
+| Attributed to | The run's actor + tag | Whoever ran the script |
+
+Both take the same `pg_dump` checkpoint, apply migrations, health-gate and roll
+the image back automatically on failure.
+
+> ⚠️ **There is no separate dev database on this host.** A verification deploy of
+> `main` applies `main`'s migrations to the *production* database. The script
+> lists the migrations in the range before asking for confirmation, and the
+> checkpoint is taken automatically — but a `noop`-reverse migration (§9.2) still
+> cannot be undone by rolling the image back. If the range contains one of those,
+> cut a tag and follow §9 instead.
+
+Afterwards, either tag the commit you verified (making it a release) or deploy a
+tag over the top. `waypost-app:dev-main` never collides with a release image tag,
+and `waypost-app:rollback` always points at whatever was running immediately
+before the last deploy, whichever kind it was.
 
 ---
 
