@@ -274,11 +274,11 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 
 | Version | Date | Focus |
 |---------|------|-------|
+| v0.2.0 | October 2026 | Store-inspection module + WeChat mini program, Waypost rebrand, token-driven UI with full zh-cn coverage, containerised production deployment |
 | v0.1.7 | May 2026 | Separate ServiceItem catalog + direct dispatch + hardware-only asset cleanup |
 | v0.1.6 | April 2026 | RFQ mailbox automation + quotation hardening + service items + workflow dashboard stock view |
-| v0.1.5 | April 2026 | Multi-role admin controls + order-management mailbox + product price history |
 
-### Current Status (v0.1.7)
+### Current Status (v0.2.0)
 
 #### Fully Operational Features
 
@@ -287,12 +287,19 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 - Company, Division & Location management
 - Complete Asset CRUD operations
 - Asset Assignment & Return with audit trails
-- Audit system with comprehensive change tracking
+- Asset activity log with field-level change tracking (`assets.AssetActivityLog` / `AssetFieldChange`)
 - Multi-language support (EN/ZH)
 - Admin panel with Django styling
 - Data export (CSV, Excel, PDF)
 - Mobile-responsive Bootstrap 5 design
 - Asset list customization (column visibility, filtering)
+- **Store Inspection Module** - New `inspections` app: batches, stores, devices, Wi-Fi weak points, sign-off logs, AM/PM slot scheduling, field-engineer assignment, review and bundle export. Replaces the legacy `audit` module, which is retired and deleted
+- **WeChat Mini Program** - Offline-first client for store inspections against a dedicated REST API with WeChat JWT auth, plus field-audit tooling, Chinese-name login and blind count
+- **Waypost Rebrand** - Renamed from HengJi AMS across the UI, docs and templates; conda replaced by `.venv`; new navbar/login logo and favicon
+- **Token-driven Design System** - Design tokens instead of hard-coded hex colors (enforced by a conformance test), priority+ navigation overflow, and a segmented language switcher
+- **Complete zh-cn Coverage** - Full Simplified Chinese translation plus per-locale date and number formats
+- **Containerised Production Deployment** - Docker Compose (app + postgres:16 + redis:7) on the shared Aliyun ECS behind host Nginx; tag-promoted CD with a pre-deploy database checkpoint, health gates and automatic image rollback; unauthenticated `/healthz/`
+- **Credentials Encrypted at Rest** - Mailbox/SMTP passwords stored with Fernet instead of XOR obfuscation
 - **2FA with TOTP** - Full setup and verification workflow
 - **Advanced Reporting** - Charts and analytics dashboard with Chart.js
 - **Enhanced Mobile Features** - Barcode scanning with Html5-QRCode
@@ -362,7 +369,33 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 - `assets.AssetMaintenance` - Maintenance scheduling and records
 - `products.ServiceItem` - Standalone catalog entries for non-asset service offerings
 - `products.ProductPrice` - Unified price list for hardware models and service items
-- `audit.*` - Audit logging models
+- `assets.AssetActivityLog` / `assets.AssetFieldChange` - Field-level asset change tracking (replaces the retired `audit` app)
+- `inspections.*` - Store inspections: batches, stores, devices, Wi-Fi weak points, sign-off logs
+
+### v0.2.0 Migration Notes
+
+**Read this before deploying.** v0.2.0 adds 20 migration files across 7 apps and
+removes the `audit` app. Two of the new migrations are one-way doors
+(`docs/RELEASE_PROCEDURE.md` §9.2):
+
+- `accounts/0017_normalize_blank_employee_ids`
+- `accounts/0019_encrypt_mailbox_passwords_with_fernet`
+
+Reversing them restores the schema but **not** the data, and mailbox credentials
+re-encrypted under Fernet cannot be read by pre-0.2.0 code. Rollback is therefore
+Tier 3 — restore the pre-deploy `pg_dump` — not `migrate <app> zero`.
+
+In the containerised deployment the entrypoint runs `migrate --noinput` before
+Gunicorn starts, and `ci-deploy.sh` takes a `pg_dump` checkpoint first
+(`docs/DEPLOYMENT.md` §2.8). On a bare-metal install:
+
+```bash
+python manage.py migrate
+```
+
+The full list is in `CHANGELOG.md` → “Release Notes v0.2.0” → Migration Files Added.
+The retired `audit` app leaves no orphaned tables in the production database
+(verified: no `audit*` tables and no `audit` rows in `django_migrations`).
 
 ### v0.1.7 Migration Notes
 
@@ -442,6 +475,7 @@ A complete business workflow for managing quotations, purchase orders, deliverie
 - Scope delivered in v0.1.5: multi-role admin migration, order-management permission gating, product price history/derived-model behavior, and user-configurable mailbox inbox/outbox workflows with auto-sync.
 - Scope delivered in v0.1.6: mailbox RFQ classification/reprocessing with authorized-sender gating, separate `ServiceItem` catalog pricing, service-aware quotation and delivery handling, workflow-dashboard stock consolidation, and repo-local `.env` runtime loading.
 - Scope delivered in v0.1.7: dedicated service catalog adoption, direct-dispatch fulfillment for stock-covered quotations, service-aware delivery lines, and hardware-only cleanup across asset-facing pages.
+- Scope delivered in v0.2.0: store-inspection module (`inspections` app) and an offline-first WeChat mini program, the Waypost rebrand, a token-driven design system with complete zh-cn coverage, containerised ECS deployment with tag-promoted CI/CD, and Fernet encryption of mailbox/SMTP credentials.
 - Core workflow stages: quotation (draft/sent/confirmed) -> direct dispatch or purchase conversion and receipt -> delivery dispatch and signed completion -> invoice batch import/recalculation/document generation -> email dispatch tracking.
 - Key data extensions: `products.ProductPrice`, `customers.CustomerProfile`, `quotations.Quotation*`, `purchases.PurchaseOrder*`, `deliveries.DeliveryOrder*`, `invoices.WeeklyOrderBatch`, `invoices.InvoiceInfo*`, `invoices.EmailDispatch`, `invoices.WorkflowStatusAudit`.
 - Key automation paths: quotation HTML-PDF generation, delivery HTML-PDF generation, invoice information template generation with PDF fallback, bulk weekly Sharepoint import, mailbox inbox/outbox sync, RFQ classification/draft quotation generation, and SMTP dispatch caching.

@@ -1,21 +1,53 @@
 # Waypost - Changelog
 
-## Unreleased
+## Release Notes v0.2.0
 
-**Version:** to be assigned by the release-prep PR (per `docs/RELEASE_PROCEDURE.md` §2 this is at least a MINOR bump — it changes how production is deployed)
-**Release Date:** —
-**Focus:** Containerised production deployment on the shared Aliyun ECS, plus a tag-promoted CI/CD pipeline
+**Version:** 0.2.0
+**Release Date:** October 9, 2026
+**Focus:** Store-inspection module and WeChat mini program, the Waypost rebrand, a token-driven UI with full zh-cn coverage, and containerised production deployment behind a tag-promoted CD pipeline
 
 ---
 
+> **First tagged release.** v0.1.7 (May 11, 2026) and earlier are recorded in this
+> file but were never tagged, so this entry covers the entire range since then:
+> **21 merged PRs, 110 commits, 390 files changed, 20 new migration files**.
+> Per §2 any release containing migrations is at least a MINOR bump.
+
+> ⚠️ **This release is a one-way door.** Two of the migrations it adds are on the
+> `noop`-reverse list (`docs/RELEASE_PROCEDURE.md` §9.2):
+> `accounts/0017_normalize_blank_employee_ids` and
+> `accounts/0019_encrypt_mailbox_passwords_with_fernet`. Reversing them restores the
+> schema but **not** the data, and mailbox credentials re-encrypted under Fernet are
+> unreadable by pre-0.2.0 code. Rollback therefore means Tier 3 — restore the
+> pre-deploy `pg_dump` — not `migrate <app> zero`. Take the backup (§6.1) first.
+
 ### Highlights
 
-1. Waypost can now be deployed to production as a Docker Compose stack; the image carries WeasyPrint's native libraries, LibreOffice and CJK fonts, and fails to build if any of them are missing rather than degrading silently at request time.
-2. Pushing an annotated `v*` tag deploys to production automatically, with a pre-deploy database checkpoint, a health gate, and an automatic image rollback when the new release does not come up.
-3. Fixed a defect that would have broken every form submission in production: behind Nginx TLS termination Django rebuilt the expected CSRF origin as `http://` while browsers sent `https://`, so every POST — starting with login — returned 403.
-4. Added an unauthenticated `/healthz/` probe reporting database and cache status, used by the container healthcheck, the deploy gate and host monitoring.
+1. **New `inspections` app** — Kering store inspections end to end: batches, stores, devices, Wi-Fi weak points, sign-off logs, AM/PM slot scheduling, field-engineer assignment, review and bundle export. Replaces the legacy `audit` module, which is retired and deleted (#59, #80, #82, #83, #84).
+2. **New WeChat mini program** — an offline-first client for store inspections (#64) against a dedicated REST API with WeChat JWT auth (#63), plus field-audit tooling, Chinese-name login and blind count (#77).
+3. **Rebrand** — HengJi AMS → **Waypost**, and conda → `.venv` (#85), with navbar/login logo and a transparent favicon (#86).
+4. **Token-driven UI and complete zh-cn coverage** (#88) — design tokens replace hard-coded colours (enforced by a conformance test), priority+ navigation overflow, a segmented language switcher, and per-locale date/number formats via `FORMAT_MODULE_PATH`.
+5. **Production deployment** (#87) — Docker Compose on the shared Aliyun ECS behind host Nginx (443 shared by SNI), tag-promoted CD with a pre-deploy database checkpoint, health gates and automatic image rollback, and an unauthenticated `/healthz/`.
+6. **Credentials encrypted at rest** — mailbox/SMTP passwords moved from XOR obfuscation to Fernet (#26).
+7. **Quality gates and runbooks** — ruff became a required CI check and surfaced three latent crashes (#74); SECURITY.md plus the backup/restore and release-procedure runbooks landed (#27, #28, #29, #67).
 
-### Delivered Scope (14-file iteration)
+### Delivered Scope (21 PRs since v0.1.7)
+
+1. Store inspections — new Django app (`inspections/`, 37 files; did not exist at v0.1.7)
+- #59 domain model + WeChat JWT auth · #61 historical photo reuse service and command · #62 EUS report and photo generation service
+- #80 web frontend, legacy `audit` module retired · #82 iteration 2 (AM/PM scheduling, field engineers, review, bundle export) · #83 batch scoping aligned with inspections + unbatched imports · #84 slot assignment, scheduling views, dashboard tests
+- #60 `import_kering_master` command for the Kering dataset · #81 verification screenshots archived
+
+2. WeChat mini program — new `miniprogram/` tree (56 files; did not exist at v0.1.7)
+- #64 offline-first client · #63 store-inspection REST API · #65 the stack landed together (import, report, API, client, docs, CI) · #77 field-audit enhancements · #76 mini program AppID and GitHub token read from `.env`
+
+3. Rebrand and brand assets — #85, #86
+4. UI design system and i18n — #88
+5. Production deployment, CD and release tooling — #87, #89 (detail below)
+6. Security, documentation and quality gates — #26, #27, #28, #29, #67, #74
+7. Repository automation smoke tests — #1, #3
+
+#### Production deployment and CD (#87, #89)
 
 1. Production request security
 - `waypost/settings.py`: env-driven `SECURE_PROXY_SSL_HEADER` and `CSRF_TRUSTED_ORIGINS`; secure cookies, SSL redirect and HSTS gated on `DEBUG` (HSTS ships at 0 because the header is sticky); `SECURE_REDIRECT_EXEMPT` keeps the probe reachable on loopback.
@@ -52,33 +84,41 @@
 
 ### Migration Files Added
 
-Three, all schema widenings — which is why §2 makes this at least a MINOR bump:
+**20 files across 7 apps**, plus one app removed. This is why §2 makes the release a
+MINOR bump, and why the two flagged rows make it a one-way door.
 
-| Migration | Change |
-|-----------|--------|
-| `companies/migrations/0015_alter_companyuser_work_phone_and_more` | `Location.phone_number` 17→100, `CompanyUser.work_phone` 20→100 |
-| `accounts/migrations/0023_alter_receivedemailmessage_message_id` | `ReceivedEmailMessage.message_id` `CharField(255)` → `TextField` |
-| `invoices/migrations/0006_alter_emaildispatch_reply_message_id` | `EmailDispatch.reply_message_id` `CharField(255)` → `TextField` (pre-emptive; it stores the same RFC 5322 Message-ID as the field above) |
+| App | Migrations added since v0.1.7 |
+|-----|-------------------------------|
+| `accounts` | 0016 split order-management role · **0017 normalise blank employee IDs (one-way)** · 0018 system SMTP settings · **0019 encrypt mailbox passwords with Fernet (one-way)** · 0020 `WeChatIdentity` · 0021 `ServiceCity` + user Chinese name / service cities · 0022 FE notes / FE rating / invite code · 0023 `ReceivedEmailMessage.message_id` → `TextField` |
+| `inspections` | 0001 initial · 0002 device fields · 0003 `InspectionBatch` + `StoreInspection.batch` · 0004 `InspectionSignoffLog` · 0005 Wi-Fi weak points |
+| `assets` | 0015 `AssetActivityLog` + `AssetFieldChange` |
+| `companies` | 0014 default quotation template · 0015 widen `Location.phone_number` 17→100 and `CompanyUser.work_phone` 20→100 |
+| `invoices` | 0006 `EmailDispatch.reply_message_id` → `TextField` |
+| `products` | 0005 `ProductPriceApprovalRequest` |
+| `quotations` | 0008 remarks · 0009 PDF template |
+| `audit` | **removed** — `audit/migrations/0001_initial.py` deleted along with the app (#80) |
 
-Why they exist: SQLite does not enforce `varchar(n)`, PostgreSQL does. Loading the
-real data into PostgreSQL failed with `value too long for type character varying(255)`
-on a Message-ID of 259 characters — legitimate data, so the columns were widened
-rather than the values truncated. Every bounded `CharField` in the project (202 of
-them) was scanned against the real data to find all three at once instead of one
-failed `loaddata` at a time.
+About the three column widenings (`companies/0015`, `accounts/0023`, `invoices/0006`):
+SQLite does not enforce `varchar(n)`, PostgreSQL does. Loading the real data into
+PostgreSQL failed with `value too long for type character varying(255)` on a
+Message-ID of 259 characters — legitimate data, so the columns were widened rather
+than the values truncated. Every bounded `CharField` in the project (202 of them) was
+scanned against the real data to find all three at once instead of one failed
+`loaddata` at a time. Reversing them is only safe while no stored value exceeds the
+old bound.
 
-Rollback: these are `AlterField` widenings, so Django can generate a real reverse
-(§9.1), but **reversing is only safe while no stored value exceeds the old bound**.
-Once a 259-character Message-ID exists, narrowing back to 255 fails on PostgreSQL.
-Treat them as one-way if the release has been live and used.
+The retired `audit` app leaves no orphans in production: verified against the ECS
+PostgreSQL that there are **no `audit*` tables and no `audit` rows in
+`django_migrations`** (67 tables, 109 applied migrations, 7 of them `inspections_*`).
 
 ### Validation
 
-- `python manage.py test`: 205 tests, 0 failures (baseline `origin/main` at the time: 193 tests, 0 failures) — the 12 new probe tests, no regressions. Re-run on the merged `main` (this PR plus the design-system PR): **215 tests, 0 failures**.
-- `python manage.py check` and `makemigrations --check --dry-run`: clean.
-- `python -m ruff check .`: clean.
-- Production-shaped configuration verified by booting with `DJANGO_DEBUG=False` and printing the resolved settings: proxy header, CSRF origins, SSL redirect, redirect exemption, secure cookies, WhiteNoise manifest storage and middleware, rotating log handler.
-- The same 12 probe tests pass under a production-shaped environment, confirming the `_RUNNING_TESTS` guard.
+- `python manage.py test`: **215 tests, 0 failures** on the release commit.
+- `python manage.py check` and `makemigrations --check --dry-run`: clean (“No changes detected”). `python -m ruff check .`: clean.
+- CI green on every PR in the range; branch protection requires `Django checks + tests` and `Python lint (ruff)`.
+- Production-shaped configuration verified by booting with `DJANGO_DEBUG=False` and printing the resolved settings: proxy header, CSRF origins, SSL redirect, redirect exemption, secure cookies, WhiteNoise manifest storage and middleware, rotating log handler. The 12 probe tests also pass under a production-shaped environment, confirming the `_RUNNING_TESTS` guard.
+- Deployed and verified on the ECS **before** tagging: `/healthz/` 200 with `database`/`cache` ok, login page 200 in both `en-us` and `zh-cn`, `/api/v1/` 401, design-system assets served under hashed manifest names, and Helpdesk on the same host unaffected.
+- The tag→CD path itself has **not** run yet — the repository has zero tags. This release is its first exercise.
 
 ---
 
