@@ -1,5 +1,47 @@
 # Waypost - Changelog
 
+## Unreleased
+
+**Version:** to be assigned by the next release-prep PR
+**Release Date:** —
+**Focus:** Repair the release pipeline's summary step, which reported failure *after* a successful deploy
+
+---
+
+### Highlights
+
+1. v0.2.0 deployed correctly but its Actions run was marked **failed**. The `Deployment summary` step interpolated `${github.event_name}` — a single brace, which is not an Actions expression — so bash received it literally and aborted with `bad substitution`. The deploy step was green and the release was live the whole time; only the cosmetics step was red.
+2. The same run's logs were partly unreadable: `ECS_DEPLOY_USER` was stored as a *secret* whose value is the word `deploy`, so Actions masked that word everywhere — step names appeared as “Run the *** script on the ECS” and the summary heading as “Waypost production ***”.
+
+### Delivered Scope
+
+1. CI/CD
+- `.github/workflows/deploy-ecs.yml`: the summary step now receives `github.event_name`, `github.actor` and `job.status` through `env:` instead of interpolating expressions into `run:`. That fixes the `bad substitution` failure and removes the script-injection surface that inline interpolation creates.
+- `ECS_DEPLOY_USER` is read from repository **variables** with a `deploy` default rather than from secrets. It is not sensitive, and variables are not masked. Behaviour is unchanged when the variable is unset, because the default equals the value the secret held.
+- The secret-presence pre-flight no longer requires `ECS_DEPLOY_USER`, since it now always resolves.
+
+### Migration Files Added
+
+None.
+
+### Validation
+
+Evidence that v0.2.0 itself is good, taken from the release run and from production:
+
+- Release run for tag `v0.2.0` (commit `c0fb0fd`): steps 1–6 and 8 green — including “Run the deploy script on the ECS”; only step 7 (`Deployment summary`) failed.
+- On the host: `deploy.log` recorded `tag  v0.2.0  c0fb0fd  OK`, `git describe --tags` returns `v0.2.0`, the app container runs `waypost-app:v0.2.0`, and `/healthz/` reports `version: v0.2.0`, `revision: c0fb0fd`.
+- Post-release checks (§7): `/healthz/` 200 · login 200 in `en-us` and `zh-cn`, both `charset=utf-8` · dashboard, admin and inspections 302 to login · `/api/v1/` and `/api/v1/inspections/` 401 · missing static file 404 · `http://` 301 to `https://` · `X-Frame-Options: DENY` and `X-Content-Type-Options: nosniff` present · `Server: nginx` with no version. Helpdesk on the same host unaffected (admin 200, api 307, bare-IP 200).
+
+The fix in this entry is **not yet exercised by a real run** — it changes the workflow, and a `pull_request` run only executes the `image-validate` job. Verify it after merging by re-running the pipeline for the existing tag, which redeploys identical content:
+
+```bash
+gh workflow run deploy-ecs.yml -f tag=v0.2.0
+```
+
+The run should finish green with a readable summary (“Waypost production deploy”, “Run the deploy script on the ECS”).
+
+---
+
 ## Release Notes v0.2.0
 
 **Version:** 0.2.0

@@ -16,12 +16,19 @@ name: Deploy to ECS
 # Required repository secrets (Settings -> Secrets and variables -> Actions):
 #   ECS_DEPLOY_HOST        public IP or DNS name of the ECS
 #   ECS_DEPLOY_PORT        SSH port (this host uses 49153, not 22)
-#   ECS_DEPLOY_USER        the unprivileged deploy account
 #   ECS_DEPLOY_SSH_KEY     private key, whose public half is the ONLY entry in
 #                          that account's authorized_keys
 #   ECS_DEPLOY_KNOWN_HOSTS `ssh-keyscan -p <port> <host>` output, so the runner
 #                          verifies the host key instead of trusting whatever
 #                          answers (StrictHostKeyChecking=yes)
+#
+# Optional repository VARIABLE (not a secret):
+#   ECS_DEPLOY_USER        the unprivileged deploy account; defaults to `deploy`.
+#                          Deliberately a variable: it is not sensitive, and
+#                          registering it as a secret made Actions mask the literal
+#                          word "deploy" throughout the logs, which turned step
+#                          names into "Run the *** script on the ECS" and the
+#                          summary heading into "Waypost production ***".
 
 on:
   pull_request:
@@ -129,16 +136,17 @@ jobs:
         env:
           HOST: ${{ secrets.ECS_DEPLOY_HOST }}
           PORT: ${{ secrets.ECS_DEPLOY_PORT }}
-          USER_NAME: ${{ secrets.ECS_DEPLOY_USER }}
+          USER_NAME: ${{ vars.ECS_DEPLOY_USER || 'deploy' }}
           KEY: ${{ secrets.ECS_DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.ECS_DEPLOY_KNOWN_HOSTS }}
         run: |
           missing=""
           [ -n "${HOST}" ]        || missing="${missing} ECS_DEPLOY_HOST"
           [ -n "${PORT}" ]        || missing="${missing} ECS_DEPLOY_PORT"
-          [ -n "${USER_NAME}" ]   || missing="${missing} ECS_DEPLOY_USER"
           [ -n "${KEY}" ]         || missing="${missing} ECS_DEPLOY_SSH_KEY"
           [ -n "${KNOWN_HOSTS}" ] || missing="${missing} ECS_DEPLOY_KNOWN_HOSTS"
+          # USER_NAME is not checked: it always resolves, via the repository
+          # variable or the `deploy` default.
           if [ -n "${missing}" ]; then
             echo "::error::Missing repository secret(s):${missing}"
             echo "Provisioning steps: docs/DEPLOYMENT.md, 'CI/CD credentials'."
@@ -162,7 +170,7 @@ jobs:
         env:
           HOST: ${{ secrets.ECS_DEPLOY_HOST }}
           PORT: ${{ secrets.ECS_DEPLOY_PORT }}
-          USER_NAME: ${{ secrets.ECS_DEPLOY_USER }}
+          USER_NAME: ${{ vars.ECS_DEPLOY_USER || 'deploy' }}
         run: |
           ssh -i "${HOME}/.ssh/id_waypost_deploy" \
               -o StrictHostKeyChecking=yes \
@@ -178,13 +186,26 @@ jobs:
 
       - name: Deployment summary
         if: always()
+        # Contexts are passed in through env instead of being interpolated into the
+        # script. Two reasons, one of them learned the hard way:
+        #   1. `${github.event_name}` - single brace - is NOT an Actions expression.
+        #      Actions leaves it alone, bash then tries to expand it and dies with
+        #      "bad substitution". That is how the v0.2.0 release run reported
+        #      failure *after* the deploy itself had succeeded: step 5 was green,
+        #      this step was red, and the release was live the whole time.
+        #   2. Keeping `${{ }}` out of `run:` removes any chance of script injection
+        #      through a context value.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          JOB_STATUS: ${{ job.status }}
         run: |
           {
             echo "## Waypost production deploy"
             echo ""
             echo "- **tag:** \`${DEPLOY_TAG}\`"
-            echo "- **trigger:** \`${github.event_name}\` by \`${github.actor}\`"
-            echo "- **result:** \`${{ job.status }}\`"
+            echo "- **trigger:** \`${EVENT_NAME}\` by \`${ACTOR}\`"
+            echo "- **result:** \`${JOB_STATUS}\`"
             echo ""
             echo "The host-side log is \`/srv/waypost/backups/deploy.log\`; container logs are"
             echo "\`docker compose logs --tail=200 app\` in \`/srv/waypost/app\`."
