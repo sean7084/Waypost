@@ -4,7 +4,7 @@
 
 **Version:** to be assigned by the next release-prep PR
 **Release Date:** —
-**Focus:** Repair the release pipeline's summary step, and let the host-side `git fetch` ride out a longer github.com outage
+**Focus:** Repair the release pipeline's summary step, and keep releases working when github.com's apex host is unreachable from the deployment host
 
 ---
 
@@ -13,6 +13,8 @@
 1. v0.2.0 deployed correctly but its Actions run was marked **failed**. The `Deployment summary` step interpolated `${github.event_name}` — a single brace, which is not an Actions expression — so bash received it literally and aborted with `bad substitution`. The deploy step was green and the release was live the whole time; only the cosmetics step was red.
 2. The same run's logs were partly unreadable: `ECS_DEPLOY_USER` was stored as a *secret* whose value is the word `deploy`, so Actions masked that word everywhere — step names appeared as “Run the *** script on the ECS” and the summary heading as “Waypost production ***”.
 3. Re-running the pipeline for `v0.2.0` then failed for an unrelated, environmental reason: the ECS could not reach github.com, and all three `git fetch` attempts died (`curl 28 Operation too slow`, then two 132-second connect timeouts). The runner aborted before touching anything — correct behaviour, but the release had to be dispatched again by hand hours later.
+4. **`ci-deploy.sh` now has a verified codeload fallback**, so an unreachable apex no longer blocks a release. Diagnosis showed the impairment is specific to the apex host: `api.github.com` answered 200 in 0.33 s and `codeload.github.com` served the v0.2.0 tarball (7.3 MB) in 1.4 s while `https://github.com/` timed out 5/5 and `git ls-remote` failed 2/2. The fallback resolves the tag through the API, downloads the tarball, and **refuses to deploy unless the extracted files' git tree hash equals the tree SHA the API reports for that tag**.
+5. Drilling that fallback exposed a real defect: a tag deploy was recorded in `deploy.log` as `DEV_OK` and announced as "NOT a release", because the code tested `KIND = "tag"` while the kind now carries a `+tarball` suffix. A release would have been logged as a mere verification deploy.
 
 ### Delivered Scope
 
@@ -24,6 +26,14 @@
 2. Host-side deploy runner (`docker/bin/ci-deploy.sh`)
 - `fetch_with_retry` goes from 3 attempts with a flat 15 s pause to **4 attempts with escalating backoff** (20/40/60 s), and logs how long each attempt took. The attempt count is bounded by the deploy job's `timeout-minutes: 25`: a failed attempt can burn ~132 s in the connect phase alone, so four cost at most ~11 minutes and still leave room for the build and the health gates. More attempts would risk the job being killed mid-deploy, which is worse than failing cleanly beforehand.
 - `record()` now falls back to the raw ref when the image tag is not resolved yet. An abort during fetch used to log `tag  none  none  ABORTED`, so the durable host-side record could not say *which* release had been attempted — only the Actions run knew. `KIND` also starts as `unresolved` instead of `tag`, so an early abort no longer mislabels a branch deploy as a tag deploy.
+
+3. Codeload fallback (`docker/bin/ci-deploy.sh`)
+- New source path used when `git fetch` fails: resolve the ref via `api.github.com` (commit SHA **and** tree SHA), download `codeload.github.com/<owner>/<repo>/tar.gz/refs/tags/<tag>` (also `refs/heads/<branch>` or a bare SHA), then **recompute the extracted files' git tree hash with a throwaway index and require it to equal the API's tree SHA**. TLS to codeload alone would only prove the bytes came from GitHub, not that they are the tag.
+- `rsync -a --delete` into the checkout, excluding `.git/` and `.env` and honouring `.gitignore`, then re-verify the tree hash in place and assert `.env` is still non-empty. `.env` is the one file whose loss would stop the app booting, so it is protected twice rather than left to a single `*.env` gitignore pattern.
+- `FETCH_ATTEMPTS` (default 4) and `FORCE_TARBALL_SOURCE=1` are now environment knobs: the first lets a drill fail fast into the fallback, the second exercises it deliberately, because an outage cannot be scheduled and an undrilled fallback is not a fallback.
+- `deploy.log`'s kind column records the source (`tag`, `tag+tarball`, `untagged-ref`, `untagged-ref+tarball`), and a new `is_release()` prefix test decides `OK` vs `DEV_OK` — the equality test it replaces is what mis-recorded the drill.
+- Rollback now also runs `git clean -ffd` after checking out the previous ref, because a tarball deploy can leave files the previous ref does not have and compose reads `docker-compose.yml` from that directory.
+- `scripts/deploy-dev-to-ecs.ps1` no longer hard-fails when the host cannot refresh the runner from the target ref: it warns, keeps the installed runner, and checks the capability against the runner that will actually execute.
 
 ### Migration Files Added
 
@@ -42,6 +52,14 @@ The workflow fix has since been **verified by a real run**. Re-dispatching the e
 The earlier dispatch (run `38194960136`) is the evidence for the fetch change: it reached step 5, failed all three fetches, and the runner aborted before checkout, build or container recreation — production was never touched. `deploy.log` recorded that attempt as `ABORTED`.
 
 The `ci-deploy.sh` changes in item 2 are **not yet exercised by a failed fetch**; they are covered by `bash -n` and by reasoning about the job's time budget. The next outage will be the real test.
+
+The codeload fallback in item 3 **has** been exercised end to end on the host, twice, with `FORCE_TARBALL_SOURCE=1`:
+
+- Integrity mechanism, tested directly: the pristine v0.2.0 tarball hashes to `1523d940f618c5b02072c73f093b9f7840073198`, equal to the API's tree SHA; appending one byte to `waypost/health.py` changes it to `e864cb85…` and deleting the file gives `973175be…`. Both would be refused.
+- Full drill: checkout deliberately reset to `87bc7d1` first, so the sync had real work to do. Resolved `v0.2.0` → commit `c0fb0fd7e164`, downloaded 7.0 MB, extracted 568 files, verified, synced, re-verified, all three health gates passed, exit 0, `deploy.log` recorded `tag+tarball  v0.2.0  c0fb0fd7e164  OK`. `scripts/deploy-dev-to-ecs.ps1` and the v0.2.0 release notes were restored by the sync, `/healthz/` reported `revision: c0fb0fd7e164`, and `.env` was byte-identical before and after (sha256 `ea87bdea…`, 2014 bytes).
+- Negative paths: a non-existent tag and an untagged ref without `--allow-untagged` were both refused through the API path with exit 1, leaving the checkout, the runner and the containers untouched.
+- The first drill is also what surfaced the `DEV_OK` bug in highlight 5; the second, after the fix, recorded `OK`.
+- The wrapper's generated bash was checked by rendering the here-string exactly as PowerShell expands it and running `bash -n` on the result for both the plain and `SKIP_PUBLIC_GATE=1` cases (0 CR bytes).
 
 ---
 
