@@ -181,33 +181,40 @@ try {
 # application code cannot drift apart. It lives in /srv/waypost/bin (outside the
 # checkout) because ci-deploy.sh does `git checkout`/`git clean` inside it.
 #
-# The capability check is what stops a confusing outcome: a ref whose runner
-# predates --allow-untagged would be installed, then refuse the flag, then roll
-# back - looking like a deploy failure rather than a version mismatch.
+# Refreshing the runner from the ref being deployed keeps host-side logic and
+# application code from drifting apart. It needs github.com's apex host, though,
+# which from this network is intermittently unreachable - so when it cannot be
+# read, keep the installed runner and say so loudly instead of refusing to deploy.
+# ci-deploy.sh has its own codeload fallback for exactly that situation, and the
+# capability check below still runs against the runner that will really execute.
 $envPrefix = if ($SkipPublicGate) { 'SKIP_PUBLIC_GATE=1 ' } else { '' }
 $remote = @"
 set -eu
 cd $AppDir
-git fetch --tags --force origin --quiet
+RUNNER=/srv/waypost/bin/ci-deploy.sh
 rm -f /tmp/.ci-deploy.sh.next
 # `${Ref} is braced on purpose: in a double-quoted here-string PowerShell reads
 # `$Ref:docker as a drive-qualified variable (like `$env:PATH) and expands it to
 # nothing, which sends git the path '/bin/ci-deploy.sh' instead.
-if ! git show '${Ref}:docker/bin/ci-deploy.sh' > /tmp/.ci-deploy.sh.next; then
-    echo 'FATAL: ${Ref} has no docker/bin/ci-deploy.sh' >&2
-    rm -f /tmp/.ci-deploy.sh.next
-    exit 1
+if git fetch --tags --force origin --quiet \
+   && git show '${Ref}:docker/bin/ci-deploy.sh' > /tmp/.ci-deploy.sh.next \
+   && grep -q 'allow-untagged' /tmp/.ci-deploy.sh.next; then
+    install -m 0755 /tmp/.ci-deploy.sh.next "`$RUNNER"
+    echo "runner refreshed from ${Ref}"
+else
+    echo "WARNING: could not refresh the runner from ${Ref} - either github.com is"
+    echo "         unreachable from this host, or that ref predates --allow-untagged."
+    echo "         Continuing with the installed runner (`$(sha256sum "`$RUNNER" | cut -c1-16))."
 fi
-if ! grep -q 'allow-untagged' /tmp/.ci-deploy.sh.next; then
-    echo 'FATAL: the ci-deploy.sh at ${Ref} does not support --allow-untagged.' >&2
-    echo '       Deploy a ref that does (this script''s own branch or later), or' >&2
-    echo '       cut a tag and let the CD pipeline deploy it.' >&2
-    rm -f /tmp/.ci-deploy.sh.next
-    exit 1
-fi
-install -m 0755 /tmp/.ci-deploy.sh.next /srv/waypost/bin/ci-deploy.sh
 rm -f /tmp/.ci-deploy.sh.next
-${envPrefix}/srv/waypost/bin/ci-deploy.sh '${Ref}' --allow-untagged
+# The runner that will actually execute is the one that must support the flag.
+if ! grep -q 'allow-untagged' "`$RUNNER"; then
+    echo 'FATAL: the installed ci-deploy.sh does not support --allow-untagged.' >&2
+    echo '       Install a current one (docs/DEPLOYMENT.md, "Updating the server from' >&2
+    echo '       main without cutting a release"), or cut a tag and let CD deploy it.' >&2
+    exit 1
+fi
+${envPrefix}`$RUNNER '${Ref}' --allow-untagged
 "@
 # A here-string inherits this file's CRLF line endings, and bash rejects them
 # (`set -eu\r` -> "set: -\r: invalid option"). Normalize to LF before sending.

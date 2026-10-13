@@ -653,19 +653,33 @@ ssh-keygen -t ed25519 -C waypost-ci-deploy -f "$env:TEMP\waypost_deploy_key" -N 
 ssh-keyscan -p 49153 <host> > "$env:TEMP\waypost_known_hosts"
 ```
 
-Install the public half as the *only* entry in `/home/deploy/.ssh/authorized_keys`,
-prefixed with `restrict` (no pty, no agent or port forwarding, no user rc):
+Install the public half in `/home/deploy/.ssh/authorized_keys`, prefixed with
+`restrict` (no pty, no agent or port forwarding, no user rc). A second entry — the
+operator key used by `scripts/deploy-dev-to-ecs.ps1` — sits alongside it without
+`restrict`, so a human can get a shell for troubleshooting:
 
 ```bash
 sudo install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
 sudo install -m 600 -o deploy -g deploy /dev/stdin /home/deploy/.ssh/authorized_keys <<'EOF'
 restrict ssh-ed25519 AAAA... waypost-ci-deploy
+ssh-ed25519 BBBB... operator-waypost-deploy
 EOF
 ```
 
+The operator key is deliberately the **same** key already authorised for the `sean`
+account, so there is no extra private key to look after. Compare fingerprints with
+`ssh-keygen -lf` before installing, and never retype a public key by hand.
+
 Then set the repository secrets (`gh secret set <name> --repo sean7084/Waypost`):
-`ECS_DEPLOY_HOST`, `ECS_DEPLOY_PORT`, `ECS_DEPLOY_USER`, `ECS_DEPLOY_SSH_KEY`,
-`ECS_DEPLOY_KNOWN_HOSTS`. Delete the local private key afterwards.
+`ECS_DEPLOY_HOST`, `ECS_DEPLOY_PORT`, `ECS_DEPLOY_SSH_KEY`, `ECS_DEPLOY_KNOWN_HOSTS`.
+Delete the local private key afterwards.
+
+The deploy account name is **not** a secret. It is read from the repository
+*variable* `ECS_DEPLOY_USER` with a default of `deploy`
+(`${{ vars.ECS_DEPLOY_USER || 'deploy' }}`), because storing the word `deploy` as a
+secret made Actions mask that word throughout the logs — step names rendered as
+"Run the *** script on the ECS" and the summary heading as "Waypost production
+***", which is exactly the log you need legible during a failed release.
 
 Finally install the script **outside** the git checkout, so that a broken script
 version cannot be shipped by the pipeline that depends on it:
@@ -683,6 +697,60 @@ deploying before running it.
 > ever restricted to known source addresses at the security-group or `ufw` level,
 > this pipeline stops working — move to a self-hosted runner in that case rather
 > than widening the rule.
+
+#### When github.com is unreachable from the host
+
+`git fetch` talks to github.com's **apex** host, and from this network that host is
+intermittently unreachable while its subdomains stay fine. Measured 2026-10-13:
+`https://github.com/` timed out on 5 of 5 attempts (once with TLS complete at
+0.199 s but no HTTP response ever arriving) and `git ls-remote` failed twice, while
+`api.github.com` answered 200 in 0.33 s and `codeload.github.com` served the v0.2.0
+tarball — 7.3 MB in 1.4 s. Two releases were lost to this before the fallback
+existed.
+
+So `ci-deploy.sh` retries the fetch (`FETCH_ATTEMPTS`, default 4, escalating
+20/40/60 s — bounded by the deploy job's `timeout-minutes: 25`) and, if that still
+fails, falls back to the tarball:
+
+1. Resolve the ref through `api.github.com`, which yields the commit SHA **and its
+   tree SHA**.
+2. Download `https://codeload.github.com/<owner>/<repo>/tar.gz/refs/tags/<tag>`
+   (or `refs/heads/<branch>`, or a bare SHA).
+3. Recompute the git tree hash of the extracted files with a throwaway index and
+   **require it to equal the tree SHA from step 1**. For v0.2.0 both sides give
+   `1523d940f618c5b02072c73f093b9f7840073198`. Tampering is detected: appending one
+   byte to a single file, or deleting one file, changes the hash and the deploy is
+   refused. TLS to codeload alone would only prove the bytes came from GitHub, not
+   that they are the tag.
+4. `rsync -a --delete` into the checkout, excluding `.git/` and `.env` and honouring
+   `.gitignore`, then **re-verify the tree hash in place** and confirm `.env` is
+   still non-empty.
+5. Build and health-gate as usual. `deploy.log` records the kind as `tag+tarball`
+   (or `untagged-ref+tarball`), so an audit shows how a release reached the host.
+
+Two consequences worth knowing:
+
+- After a tarball deploy the files are the tag's but `.git` still points at the
+  previous commit, so `git describe` inside the checkout is **stale by design**. The
+  truth is in `/healthz/` (`revision`) and in `deploy.log`. The next git-mode deploy
+  reconciles the checkout with `git checkout -f` + `git clean -ffd`.
+- The fallback needs `jq` and `rsync` on the host (both installed; the script checks
+  and fails with a clear message if either is missing).
+
+Drill it without waiting for an outage — this is a real deploy of the given tag:
+
+```bash
+FORCE_TARBALL_SOURCE=1 /srv/waypost/bin/ci-deploy.sh v0.2.0
+```
+
+And probe the two hosts if a deploy keeps failing at fetch:
+
+```bash
+curl -sS -o /dev/null -w 'apex=%{http_code}\n' --max-time 15 https://github.com/
+curl -sS -o /dev/null -w 'api=%{http_code}\n'  --max-time 15 https://api.github.com/
+```
+
+`apex=000` with `api=200` is the signature this fallback exists for.
 
 #### Updating the server from `main` without cutting a release
 

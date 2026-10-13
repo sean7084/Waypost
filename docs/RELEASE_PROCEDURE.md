@@ -291,7 +291,12 @@ run diagnosable:
 1. Alias the running image as `waypost-app:rollback` (the rollback target).
 2. `pg_dump -Fc` checkpoint into `/srv/waypost/backups/pg/` (§6.1, automated).
 3. `git fetch --tags && git checkout -f <tag> && git clean -ffd` — **never
-   `-x`**, because `.env` is gitignored and must survive.
+   `-x`**, because `.env` is gitignored and must survive. If the fetch cannot be
+   made to work after `FETCH_ATTEMPTS` tries, the script falls back to downloading
+   the tag's tarball from `codeload.github.com` and verifying its git tree hash
+   against the tree SHA `api.github.com` reports for that tag — see
+   `DEPLOYMENT.md` §2.8, "When github.com is unreachable from the host". Such a
+   deploy is logged `tag+tarball` rather than `tag`.
 4. `docker compose build --pull app && docker compose up -d`. The container
    entrypoint then runs `migrate --noinput` and `collectstatic --noinput --clear`
    before exec'ing Gunicorn, which preserves the ordering this section used to
