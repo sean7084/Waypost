@@ -84,6 +84,11 @@ FETCH_ATTEMPTS="${FETCH_ATTEMPTS:-4}"
 # An outage cannot be scheduled, and an undrilled fallback is not a fallback.
 FORCE_TARBALL_SOURCE="${FORCE_TARBALL_SOURCE:-0}"
 
+# Set to 1 to deploy without a pre-deploy database checkpoint. See step 2: the
+# default is to refuse, because the checkpoint is the only restore point a release
+# gets and some migrations are one-way doors.
+ALLOW_MISSING_CHECKPOINT="${ALLOW_MISSING_CHECKPOINT:-0}"
+
 # The fallback talks to two hosts that stay reachable when the apex does not.
 GITHUB_API_URL="${GITHUB_API_URL:-https://api.github.com}"
 CODELOAD_URL="${CODELOAD_URL:-https://codeload.github.com}"
@@ -495,27 +500,72 @@ else
 fi
 
 # --- 2. pre-deploy database checkpoint --------------------------------------
-# Automates the non-negotiable backup in RELEASE_PROCEDURE §6.1. Skipped only
-# when the database is not up yet (first deploy), because there is nothing to
-# lose at that point.
+# Automates the non-negotiable backup in RELEASE_PROCEDURE §6.1. The database is
+# never restored automatically (§8/§9) and some migrations are one-way doors, so
+# this dump is the only restore point a release gets. Not having one is therefore
+# treated as a failed deploy, not a warning - unless the operator accepts that
+# explicitly with ALLOW_MISSING_CHECKPOINT=1.
+#
+# That matters most for the "no db service" branch at the end. It used to log
+# "database container not running yet", which reads like a harmless first deploy
+# whether or not it is one: if the database ever moves off this compose stack (to
+# RDS, say) the service disappears, every deploy silently stops taking a
+# checkpoint, and the log still looks routine.
 mkdir -p "${BACKUP_DIR}/pg"
+
+# Has anything been deployed here before? A genuine first deploy has no data to
+# checkpoint; a later one always does, and must not be allowed to look like one.
+DEPLOYED_BEFORE=0
+if [ -s "$DEPLOY_LOG" ] || docker inspect waypost_app >/dev/null 2>&1; then
+    DEPLOYED_BEFORE=1
+fi
+
+checkpoint_missing() {
+    # $1 = why there is no checkpoint. Returns non-zero when that is not acceptable.
+    log "WARNING: no pre-deploy checkpoint - $1"
+    if [ "$DEPLOYED_BEFORE" -eq 0 ]; then
+        log "  nothing has been deployed on this host before, so there is no data to lose - continuing"
+        return 0
+    fi
+    if [ "$ALLOW_MISSING_CHECKPOINT" = "1" ]; then
+        log "  ALLOW_MISSING_CHECKPOINT=1, so continuing anyway. If this release contains a"
+        log "  one-way-door migration (RELEASE_PROCEDURE §9.2) there is now no way back."
+        return 0
+    fi
+    log "  This host has been deployed before, so there IS data to lose. Either fix the"
+    log "  checkpoint, or re-run with ALLOW_MISSING_CHECKPOINT=1 to accept the risk."
+    log "  If the database has moved off this compose stack, point the checkpoint at the"
+    log "  new DSN rather than silencing this."
+    return 1
+}
+
 if docker compose ps --status running --services 2>/dev/null | grep -qx db; then
     CHECKPOINT="${BACKUP_DIR}/pg/pre-${TAG}-${STAMP}.dump"
     # The DSN is read from the db container's own environment rather than parsed
     # out of .env here, so this cannot disagree with what Postgres was actually
     # initialised with.
     if docker compose exec -T db sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$CHECKPOINT"; then
-        log "database checkpoint written: $CHECKPOINT ($(du -h "$CHECKPOINT" | cut -f1))"
+        # An empty dump is worse than no dump: it looks like a restore point and is
+        # not one, and pg_dump can exit 0 having written nothing when it is interrupted.
+        if [ -s "$CHECKPOINT" ]; then
+            log "database checkpoint written: $CHECKPOINT ($(du -h "$CHECKPOINT" | cut -f1))"
+        else
+            rm -f "$CHECKPOINT"
+            CHECKPOINT=""
+            checkpoint_missing "pg_dump exited 0 but wrote an empty file" \
+                || die "refusing to deploy without a restore point"
+        fi
     else
         rm -f "$CHECKPOINT"
         CHECKPOINT=""
-        log "WARNING: pg_dump checkpoint failed; continuing without a pre-deploy restore point"
+        checkpoint_missing "pg_dump failed" || die "refusing to deploy without a restore point"
     fi
     # Keep the newest N pre-deploy checkpoints. Nightly backups are pruned by the
     # cron job instead (see docs/BACKUP_RESTORE.md).
     { ls -1t "${BACKUP_DIR}"/pg/pre-*.dump 2>/dev/null || true; } | tail -n +$(( KEEP_CHECKPOINTS + 1 )) | xargs -r rm -f
 else
-    log "database container not running yet - skipping the pre-deploy checkpoint"
+    checkpoint_missing "the compose stack has no running 'db' service" \
+        || die "refusing to deploy without a restore point (no running db service)"
 fi
 
 # --- 3. put the released tree into the checkout ------------------------------

@@ -599,7 +599,8 @@ These are tracked as open issues and are **not** solved by this document:
 | Mailbox sync never runs unattended in production | #24 | The background thread is `runserver`-only by design (`accounts/apps.py`), so invoice/RFQ mail is only ingested when a user opens their mailbox view. Needs a management command + timer |
 | No staging environment | — | Releases are verified **in production**. This is the single largest risk in the current process |
 | No notification channel for a failed deploy | — | A red `deploy-ecs.yml` run is only seen if someone looks at the Actions tab. The host writes `/srv/waypost/backups/deploy.log`, but nothing pages anyone |
-| First tag not yet cut | — | The CD pipeline is tag-triggered and the repository has no tags, so it has never run against production. The first release must prove it end to end, including a rollback drill |
+| First release shipped; a real rollback has never been drilled | — | `v0.2.0` was tagged on 2026-10-10 and the pipeline has since run green end to end, including the codeload fallback path. The image-rollback branch was drilled with a deliberately bad tag, but no real release has been rolled back — and v0.2.0 is a one-way door (§9.2), so its only rollback is a database restore |
+| A missing pre-deploy checkpoint now stops the deploy | — | `ci-deploy.sh` refuses to continue when it cannot take a `pg_dump` and the host has been deployed before, because that dump is the only restore point a release gets. Override with `ALLOW_MISSING_CHECKPOINT=1`. **If the database moves off the compose stack (e.g. to RDS), repoint the checkpoint at the new DSN in the same change** — otherwise every deploy would either fail or be waved through with no safety net |
 
 > ✅ **Resolved since this document was first written:** CI now exists and both
 > `Django checks + tests` and `Python lint (ruff)` are required status checks on
