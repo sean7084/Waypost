@@ -187,7 +187,7 @@ Labels created live for this work: `component: api`, `component: inspections`,
 
 These require the WeChat business account, a production server, and an ICP-filed domain, so
 they cannot be completed in-repo. Each is documented step-by-step in
-[`docs/DEPLOYMENT_MINIPROGRAM.md`](../docs/DEPLOYMENT_MINIPROGRAM.md) and tracked as issue #53.
+[`docs/DEPLOYMENT_MINIPROGRAM.md`](../DEPLOYMENT_MINIPROGRAM.md) and tracked as issue #53.
 
 - ⚠️ Register the mini program; obtain AppID / AppSecret / code-upload key (runbook §1)
 - ⚠️ Production HTTPS on an ICP-filed domain + legal-domain whitelist for `request`,
@@ -204,11 +204,11 @@ API tests, the persisted real-data import, and GitHub API evidence.
 
 ## 10. Related Documents
 
-- [`docs/MINIPROGRAM_SPEC.md`](../docs/MINIPROGRAM_SPEC.md) — feature spec (personas, screens, sync contract, API map)
-- [`docs/DEPLOYMENT_MINIPROGRAM.md`](../docs/DEPLOYMENT_MINIPROGRAM.md) — deployment runbook
-- [`docs/ARCHITECTURAL_DECISION_RECORDS.md`](../docs/ARCHITECTURAL_DECISION_RECORDS.md) — ADR-0011
-- [`docs/API_GUIDE.md`](../docs/API_GUIDE.md) — JWT + inspection endpoints
-- [`miniprogram/README.md`](../miniprogram/README.md) — client structure + release checklist
+- [`docs/MINIPROGRAM_SPEC.md`](../MINIPROGRAM_SPEC.md) — feature spec (personas, screens, sync contract, API map)
+- [`docs/DEPLOYMENT_MINIPROGRAM.md`](../DEPLOYMENT_MINIPROGRAM.md) — deployment runbook
+- [`docs/ARCHITECTURAL_DECISION_RECORDS.md`](../ARCHITECTURAL_DECISION_RECORDS.md) — ADR-0011
+- [`docs/API_GUIDE.md`](../API_GUIDE.md) — JWT + inspection endpoints
+- [`miniprogram/README.md`](../../miniprogram/README.md) — client structure + release checklist
 
 ---
 

@@ -4,7 +4,7 @@
 **Author**: Sean Liu (Automated)  
 **Status**: ✅ Complete (counts corrected September 6, 2026)
 
-> ⚠️ **Correction (September 6, 2026):** A documentation alignment audit found several claims below were inaccurate — the impact-label count, the file line counts in Appendix A, and the API "completeness" self-certification. The inline figures have been corrected and the affected guides rewritten. See `reports/DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md`.
+> ⚠️ **Correction (September 6, 2026):** A documentation alignment audit found several claims below were inaccurate — the impact-label count, the file line counts in Appendix A, and the API "completeness" self-certification. The inline figures have been corrected and the affected guides rewritten. See `docs/reports/REPO_DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md`.
 
 ---
 
@@ -210,7 +210,7 @@ To Do → In Progress → Code Review → Testing → Ready for Deploy → Deplo
 **Status**: ✅ Pass
 
 ### Criterion 2: API consumers understand available endpoints
-**Evidence**: API_GUIDE.md documents the real `/api/v1/` DRF endpoints (corrected Sept 6, 2026 — the original described non-existent endpoints and a JWT auth model the code never implemented; see `reports/DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md`)  
+**Evidence**: API_GUIDE.md documents the real `/api/v1/` DRF endpoints (corrected Sept 6, 2026 — the original described non-existent endpoints and a JWT auth model the code never implemented; see `docs/reports/REPO_DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md`)  
 **Status**: ✅ Pass
 
 ### Criterion 3: Operations staff know how to process orders
@@ -261,11 +261,11 @@ For questions about this documentation setup:
 ## Appendix B: Quick Links
 
 ### Internal Resources
-- [ARCHITECTURAL_DECISION_RECORDS.md](docs/ARCHITECTURAL_DECISION_RECORDS.md)
-- [API_GUIDE.md](docs/API_GUIDE.md)
-- [DEPLOYMENT.md](docs/DEPLOYMENT.md)
-- [WORKFLOW_GUIDE.md](docs/WORKFLOW_GUIDE.md)
-- [CONTRIBUTING.md](docs/CONTRIBUTING.md)
+- [ARCHITECTURAL_DECISION_RECORDS.md](ARCHITECTURAL_DECISION_RECORDS.md)
+- [API_GUIDE.md](API_GUIDE.md)
+- [DEPLOYMENT.md](DEPLOYMENT.md)
+- [WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ### External References
 - Django Framework Docs

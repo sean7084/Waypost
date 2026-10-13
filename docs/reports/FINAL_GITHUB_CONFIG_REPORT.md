@@ -105,7 +105,7 @@ Complete documentation structure established:
 - ✅ `docs/CONTRIBUTING.md` - Contributor guidelines
 - ✅ `docs/INDEX.md` - Documentation navigation
 - ✅ `docs/SETUP_SUMMARY.md` - Project overview
-- ✅ `reports/GITHUB_LABELS_SETUP_REPORT.md` - Configuration details
+- ✅ `docs/reports/GITHUB_LABELS_SETUP_REPORT.md` - Configuration details
 
 **Coverage:** 3,500+ lines of professional documentation
 
@@ -223,7 +223,7 @@ Estimated Remaining Time: 5 minutes (optional branch protection refinements)
 - `SETUP_SUMMARY.md`
 
 ### Reports & Scripts
-- `reports/GITHUB_LABELS_SETUP_REPORT.md`
+- `docs/reports/GITHUB_LABELS_SETUP_REPORT.md`
 - `scripts/setup-github-labels.ps1`
 - `scripts/setup-github-project.ps1`
 - `scripts/setup-github-branch-protection.ps1`
