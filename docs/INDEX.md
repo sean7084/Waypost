@@ -54,15 +54,26 @@ Complete list of project documentation for reference and navigation.
 
 ### 📊 Completion & Audit Reports
 
-Point-in-time delivery reports, audits and gap analyses. New reports live in `docs/reports/`;
-the earlier ones are in the legacy `reports/` folder at the repository root.
+Point-in-time delivery reports, audits and gap analyses. **All reports live in `docs/reports/`.**
+The repository-root `reports/` folder is the Django `reports` **app** and must contain only app
+code — this is enforced by `tests/test_repo_hygiene.py`, which runs in the `backend-ci.yml`
+`manage.py test` gate. Canvas companions live in `docs/reports/canvas/`, and per-report evidence
+assets get their own subfolder (e.g. `docs/reports/inspections-iteration-2/`).
+
+Scope: **Waypost project** reports only. Infrastructure and cloud-account material (ECS, RDS, OSS,
+CDN, DNS, RAM, certificates, bandwidth, procurement and costing) belongs to the Aliyun ops knowledge
+base, which covers the host and the account and is shared with the Helpdesk tenant. See
+`docs/reports/README.md`.
 
 | Document | Location | Purpose |
 |----------|----------|---------|
+| **GO_LIVE_MIGRATION_BLOCKERS_REPORT_20261013.md** | `docs/reports/` | Pre-go-live OSS + RDS migration: 15 code-level blockers with `file:line`, 22 person-days of effort, Phase 1 dependency order. Application half of the ops knowledge base's cloud cost estimate |
 | **INSPECTIONS_ITERATION2_COMPLETION_REPORT_20260924.md** | `docs/reports/` | Inspections iteration 2 delivery: scope, auto-arrangement rule, endpoint surface, defects caught in verification, evidence screenshots |
-| **MINIPROGRAM_SPEC_COMPLETION_REPORT_20260914.md** | `reports/` | WeChat mini program spec completion |
-| **DOCUMENTATION_GAP_ANALYSIS_20260906.md** | `reports/` | Authoritative documentation gap analysis |
-| **DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md** | `reports/` | Documentation vs implementation alignment audit |
+| **MINIPROGRAM_SPEC_COMPLETION_REPORT_20260914.md** | `docs/reports/` | WeChat mini program spec completion |
+| **DOCUMENTATION_GAP_ANALYSIS_20260906.md** | `docs/reports/` | Authoritative documentation gap analysis |
+| **REPO_DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md** | `docs/reports/` | This repository's documentation vs its implementation. Renamed 2026-10-13 — **not** the ops knowledge base's same-dated `KB_DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md`, which audits that KB against the live ECS |
+| **GITHUB_LABELS_SETUP_REPORT.md** | `docs/reports/` | GitHub label taxonomy setup (2026-08-24) |
+| **FINAL_GITHUB_CONFIG_REPORT.md** | `docs/reports/` | GitHub repository configuration status (2026-08-24) |
 
 ### 🚀 Getting Started Resources
 
@@ -220,7 +231,7 @@ All documentation should:
 > section assigned work to roles that do not exist here (DBA team, QA lead, Security officer,
 > Engineering manager, Marketing team). Tracking is by GitHub issue instead. The authoritative
 > analysis is
-> [`reports/DOCUMENTATION_GAP_ANALYSIS_20260906.md`](../reports/DOCUMENTATION_GAP_ANALYSIS_20260906.md).
+> [`docs/reports/DOCUMENTATION_GAP_ANALYSIS_20260906.md`](reports/DOCUMENTATION_GAP_ANALYSIS_20260906.md).
 
 ### Delivered
 

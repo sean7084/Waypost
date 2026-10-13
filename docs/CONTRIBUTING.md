@@ -408,6 +408,7 @@ When making changes, ensure corresponding docs are updated:
 | UI changes | User guides, screenshot updates |
 | Bug fixes | CHANGELOG.md, release notes |
 | Cutting a release | CHANGELOG.md + README.md version tables, git tag — see [`RELEASE_PROCEDURE.md`](RELEASE_PROCEDURE.md) |
+| Delivery report / audit / gap analysis | `docs/reports/<NAME>_<YYYYMMDD>.md` + a row in `docs/INDEX.md` → “Completion & Audit Reports” |
 
 ### Documentation Structure
 
@@ -421,10 +422,23 @@ docs/
 ├── DATABASE_SCHEMA.md                  # Data model documentation (planned, issue #18)
 ├── WORKFLOW_GUIDE.md                   # Operational procedures
 ├── CONTRIBUTING.md                     # This file
-└── INDEX.md                            # Documentation navigation
+├── INDEX.md                            # Documentation navigation
+└── reports/                            # Point-in-time delivery reports, audits, gap analyses
+    ├── <NAME>_<YYYYMMDD>.md            #   the report itself
+    ├── canvas/                         #   .canvas.tsx visual companions
+    └── <report-slug>/                  #   evidence assets (screenshots, exports)
 
 ../CHANGELOG.md                         # Release history (repo root, not under docs/)
 ```
+
+> ⚠️ **`reports/` at the repository root is the Django `reports` *app*, not a documentation
+> folder.** It must contain only Python. Report documents go in `docs/reports/`.
+>
+> This is not a style preference: five delivery/audit reports had already accumulated inside
+> `reports/` next to `models.py` before they were moved on 2026-10-13. It is now enforced by
+> [`tests/test_repo_hygiene.py`](../tests/test_repo_hygiene.py), which runs in the required
+> `manage.py test` CI gate — a `.md` dropped into any app directory fails the build and the
+> failure message says where the file belongs.
 
 ### Writing Good Docs
 
