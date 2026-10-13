@@ -12,13 +12,18 @@ import pandas as pd
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.core.management import call_command
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from openpyxl import load_workbook
 from PIL import Image
 
 from assets.models import Asset
 from companies.models import Company, Division, Location
-from inspections.constants import COVER_PAGE_DEVICE_LABELS, STATUS_IN_STORE, STATUS_NOT_IN_STORE
+from inspections.constants import (
+    COVER_PAGE_DEVICE_LABELS,
+    COVER_PAGE_SUMMARY_LABELS,
+    STATUS_IN_STORE,
+    STATUS_NOT_IN_STORE,
+)
 from inspections.models import InspectionDevice, InspectionPhoto, StoreInspection
 from inspections.services import transforms
 from inspections.services.photo_naming import assign_photo_display_names
@@ -556,27 +561,233 @@ class RealDataIntegrationTests(TestCase):
         self.assertEqual(data_rows, inspection.devices.count())
 
 
+class CoverPageSummaryCountTests(SimpleTestCase):
+    """Deterministic cover_page counting tests, from committed fixtures only.
+
+    `ReportGoldenParityTests` below is the authoritative check against a real
+    EUS-generated workbook, but those workbooks are client data and cannot be
+    committed - so in CI that test skips and the counting rules were left with no
+    protection at all (issue #72). These tests pin the same rules on every run.
+
+    No database is required: `build_cover_page_summary_counts` only reads
+    attributes off the objects it is given.
+    """
+
+    @staticmethod
+    def _device(category, usage='', brand_model='', status='in_store',
+                collected_at='auto', is_new_device=False):
+        from types import SimpleNamespace
+
+        from django.utils import timezone
+
+        # effective_status() reads status/collected_at/is_new_device; 'auto' mirrors
+        # what the golden test builds (collected now when in store, else never).
+        if collected_at == 'auto':
+            collected_at = timezone.now() if status == 'in_store' else None
+        return SimpleNamespace(
+            category=category, usage=usage, brand_model=brand_model, status=status,
+            collected_at=collected_at, is_new_device=is_new_device,
+        )
+
+    def _counts(self, *devices):
+        return transforms.build_cover_page_summary_counts(list(devices))
+
+    def test_every_summary_label_is_initialised_to_zero(self):
+        # Guards the label literals used inside the function against the constant
+        # they must match. A mismatch (a stray space inside the full-width
+        # parentheses, say) would be a KeyError on the first store that owns such a
+        # device rather than a test failure - and only in production.
+        counts = self._counts()
+        self.assertEqual(set(counts), set(COVER_PAGE_SUMMARY_LABELS))
+        self.assertEqual(sum(counts.values()), 0)
+
+    def test_category_usage_and_brand_rules(self):
+        cases = [
+            # (category, usage, brand_model, label that must reach 1)
+            ('Desktop', 'xstore', '', 'Xstore PC'),
+            ('Laptop', '', '', 'None POS PC'),
+            ('Monitor', '', '', 'Monitor'),
+            ('Printer', '', 'Epson TM-T88V', 'Reception Printer'),
+            ('Printer', 'label', '', 'Barcode Printer'),
+            ('Printer', 'aio', '', 'AIO Printer'),
+            ('Printer', 'a4', '', 'Black/White'),
+            ('Scanner', 'xstore', '', 'Xstore Scanner'),
+            ('Scanner', '', '', 'Scanner'),
+            ('Tablet', '', 'Apple iPad Air', 'iPad（Total）'),
+            ('Phone', '', 'Apple iPhone SE 3', 'iPhone se（total）'),
+            ('Charger', '', 'Linea Pro Charger', 'Linea Pro Charger'),
+            ('RFID', '', 'RFID reader', 'RFID'),
+            ('Charger', '', 'RFID charger', 'RFID Charger'),
+            ('UPS', '', 'APC UPS', 'UPS'),
+            ('Other', '', 'cash drawer', 'Cashdrawer'),
+        ]
+        for category, usage, brand_model, label in cases:
+            with self.subTest(category=category, usage=usage, brand_model=brand_model):
+                counts = self._counts(self._device(category, usage, brand_model))
+                self.assertEqual(counts[label], 1)
+                self.assertEqual(sum(counts.values()), 1, 'exactly one label expected')
+
+    def test_one_device_may_increment_several_labels(self):
+        # The EUS rules are independent checks, not an if/elif chain: a Linea Pro
+        # scanner is counted both as a Scanner and as a Linea Pro.
+        counts = self._counts(self._device('Scanner', '', 'Datalogic Linea Pro'))
+        self.assertEqual(counts['Scanner'], 1)
+        self.assertEqual(counts['Linea Pro'], 1)
+
+    def test_charger_is_not_also_counted_as_the_device(self):
+        # 'RFID Charger' is an if/elif against 'RFID', unlike the Linea Pro case.
+        counts = self._counts(self._device('Charger', '', 'RFID charger'))
+        self.assertEqual(counts['RFID Charger'], 1)
+        self.assertEqual(counts['RFID'], 0)
+
+    def test_devices_that_were_not_collected_onsite_are_not_counted(self):
+        counts = self._counts(
+            # explicitly absent
+            self._device('Monitor', status='not_in_store'),
+            # expected but never collected: status says in store, collected_at does not
+            self._device('Monitor', collected_at=None, is_new_device=False),
+        )
+        self.assertEqual(counts['Monitor'], 0)
+
+        # ...while a device the engineer added on the spot does count.
+        added = self._counts(
+            self._device('Monitor', collected_at=None, is_new_device=True))
+        self.assertEqual(added['Monitor'], 1)
+
+    def test_counting_depends_on_whether_the_category_was_normalized(self):
+        """Pins a live divergence rather than asserting a desirable behaviour.
+
+        `DEVICE_CATEGORY_REPLACEMENTS` maps 'ups' -> 'Other' and 'ipad'/'iphonese'
+        -> 'IOS_Device', while `build_cover_page_summary_counts` compares the
+        lowercased category against the literals 'ups', 'ipad' and 'iphonese'.
+        Those comparisons therefore only match when the caller passes the raw
+        stored value:
+
+        - `report_generator.generate_inspection_report` passes `InspectionDevice`
+          rows straight from the database, so a stored 'UPS' still counts;
+        - `ReportGoldenParityTests` normalizes first, so on that path the same
+          device counts only when the brand/model carries the substring.
+
+        The UPS branch is narrower still: once normalized to 'Other' it also
+        requires BOTH 'ups' and 'smc' in the brand/model. Whether that is faithful
+        to EUS needs the reference implementation to settle; until then this test
+        documents the divergence so it cannot change unnoticed.
+        """
+        from inspections.constants import normalize_device_category
+
+        self.assertEqual(normalize_device_category('UPS'), 'Other')
+        self.assertEqual(normalize_device_category('iPad'), 'IOS_Device')
+        self.assertEqual(normalize_device_category('iphonese'), 'IOS_Device')
+
+        raw = self._counts(self._device('UPS', '', 'APC UPS'))
+        self.assertEqual(raw['UPS'], 1, 'a raw stored category still matches')
+
+        normalized = self._counts(
+            self._device(normalize_device_category('UPS'), '', 'APC UPS'))
+        self.assertEqual(
+            normalized['UPS'], 0,
+            "normalizing first maps UPS -> Other, and 'APC UPS' lacks the 'smc' "
+            'substring that the Other branch additionally requires')
+
+        # Same shape for the iOS devices: after normalization only the brand/model
+        # substring path can count them.
+        self.assertEqual(
+            self._counts(self._device('iPad'))['iPad（Total）'], 1)
+        self.assertEqual(
+            self._counts(self._device(normalize_device_category('iPad')))['iPad（Total）'], 0)
+        self.assertEqual(
+            self._counts(self._device('iPad', brand_model='Apple iPad Air'))['iPad（Total）'], 1)
+        self.assertEqual(
+            self._counts(
+                self._device(normalize_device_category('iPad'), brand_model='Apple iPad Air')
+            )['iPad（Total）'], 1)
+
+
 class ReportGoldenParityTests(TestCase):
     """Authoritative parity: reconstruct devices from a REAL EUS-generated report and
     assert our ported transforms reproduce its cover_page counts and categories.
 
-    Skips when no golden report is available locally (e.g. CI). Set
-    INSPECTION_GOLDEN_REPORT to point at a specific '... Report Per Store.xlsx'.
+    Skips when no golden report is available locally (e.g. CI) - loudly, via a
+    workflow annotation. Set INSPECTION_GOLDEN_REPORT to point at a specific
+    '... Report Per Store.xlsx' (required when several match), and
+    INSPECTION_GOLDEN_REQUIRED=1 to make an unavailable golden fail instead of skip.
     """
 
     # Cover labels fed by devices that the EUS pipeline filters OUT of asset_list
     # (network gear + cash drawers), so they cannot be reconstructed from it.
     NON_ASSET_LIST_LABELS = {'Patch Panel', 'Router', 'Switch', 'AP', 'Cashdrawer'}
 
+    # Golden reports are client data and cannot be committed, so this test can only
+    # run on a machine that has them. That is a hazard in three distinct ways, and
+    # all three have bitten (issue #72):
+    #
+    #   1. `sorted(glob(...))[0]` silently changes WHICH STORE is under assertion
+    #      whenever a workbook is added or renamed. A failure then says nothing
+    #      about the code, and a pass says nothing about the store this port was
+    #      validated against. Confirmed in practice: the golden set changed between
+    #      the issue being filed and it being fixed, so the reported mismatch
+    #      stopped reproducing without any code change.
+    #   2. The path is outside the repository, so no other machine can run it.
+    #   3. In CI the path does not exist, so the test skipped silently and the
+    #      authoritative check on the Kering report port gave no protection.
+    #   4. The pattern spelled `**` but glob was called WITHOUT recursive=True, and
+    #      `**` is only special when it is a WHOLE path segment - glued to the
+    #      filename it degrades to a single `*` that cannot cross a directory
+    #      boundary. The workbooks live in per-store subfolders, so whether the
+    #      test ran at all depended on whether a copy happened to sit at the top
+    #      level. It matched, then stopped matching within the hour, with no code
+    #      change - the file had been moved into its store's subfolder.
+    #
+    # Hence: recurse with `**` as its own segment so nesting works, never guess
+    # between candidates, surface the skip as a CI annotation, and allow the skip to
+    # be escalated to a failure where the files do exist.
+    # CoverPageSummaryCountTests above is what actually protects the rules in CI.
+    GOLDEN_GLOB = (r'c:\Users\sean_\Documents\EUS_Device_Inspec\DeviceInspecFeishuAutomation'
+                   r'\**\* Report Per Store.xlsx')
+
+    def _note_golden_unavailable(self, reason):
+        # A workflow annotation shows up in the Actions summary; a plain skipTest
+        # reason is only visible if someone reads the raw log, which is how this
+        # went unnoticed for as long as it did.
+        if os.environ.get('GITHUB_ACTIONS'):
+            print(f'::warning title=Inspection golden parity NOT verified::{reason}')
+
     def _find_golden(self):
         import glob
+
         override = os.environ.get('INSPECTION_GOLDEN_REPORT')
-        if override and os.path.exists(override):
-            return override
-        pattern = (r'c:\Users\sean_\Documents\EUS_Device_Inspec\DeviceInspecFeishuAutomation'
-                   r'\*\* Report Per Store.xlsx')
-        matches = sorted(glob.glob(pattern))
-        return matches[0] if matches else None
+        if override:
+            if os.path.exists(override):
+                return override
+            self._note_golden_unavailable(
+                f'INSPECTION_GOLDEN_REPORT points at a missing file: {override}')
+            return None
+
+        matches = sorted(glob.glob(self.GOLDEN_GLOB, recursive=True))
+        if not matches:
+            self._note_golden_unavailable(
+                'no EUS golden report found; set INSPECTION_GOLDEN_REPORT to a '
+                '"... Report Per Store.xlsx" to enable the parity check')
+            return None
+        if len(matches) > 1:
+            listing = ', '.join(os.path.basename(m) for m in matches)
+            self._note_golden_unavailable(
+                f'{len(matches)} golden reports match ({listing}); refusing to guess '
+                'which store to assert against - set INSPECTION_GOLDEN_REPORT to the '
+                'one this port was validated against')
+            return None
+        return matches[0]
+
+    def _golden_or_skip(self):
+        golden = self._find_golden()
+        if golden:
+            return golden
+        reason = 'EUS golden report unavailable or ambiguous (see the warning above)'
+        if os.environ.get('INSPECTION_GOLDEN_REQUIRED') == '1':
+            # For a maintainer machine that does have the workbooks: turn the skip
+            # into a failure so the parity check cannot be quietly lost.
+            self.fail(f'INSPECTION_GOLDEN_REQUIRED=1 but {reason}')
+        self.skipTest(reason)
 
     def _read_golden(self, path):
         wb = load_workbook(path, data_only=True)
@@ -612,9 +823,7 @@ class ReportGoldenParityTests(TestCase):
         from django.utils import timezone
         from inspections.constants import normalize_device_category
 
-        golden = self._find_golden()
-        if not golden:
-            self.skipTest('No local EUS golden report available')
+        golden = self._golden_or_skip()
         rows, golden_counts = self._read_golden(golden)
         self.assertTrue(rows, 'golden asset_list had no rows')
 
@@ -647,9 +856,7 @@ class ReportGoldenParityTests(TestCase):
     def test_category_normalization_is_idempotent_on_golden(self):
         from inspections.constants import normalize_device_category
 
-        golden = self._find_golden()
-        if not golden:
-            self.skipTest('No local EUS golden report available')
+        golden = self._golden_or_skip()
         rows, _ = self._read_golden(golden)
         for row in rows:
             category = row['category']
