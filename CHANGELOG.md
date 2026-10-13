@@ -35,6 +35,12 @@
 - Rollback now also runs `git clean -ffd` after checking out the previous ref, because a tarball deploy can leave files the previous ref does not have and compose reads `docker-compose.yml` from that directory.
 - `scripts/deploy-dev-to-ecs.ps1` no longer hard-fails when the host cannot refresh the runner from the target ref: it warns, keeps the installed runner, and checks the capability against the runner that will actually execute.
 
+4. A missing pre-deploy checkpoint now stops the deploy
+- `ci-deploy.sh` step 2 used to log `database container not running yet - skipping the pre-deploy checkpoint` whenever the compose stack had no running `db` service. That wording reads like a harmless first deploy whether or not it is one: if the database moves off this stack (to RDS, which the go-live plan contemplates) the service disappears, **every deploy silently stops taking a checkpoint, and the log still looks routine** — while the database is never restored automatically and some migrations are one-way doors.
+- It now distinguishes the two cases. Nothing deployed here before → continue (there is genuinely no data to lose). Deployed before → refuse, with the reason and the two ways forward. `ALLOW_MISSING_CHECKPOINT=1` overrides, and says out loud that a one-way-door migration would then be unrecoverable.
+- Same treatment for a `pg_dump` that fails, and a new guard for one that exits 0 but writes an empty file — an empty dump is worse than no dump, because it looks like a restore point and is not one.
+- `docs/RELEASE_PROCEDURE.md` §11 corrected: it still claimed "First tag not yet cut … the repository has no tags", which stopped being true at v0.2.0. The replacement rows record that a real rollback has still never been drilled, and that the checkpoint must be repointed at the new DSN in the same change that moves the database.
+
 ### Migration Files Added
 
 None.
@@ -60,6 +66,7 @@ The codeload fallback in item 3 **has** been exercised end to end on the host, t
 - Negative paths: a non-existent tag and an untagged ref without `--allow-untagged` were both refused through the API path with exit 1, leaving the checkout, the runner and the containers untouched.
 - The first drill is also what surfaced the `DEV_OK` bug in highlight 5; the second, after the fix, recorded `OK`.
 - The wrapper's generated bash was checked by rendering the here-string exactly as PowerShell expands it and running `bash -n` on the result for both the plain and `SKIP_PUBLIC_GATE=1` cases (0 CR bytes).
+- The item 4 decision logic was unit-tested by extracting the real `checkpoint_missing` function out of the shipped script (`sed -n '/^checkpoint_missing() {/,/^}/p'` + `eval`) and exercising all four combinations of `DEPLOYED_BEFORE` × `ALLOW_MISSING_CHECKPOINT`: first deploy continues, deployed-before refuses, deployed-before with the override continues and warns, first deploy with the override is harmless. All four returned the expected status.
 
 ---
 
