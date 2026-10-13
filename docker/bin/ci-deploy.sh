@@ -72,7 +72,9 @@ STAMP="$(date +%F-%H%M%S)"
 REF=""
 SHA=""
 ALLOW_UNTAGGED=0
-KIND="tag"
+# "unresolved" until the pre-flight works out what was asked for. An abort before
+# that point (a failed fetch, say) must not claim kind=tag for a branch.
+KIND="unresolved"
 TAG=""
 PREV_REF=""
 CHECKPOINT=""
@@ -96,21 +98,44 @@ die()  { log "FATAL: $*" >&2; record "ABORTED"; exit 1; }
 # outcome depend on a transient blip. Retry, and bound the transfer so a stalled
 # connection fails in a minute instead of hanging for the whole SSH session.
 fetch_with_retry() {
-    local attempt
-    for attempt in 1 2 3; do
+    local attempt waited start
+    # github.com is intermittently unreachable from this network. Observed during
+    # bring-up, and again on 2026-10-12 when a dispatched release failed all three
+    # of the original attempts (curl 28 "Operation too slow", then two 132s connect
+    # timeouts) and had to be re-run by hand seven hours later.
+    #
+    # The attempt count is bounded by the workflow's timeout-minutes: 25 for the
+    # deploy job, of which the build and the health gates need about 4. A failed
+    # attempt can burn ~132s in the connect phase alone, so four attempts with
+    # escalating backoff cost at most ~11 minutes and still leave headroom. Going
+    # further would risk the job being killed mid-deploy, which is worse than
+    # failing cleanly before anything was touched.
+    for attempt in 1 2 3 4; do
+        start=$(date +%s)
         if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 \
                fetch --tags --force origin; then
+            log "git fetch succeeded on attempt ${attempt}/4 ($(( $(date +%s) - start ))s)"
             return 0
         fi
-        log "git fetch attempt ${attempt}/3 failed; retrying in 15s"
-        sleep 15
+        case "$attempt" in
+            1) waited=20 ;;
+            2) waited=40 ;;
+            *) waited=60 ;;
+        esac
+        log "git fetch attempt ${attempt}/4 failed after $(( $(date +%s) - start ))s; retrying in ${waited}s"
+        if [ "$attempt" -lt 4 ]; then
+            sleep "$waited"
+        fi
     done
     return 1
 }
 
 record() {
     mkdir -p "$BACKUP_DIR"
-    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -Is)" "${KIND}" "${TAG:-none}" "${SHA:-none}" "${1:-unknown}" >> "$DEPLOY_LOG"
+    # TAG is only known once the pre-flight has resolved the ref, so fall back to
+    # the raw ref: without it, an abort during fetch logged "none none ABORTED" and
+    # the durable host-side record could not say which release was attempted.
+    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -Is)" "${KIND}" "${TAG:-${REF:-none}}" "${SHA:-none}" "${1:-unknown}" >> "$DEPLOY_LOG"
 }
 
 # Dump the app container's recent logs so a failed deploy is diagnosable straight
@@ -180,7 +205,7 @@ cd "$APP_DIR"
 
 # Fetch first: the ref must be resolved against what origin actually has, and a
 # branch deploy is meaningless against a stale remote-tracking ref.
-fetch_with_retry || die "git fetch failed after 3 attempts (is github.com reachable from this host?)"
+fetch_with_retry || die "git fetch failed after 4 attempts (is github.com reachable from this host?)"
 
 if git rev-parse -q --verify "refs/tags/${REF}" >/dev/null 2>&1; then
     KIND="tag"
