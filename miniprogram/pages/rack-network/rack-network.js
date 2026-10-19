@@ -1,6 +1,7 @@
 // Rack / network / speedtest / issue photos. Each captured photo is persisted
 // locally and queued (type 'photo') for offline sync to /inspections/{id}/photos/.
 const queue = require('../../utils/queue');
+const image = require('../../utils/image');
 
 const KINDS = [
   { kind: 'rack1', label: '机柜 Rack 1' },
@@ -46,28 +47,15 @@ Page({
     this.setData({ weakPoints });
   },
 
-  saveLocal(tempPath) {
-    return new Promise((resolve) => {
-      wx.getFileSystemManager().saveFile({
-        tempFilePath: tempPath,
-        success: (s) => resolve(s.savedFilePath),
-        fail: () => resolve(tempPath),
-      });
-    });
-  },
-
   async choose(e) {
     const kind = e.currentTarget.dataset.kind;
     try {
-      const res = await new Promise((resolve, reject) =>
-        wx.chooseMedia({ count: 9, mediaType: ['image'], sourceType: ['album', 'camera'], success: resolve, fail: reject })
-      );
-      const saved = await Promise.all(res.tempFiles.map((f) => this.saveLocal(f.tempFilePath)));
+      const saved = await image.pickPhotos({ count: 9 });
       const shots = { ...this.data.shots };
       const existing = shots[kind] || [];
       shots[kind] = existing.concat(saved.map((path) => ({ path, uid: queue.uid() })));
       this.setData({ shots });
-    } catch (err) {
+    } catch (_e) {
       // user cancelled
     }
   },

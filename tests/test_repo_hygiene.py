@@ -42,6 +42,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DOCS_REPORTS_DIR = BASE_DIR / "docs" / "reports"
 CANVAS_DIR = DOCS_REPORTS_DIR / "canvas"
 
+# Mini program photo-capture surface (see MiniprogramCompressionTests below).
+MINIPROGRAM_DIR = BASE_DIR / "miniprogram"
+MINIPROGRAM_PAGES_DIR = MINIPROGRAM_DIR / "pages"
+MINIPROGRAM_IMAGE_HELPER = MINIPROGRAM_DIR / "utils" / "image.js"
+
 # Directories that are not part of the shipped tree: VCS metadata, virtualenvs,
 # build/lint caches, browser-session dumps, runtime uploads and node modules.
 # Mirrors `norecursedirs` in pyproject.toml.
@@ -88,6 +93,10 @@ EXTERNAL_TARGET_RE = re.compile(r"^(?:[a-zA-Z][a-zA-Z0-9+.\-]*:|#)")
 # `.github/` is deliberately walked (see SKIPPED_DIR_NAMES).
 REPORT_NAME_RE = re.compile(r"REPORT|AUDIT|GAP_ANALYSIS")
 
+# Raw photo picker. Pages must route through utils/image.js so capture is
+# compressed; a direct call bypasses sizeType + compressImage (blocker 5).
+CHOOSE_MEDIA_RE = re.compile(r"wx\.chooseMedia\s*\(")
+
 
 def _walk(root):
     """Yield every file under `root`, pruning vendored/generated directories.
@@ -104,6 +113,10 @@ def _walk(root):
         dirnames[:] = sorted(d for d in dirnames if d not in SKIPPED_DIR_NAMES)
         for name in sorted(filenames):
             yield Path(dirpath) / name
+
+
+def _read(path):
+    return path.read_text(encoding="utf-8")
 
 
 def _local_app_dirs():
@@ -281,4 +294,43 @@ class MarkdownLinkIntegrityTests(SimpleTestCase):
             "directory. Moving a document usually means its own links need "
             "re-anchoring (`../docs/X.md` -> `../X.md`), and anything linking "
             "*to* it needs updating too.",
+        )
+
+
+class MiniprogramCompressionTests(SimpleTestCase):
+    """Photo capture must go through utils/image.js so compression is guaranteed.
+
+    Raw ``wx.chooseMedia`` calls in pages bypass ``sizeType`` + ``compressImage``,
+    uploading 2.5-5 MB phone originals (blocker 5 in the go-live migration
+    report). The helper is the single place that enforces the ~300 KB target, so
+    the invariant is "only utils/image.js may call wx.chooseMedia".
+    """
+
+    def test_pages_do_not_call_choose_media_directly(self):
+        offenders = [
+            _relative(p)
+            for p in _walk(MINIPROGRAM_PAGES_DIR)
+            if p.suffix == ".js" and CHOOSE_MEDIA_RE.search(_read(p))
+        ]
+        self.assertEqual(
+            offenders,
+            [],
+            "Pages must use utils/image.js pickPhotos(), not raw wx.chooseMedia "
+            "(compression would be bypassed): " + ", ".join(offenders),
+        )
+
+    def test_image_helper_exists_and_compresses(self):
+        self.assertTrue(
+            MINIPROGRAM_IMAGE_HELPER.exists(),
+            f"Missing {_relative(MINIPROGRAM_IMAGE_HELPER)} - the photo capture "
+            "helper was deleted or never created",
+        )
+        text = _read(MINIPROGRAM_IMAGE_HELPER)
+        self.assertIn(
+            "sizeType", text,
+            "utils/image.js must pass sizeType to wx.chooseMedia",
+        )
+        self.assertIn(
+            "compressImage", text,
+            "utils/image.js must call wx.compressImage for the deterministic cap",
         )

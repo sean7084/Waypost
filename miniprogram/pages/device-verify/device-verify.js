@@ -7,6 +7,7 @@ const db = require('../../utils/db');
 const queue = require('../../utils/queue');
 const request = require('../../utils/request');
 const labels = require('../../utils/labels');
+const image = require('../../utils/image');
 
 const OTHER = '其他';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -163,23 +164,14 @@ Page({
     this.setData({ status: e.currentTarget.dataset.status });
   },
 
-  choosePhoto(e) {
+  async choosePhoto(e) {
     const part = e.currentTarget.dataset.part; // overall_photo | serial_photo
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['album', 'camera'],
-      success: (res) => {
-        const tempPath = res.tempFiles[0].tempFilePath;
-        // Persist the file so it survives until sync (offline safety).
-        const fsm = wx.getFileSystemManager();
-        fsm.saveFile({
-          tempFilePath: tempPath,
-          success: (s) => this.setData({ [part]: s.savedFilePath }),
-          fail: () => this.setData({ [part]: tempPath }),
-        });
-      },
-    });
+    try {
+      const [saved] = await image.pickPhotos({ count: 1 });
+      this.setData({ [part]: saved });
+    } catch (_e) {
+      // user cancelled
+    }
   },
 
   onSave() {
