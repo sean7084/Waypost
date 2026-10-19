@@ -314,9 +314,15 @@ def generate_inspection_report(inspection):
     workbook.save(buffer)
 
     safe_label = _safe_filename(inspection.store_label or str(inspection.jda_code))
+    # FieldFile.save() does not delete the prior file; without this, every
+    # regeneration orphans a full copy on disk (confirmed 3x in dev media/).
+    if inspection.report_file:
+        inspection.report_file.delete(save=False)
     inspection.report_file.save(
         f'{safe_label} Report Per Store.xlsx', ContentFile(buffer.getvalue()), save=False
     )
+    if inspection.photo_zip:
+        inspection.photo_zip.delete(save=False)
     inspection.photo_zip.save(
         f'{safe_label} Photo.zip', ContentFile(_build_photo_zip(inspection)), save=False
     )

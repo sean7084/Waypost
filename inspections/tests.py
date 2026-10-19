@@ -234,6 +234,41 @@ class ReportGeneratorTests(InspectionFixtureMixin, TestCase):
         with zipfile.ZipFile(inspection.photo_zip.path) as zf:
             self.assertIn('Photo/MonitorM9-1.png', zf.namelist())
 
+    def test_regenerating_report_does_not_orphan_files(self):
+        """FieldFile.save() does not delete the prior file; generate_inspection_report must.
+
+        Counts files rather than comparing names: the shared TEMP_MEDIA dir may
+        hold artifacts from earlier tests in this class, and Django's uniqueness
+        suffix changes on every save, so name equality is not the invariant.
+        """
+        inspection = self.make_inspection()
+        device = self.make_device(inspection, uid='orph1', category='Monitor', sn='M11')
+        photo = InspectionPhoto(store_inspection=inspection, device=device, kind='overall', sort_index=1)
+        photo.image.save('orph.png', ContentFile(_png_bytes()), save=False)
+        photo.save()
+
+        generate_inspection_report(inspection)
+        inspection.refresh_from_db()
+        upload_dir = os.path.dirname(inspection.report_file.path)
+
+        def count_by_ext(ext):
+            return sum(1 for f in os.listdir(upload_dir) if f.endswith(ext))
+
+        xlsx_before = count_by_ext('.xlsx')
+        zip_before = count_by_ext('.zip')
+
+        generate_inspection_report(inspection)
+        inspection.refresh_from_db()
+
+        self.assertEqual(
+            xlsx_before, count_by_ext('.xlsx'),
+            'Regeneration orphaned an xlsx',
+        )
+        self.assertEqual(
+            zip_before, count_by_ext('.zip'),
+            'Regeneration orphaned a zip',
+        )
+
     def test_template_population_by_label(self):
         """Values land in the exact template cells (cover D-column, confirmation C-column)."""
         from django.utils import timezone
