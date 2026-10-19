@@ -510,7 +510,6 @@ erDiagram
         json device_counts
         json cover_extras
         file report_file
-        file photo_zip
         image store_signature
         image engineer_signature
     }

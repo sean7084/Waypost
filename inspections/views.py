@@ -43,6 +43,7 @@ from inspections.models import (
     InspectionBatch,
     InspectionDevice,
     InspectionIssue,
+    InspectionPhoto,
     InspectionSignoffLog,
     StoreInspection,
 )
@@ -536,6 +537,16 @@ class InspectionBatchDetailView(InspectionAccessMixin, DetailView):
             .annotate(n=Count('id'))
             .values_list('store_inspection_id', 'n')
         )
+        # Per-inspection photo count, so the "Download photos" button only shows
+        # when there is something to stream (computed separately to avoid the
+        # multi-valued JOIN that would corrupt device_total).
+        photo_map = dict(
+            InspectionPhoto.objects
+            .filter(store_inspection__batch=batch)
+            .values('store_inspection_id')
+            .annotate(n=Count('id'))
+            .values_list('store_inspection_id', 'n')
+        )
         rows = []
         for inspection in inspections:
             collected = collected_map.get(inspection.id, 0)
@@ -546,6 +557,7 @@ class InspectionBatchDetailView(InspectionAccessMixin, DetailView):
                 'collected': collected,
                 'total': total,
                 'pct': pct,
+                'photo_count': photo_map.get(inspection.id, 0),
             })
         context.update({
             'rows': rows,
@@ -714,6 +726,22 @@ class AssetListExportView(InspectionAccessMixin, View):
         )
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
+
+
+# -- per-store photo bundle (streamed on demand) -----------------------------
+class InspectionPhotoBundleView(InspectionAccessMixin, View):
+    """GET streams a ZIP of one inspection's photos, built on demand.
+
+    Replaces the retired ``photo_zip`` field: photos are no longer persisted
+    twice on disk. Scoped to ``scoped_inspections`` so a user can only download
+    stores they have access to.
+    """
+
+    def get(self, request, pk):
+        from inspections.services.bundle_export import photo_bundle_response
+
+        inspection = get_object_or_404(scoped_inspections(request.user), pk=pk)
+        return photo_bundle_response(inspection)
 
 
 # -- backend editing of onsite-captured data ---------------------------------

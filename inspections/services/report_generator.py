@@ -12,12 +12,11 @@ the working sheets). Values are written into the same cells the EUS output uses:
   - asset_list: header row 1 mapped by name; one row per device.
 
 A from-scratch builder is kept as a fallback if the template file is absent, so the
-generator never hard-fails. Output: `<store_label> Report Per Store.xlsx` plus a
-Photo archive named per `photo_naming.py`.
+generator never hard-fails. Output: `<store_label> Report Per Store.xlsx`.
+Photo archives are streamed on demand via `bundle_export.build_bundle`.
 """
 import io
 import os
-import zipfile
 
 from django.core.files.base import ContentFile
 from django.utils import timezone
@@ -36,7 +35,6 @@ from inspections.constants import (
 )
 
 from . import transforms
-from .photo_naming import assign_photo_display_names
 
 TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'report_template.xlsx')
 
@@ -262,33 +260,6 @@ def _build_from_scratch(inspection, devices, counts):
     return workbook
 
 
-# --- Photo archive ----------------------------------------------------------
-def _dedupe_name(name, count):
-    stem, dot, ext = name.rpartition('.')
-    return f'{stem}({count}).{ext}' if dot else f'{name}({count})'
-
-
-def _build_photo_zip(inspection):
-    photos = assign_photo_display_names(inspection)
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-        used_names = {}
-        for photo in photos:
-            if not photo.image:
-                continue
-            base_name = photo.display_name or f'{photo.kind}-{photo.sort_index}'
-            count = used_names.get(base_name, 0)
-            used_names[base_name] = count + 1
-            arc_name = base_name if count == 0 else _dedupe_name(base_name, count)
-            try:
-                photo.image.open('rb')
-                data = photo.image.read()
-            finally:
-                photo.image.close()
-            zf.writestr(f'Photo/{arc_name}', data)
-    return buffer.getvalue()
-
-
 def _safe_filename(text):
     cleaned = ''.join('_' if ch in '<>:"/\\|?*' else ch for ch in str(text))
     return cleaned.strip() or 'inspection'
@@ -296,7 +267,7 @@ def _safe_filename(text):
 
 # --- Orchestration ----------------------------------------------------------
 def generate_inspection_report(inspection):
-    """Build the workbook + photo archive, attach them to the inspection, save."""
+    """Build the workbook, attach it to the inspection, save."""
     devices = list(inspection.devices.select_related('asset').order_by('row_order', 'created_at'))
     transforms.link_xstore_peripherals(devices)
     counts = transforms.build_cover_page_summary_counts(devices)
@@ -320,11 +291,6 @@ def generate_inspection_report(inspection):
         inspection.report_file.delete(save=False)
     inspection.report_file.save(
         f'{safe_label} Report Per Store.xlsx', ContentFile(buffer.getvalue()), save=False
-    )
-    if inspection.photo_zip:
-        inspection.photo_zip.delete(save=False)
-    inspection.photo_zip.save(
-        f'{safe_label} Photo.zip', ContentFile(_build_photo_zip(inspection)), save=False
     )
     inspection.report_generated_at = timezone.now()
     inspection.save()

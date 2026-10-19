@@ -146,8 +146,9 @@
                                         <i class="fas fa-file-excel"></i>
                                     </a>
                                     {% endif %}
-                                    {% if inspection.photo_zip %}
-                                    <a href="{{ inspection.photo_zip.url }}" class="btn btn-outline-secondary"
+                                    {% if row.photo_count %}
+                                    <a href="{% url 'inspections:inspection_photo_bundle' inspection.id %}"
+                                       class="btn btn-outline-secondary"
                                        title="{% trans 'Download photos' %}" download>
                                         <i class="fas fa-images"></i>
                                     </a>

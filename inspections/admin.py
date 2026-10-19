@@ -104,7 +104,7 @@ class StoreInspectionAdmin(admin.ModelAdmin):
             'fields': ('store_signature', 'engineer_signature', 'signed_at'),
         }),
         (_('Deliverables'), {
-            'fields': ('report_file', 'photo_zip', 'report_generated_at'),
+            'fields': ('report_file', 'report_generated_at'),
         }),
         (_('Metadata'), {
             'fields': ('notes', 'created_by', 'created_at', 'updated_at'),

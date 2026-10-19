@@ -122,13 +122,13 @@ class StoreInspectionSerializer(serializers.ModelSerializer):
             'error_setting_fixed_count', 'store_issue_found_count', 'issue_to_follow_count',
             'device_counts', 'cover_extras', 'notes',
             'store_signature', 'engineer_signature', 'signed_at',
-            'report_file', 'photo_zip', 'report_generated_at',
+            'report_file', 'report_generated_at',
             'completion_percentage', 'device_total', 'device_collected',
             'created_at', 'updated_at',
         ]
         read_only_fields = [
             'id', 'store_signature', 'engineer_signature', 'signed_at',
-            'report_file', 'photo_zip', 'report_generated_at',
+            'report_file', 'report_generated_at',
             'created_at', 'updated_at',
         ]
 

@@ -42,6 +42,10 @@ def inspection_report_upload_path(instance, filename):
 
 
 def inspection_photo_zip_upload_path(instance, filename):
+    # Retained for historical migration 0001_initial; the photo_zip field was
+    # removed in 0006 (photos are now streamed on demand via bundle_export).
+    # Django imports upload_to callables when loading the migration graph, so
+    # this must stay importable even though no live field references it.
     return f'{_inspection_media_folder(instance)}/{filename}'
 
 
@@ -274,8 +278,6 @@ class StoreInspection(models.Model):
     # Generated deliverables
     report_file = models.FileField(
         upload_to=inspection_report_upload_path, null=True, blank=True, verbose_name=_('Report Workbook'))
-    photo_zip = models.FileField(
-        upload_to=inspection_photo_zip_upload_path, null=True, blank=True, verbose_name=_('Photo Archive'))
     report_generated_at = models.DateTimeField(null=True, blank=True, verbose_name=_('Report Generated At'))
 
     created_by = models.ForeignKey(

@@ -268,7 +268,12 @@ curl -H "Authorization: Bearer $ACCESS" https://api.your-domain.com/api/v1/inspe
 # 4. Generate + download a report for one store:
 curl -X POST -H "Authorization: Bearer $ACCESS" \
      https://api.your-domain.com/api/v1/inspections/{id}/report/
-#    -> {report_file, photo_zip} absolute URLs; both must download over HTTPS.
+#    -> {report_file, report_generated_at}; report_file must download over HTTPS.
+
+# 5. Stream a ZIP of one store's photos on demand (photo_zip is no longer persisted):
+curl -H "Authorization: Bearer $ACCESS" \
+     https://api.your-domain.com/api/v1/inspections/{id}/photo-bundle/
+#    -> application/zip attachment "<store> Photo.zip".
 ```
 
 On-device: bind → see assigned store → scan a device barcode → capture readings +
