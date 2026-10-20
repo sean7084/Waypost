@@ -3,7 +3,7 @@
 **Date:** September 6, 2026
 **Repository:** sean7084/HengjiAMS1
 **Method:** Verified against the actual codebase (not assumptions)
-**Companion:** `reports/DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md` (accuracy audit of existing docs)
+**Companion:** `docs/reports/REPO_DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md` (accuracy audit of existing docs)
 
 > This analysis identifies documentation **still missing** after the alignment audit remediated the existing docs. It produces a prioritized action plan with effort estimates and GitHub-issue mappings.
 

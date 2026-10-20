@@ -4,7 +4,7 @@
 
 **Version:** to be assigned by the next release-prep PR
 **Release Date:** —
-**Focus:** Repair the release pipeline's summary step, and keep releases working when github.com's apex host is unreachable from the deployment host
+**Focus:** Repair the release pipeline's summary step, keep releases working when github.com's apex host is unreachable from the deployment host, and make documentation placement a CI gate instead of a convention
 
 ---
 
@@ -15,6 +15,7 @@
 3. Re-running the pipeline for `v0.2.0` then failed for an unrelated, environmental reason: the ECS could not reach github.com, and all three `git fetch` attempts died (`curl 28 Operation too slow`, then two 132-second connect timeouts). The runner aborted before touching anything — correct behaviour, but the release had to be dispatched again by hand hours later.
 4. **`ci-deploy.sh` now has a verified codeload fallback**, so an unreachable apex no longer blocks a release. Diagnosis showed the impairment is specific to the apex host: `api.github.com` answered 200 in 0.33 s and `codeload.github.com` served the v0.2.0 tarball (7.3 MB) in 1.4 s while `https://github.com/` timed out 5/5 and `git ls-remote` failed 2/2. The fallback resolves the tag through the API, downloads the tarball, and **refuses to deploy unless the extracted files' git tree hash equals the tree SHA the API reports for that tag**.
 5. Drilling that fallback exposed a real defect: a tag deploy was recorded in `deploy.log` as `DEV_OK` and announced as "NOT a release", because the code tested `KIND = "tag"` while the kind now carries a `+tarball` suffix. A release would have been logged as a mere verification deploy.
+6. Documentation placement is now enforced by CI rather than left to convention. `reports/` at the repository root is the Django **`reports` app**, and five delivery/audit reports had accumulated inside it next to `models.py` and `views.py` — invisible to `docs/INDEX.md` readers and one `manage.py`-adjacent glob away from being baked into the Docker image. They moved to `docs/reports/`, and the move silently broke eleven relative Markdown links inside them, which is what the second new check exists for.
 
 ### Delivered Scope
 
@@ -40,6 +41,14 @@
 - It now distinguishes the two cases. Nothing deployed here before → continue (there is genuinely no data to lose). Deployed before → refuse, with the reason and the two ways forward. `ALLOW_MISSING_CHECKPOINT=1` overrides, and says out loud that a one-way-door migration would then be unrecoverable.
 - Same treatment for a `pg_dump` that fails, and a new guard for one that exits 0 but writes an empty file — an empty dump is worse than no dump, because it looks like a restore point and is not one.
 - `docs/RELEASE_PROCEDURE.md` §11 corrected: it still claimed "First tag not yet cut … the repository has no tags", which stopped being true at v0.2.0. The replacement rows record that a real rollback has still never been drilled, and that the checkpoint must be repointed at the new DSN in the same change that moves the database.
+
+5. Report placement and link integrity are now CI gates
+- Five report documents moved from `reports/` (the Django app) to `docs/reports/`; Canvas companions live in `docs/reports/canvas/` and per-report evidence assets in a subfolder of `docs/reports/`. `docs/INDEX.md`, `docs/CONTRIBUTING.md` and `docs/SETUP_SUMMARY.md` updated to match, and `docs/reports/README.md` added as the catalogue plus the scope rule.
+- `tests/test_repo_hygiene.py` (new) encodes the rules as `SimpleTestCase`s inside the required `python manage.py test` gate: no `.md`/`.markdown`/`.rst` under any local app directory, `reports/` holds Python only, report-named documents live under `docs/reports/`, `.canvas.tsx` lives under `docs/reports/canvas/`, and every relative Markdown link in the repository resolves. The app list is derived from `INSTALLED_APPS`, so an app added later is covered without editing the test.
+- The report-name rule matches `REPORT|AUDIT|GAP_ANALYSIS` **case-sensitively**, which is the only thing exempting `.github/ISSUE_TEMPLATE/bug_report.md`; `.github/` is deliberately walked rather than skipped, because its issue templates carry relative links worth checking.
+- The link check asserts `checked > 50` before asserting nothing is broken, so a future change to the tree walk that silently inspects nothing fails loudly instead of passing vacuously.
+- `docs/reports/GO_LIVE_MIGRATION_BLOCKERS_REPORT_20261013.md` (new) is the application-side half of the go-live migration: 15 code-level blockers with `file:line` citations verified against `origin/main`, a 22.0 person-day estimate and the ordering constraints. Its blocker 9 records what item 4 above leaves open — once the `db` service moves to RDS, `DEPLOYED_BEFORE` is 1 and every deploy dies at `ci-deploy.sh:568` until the checkpoint learns the new DSN. The procurement half deliberately stays in the Aliyun ops knowledge base: a cloud-account cost document outlives any one commit, whereas these citations go stale the moment the code moves.
+- `docs/reports/DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md` renamed to `REPO_DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md`. The ops knowledge base holds a same-named, same-day document auditing a different subject (the knowledge base against the live ECS, rather than this repository's docs against its code), and both were being cited by a filename that did not say which was which. Each now opens with a note naming the other.
 
 ### Migration Files Added
 
@@ -67,6 +76,7 @@ The codeload fallback in item 3 **has** been exercised end to end on the host, t
 - The first drill is also what surfaced the `DEV_OK` bug in highlight 5; the second, after the fix, recorded `OK`.
 - The wrapper's generated bash was checked by rendering the here-string exactly as PowerShell expands it and running `bash -n` on the result for both the plain and `SKIP_PUBLIC_GATE=1` cases (0 CR bytes).
 - The item 4 decision logic was unit-tested by extracting the real `checkpoint_missing` function out of the shipped script (`sed -n '/^checkpoint_missing() {/,/^}/p'` + `eval`) and exercising all four combinations of `DEPLOYED_BEFORE` × `ALLOW_MISSING_CHECKPOINT`: first deploy continues, deployed-before refuses, deployed-before with the override continues and warns, first deploy with the override is harmless. All four returned the expected status.
+- Both item 5 guards were proven to **fire**, not merely to pass, by planting a probe and watching it fail: a `reports/TEMP_PROBE.md` produced 2 failures (`['reports/TEMP_PROBE.md'] != []` from both the app-directory scan and the Python-only assertion), and a `docs/TEMP_LINK_PROBE.md` carrying one unresolvable link produced `['docs/TEMP_LINK_PROBE.md:3 -> DOES_NOT_EXIST.md'] != []`. Both probes were deleted afterwards. The eleven links the move actually broke were found by the same check and are fixed; a repository-wide scan now reports 134 relative Markdown links, 0 broken.
 
 ---
 

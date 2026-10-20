@@ -1,9 +1,16 @@
-# Documentation Alignment Audit — HengjiAMS1
+# Repository Documentation Alignment Audit — HengjiAMS1 (now Waypost)
 
 **Date:** September 6, 2026
 **Auditor:** Automated documentation review
 **Repository:** sean7084/HengjiAMS1
 **Scope:** API docs vs. endpoints, config docs vs. `.env.example`/`settings.py`, workflow docs vs. business logic
+
+> ℹ️ **Filename note (2026-10-13):** renamed from `DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md`.
+> A *different* audit with that exact name lives in the Aliyun ops knowledge base as
+> `reports/KB_DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md`. That one audits the **ops knowledge base
+> against the live ECS**; this one audits **this repository's documentation against its code**.
+> Same date, same auditor, unrelated corpora — the `REPO_` / `KB_` prefixes exist so the two are
+> never cited interchangeably.
 
 ---
 
