@@ -32,6 +32,7 @@ urlpatterns = [
     path('<uuid:pk>/', views.StoreInspectionDetailView.as_view(), name='inspection_detail'),
     path('<uuid:pk>/edit/', views.StoreInspectionUpdateView.as_view(), name='inspection_edit'),
     path('<uuid:pk>/assign-fe/', views.EngineerAssignView.as_view(), name='assign_fe'),
+    path('<uuid:pk>/photos.zip/', views.InspectionPhotoBundleView.as_view(), name='inspection_photo_bundle'),
     path('issues/<uuid:pk>/update/', views.InspectionIssueUpdateView.as_view(), name='issue_update'),
 
     # Cross-store asset-list export (GUCCI_资产表 format).

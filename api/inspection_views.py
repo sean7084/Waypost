@@ -486,7 +486,7 @@ class StoreInspectionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='report')
     def report(self, request, pk=None):
-        """Generate the per-store Excel report + Photo zip and return download URLs."""
+        """Generate the per-store Excel report and return its download URL."""
         inspection = self.get_object()
         from inspections.services.report_generator import generate_inspection_report
 
@@ -494,6 +494,18 @@ class StoreInspectionViewSet(viewsets.ModelViewSet):
         inspection.refresh_from_db()
         return Response({
             'report_file': request.build_absolute_uri(inspection.report_file.url) if inspection.report_file else None,
-            'photo_zip': request.build_absolute_uri(inspection.photo_zip.url) if inspection.photo_zip else None,
             'report_generated_at': inspection.report_generated_at,
         }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='photo-bundle')
+    def photo_bundle(self, request, pk=None):
+        """Stream a ZIP of this inspection's photos on demand.
+
+        Replaces the persisted ``photo_zip`` field (retired in migration 0006):
+        photos are no longer stored twice on disk. The archive is built per
+        request via ``bundle_export.build_bundle`` and streamed as a FileResponse.
+        """
+        from inspections.services.bundle_export import photo_bundle_response
+
+        inspection = self.get_object()
+        return photo_bundle_response(inspection)

@@ -40,8 +40,8 @@
                 <i class="fas fa-file-excel"></i> {% trans "Report" %}
             </a>
             {% endif %}
-            {% if inspection.photo_zip %}
-            <a href="{{ inspection.photo_zip.url }}" class="btn btn-outline-secondary" download>
+            {% if inspection.photos.exists %}
+            <a href="{% url 'inspections:inspection_photo_bundle' inspection.id %}" class="btn btn-outline-secondary" download>
                 <i class="fas fa-images"></i> {% trans "Photos" %}
             </a>
             {% endif %}

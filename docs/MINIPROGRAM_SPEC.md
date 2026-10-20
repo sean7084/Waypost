@@ -43,8 +43,10 @@ rows.
   `inspection_date`, `engineer`, `status` (planned/in_progress/completed/submitted),
   cover-page fields (arriving/leaving time, wifi_coverage, error/issue/follow counts,
   `cover_extras` JSON), confirmation fields (`wifi_covers_store`, `it_support_rating`,
-  `it_support_comment`, `device_counts` JSON), signatures, generated `report_file` +
-  `photo_zip`.
+  `it_support_comment`, `device_counts` JSON), signatures, and a generated
+  `report_file`. Photo archives are no longer persisted (`photo_zip` was retired
+  in migration 0006); they are streamed on demand from `GET
+  /api/v1/inspections/{id}/photo-bundle/`.
 - `InspectionDevice`: links to `Asset` (nullable for onsite-new devices),
   `client_device_uid` (idempotency), expected identity (category/brand_model/sn/
   asset_id_text/usage/warranty_start/photo_required/outline/device_notes) and

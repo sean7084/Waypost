@@ -225,6 +225,20 @@ class InspectionWorkflowApiTests(TestCase):
         self.assertIsNotNone(self.inspection.report_generated_at)
         self.assertTrue(self.inspection.report_file.storage.exists(self.inspection.report_file.name))
 
+    def test_photo_bundle_streams_zip(self):
+        """photo_zip is retired; photos stream on demand from the photo-bundle action."""
+        self.client.post(
+            f'/api/v1/inspections/{self.inspection.id}/photos/',
+            {'kind': 'rack1', 'client_photo_uid': 'p-bundle', 'image': _png_upload()},
+            format='multipart',
+        )
+        res = self.client.get(f'/api/v1/inspections/{self.inspection.id}/photo-bundle/')
+        self.assertEqual(res.status_code, 200)
+        import zipfile
+        content = b''.join(res.streaming_content) if res.streaming else res.content
+        with zipfile.ZipFile(io.BytesIO(content)) as zf:
+            self.assertTrue(any('/Photo/' in n for n in zf.namelist()), zf.namelist())
+
     @override_settings(MAX_UPLOAD_SIZE=10)  # 10 bytes: any real image exceeds this
     def test_oversized_photo_upload_rejected(self):
         """Server-side upload cap: files over MAX_UPLOAD_SIZE are rejected with 400."""

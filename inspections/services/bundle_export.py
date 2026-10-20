@@ -161,3 +161,19 @@ def bundle_as_file_response(inspections, *, batch=None, include_asset_list=True,
     filename = bundle_filename(inspections, batch=batch)
     response = FileResponse(File(tmp, name=filename), as_attachment=True, filename=filename)
     return response
+
+
+def photo_bundle_response(inspection):
+    """Stream a photos-only ZIP for one inspection: ``<store> Photo.zip``.
+
+    Replaces the retired ``photo_zip`` field. Named per-store (not the date-range
+    ``bundle_filename``) so a single-store download reads like the old deliverable.
+    """
+    from django.http import FileResponse
+
+    tmp = build_bundle(
+        [inspection], include_asset_list=False, include_photos=True, include_reports=False,
+    )
+    label = inspection.store_label or inspection.jda_code or 'inspection'
+    filename = f'{_safe(label)} Photo.zip'
+    return FileResponse(File(tmp, name=filename), as_attachment=True, filename=filename)

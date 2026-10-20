@@ -220,7 +220,10 @@ class ReportGeneratorTests(InspectionFixtureMixin, TestCase):
         self.assertEqual(names['serial'], 'DesktopPC9-2.png')
         self.assertEqual(names['rack1'], 'Rack1-1.png')
 
-    def test_generate_report_packages_photo_zip(self):
+    def test_generate_report_builds_workbook_not_photo_zip(self):
+        """photo_zip is retired: report generation writes only the workbook, and
+        the photo archive is streamed on demand via build_bundle (no .path, no
+        second copy of every photo on disk)."""
         inspection = self.make_inspection()
         device = self.make_device(inspection, uid='z1', category='Monitor', sn='M9')
         photo = InspectionPhoto(store_inspection=inspection, device=device, kind='overall', sort_index=1)
@@ -229,10 +232,50 @@ class ReportGeneratorTests(InspectionFixtureMixin, TestCase):
 
         generate_inspection_report(inspection)
         inspection.refresh_from_db()
-        self.assertTrue(inspection.photo_zip)
+        self.assertTrue(inspection.report_file)
+        self.assertFalse(hasattr(inspection, 'photo_zip'))
+
         import zipfile
-        with zipfile.ZipFile(inspection.photo_zip.path) as zf:
-            self.assertIn('Photo/MonitorM9-1.png', zf.namelist())
+        from inspections.services.bundle_export import build_bundle
+        tmp = build_bundle(
+            [inspection], include_asset_list=False, include_photos=True, include_reports=False,
+        )
+        with zipfile.ZipFile(tmp) as zf:
+            names = zf.namelist()
+        self.assertTrue(
+            any(n.endswith('Photo/MonitorM9-1.png') for n in names),
+            f'photo missing from on-demand bundle: {names}',
+        )
+
+    def test_regenerating_report_does_not_orphan_files(self):
+        """FieldFile.save() does not delete the prior file; generate_inspection_report must.
+
+        Counts files rather than comparing names: the shared TEMP_MEDIA dir may
+        hold artifacts from earlier tests in this class, and Django's uniqueness
+        suffix changes on every save, so name equality is not the invariant.
+        """
+        inspection = self.make_inspection()
+        device = self.make_device(inspection, uid='orph1', category='Monitor', sn='M11')
+        photo = InspectionPhoto(store_inspection=inspection, device=device, kind='overall', sort_index=1)
+        photo.image.save('orph.png', ContentFile(_png_bytes()), save=False)
+        photo.save()
+
+        generate_inspection_report(inspection)
+        inspection.refresh_from_db()
+        upload_dir = os.path.dirname(inspection.report_file.path)
+
+        def count_by_ext(ext):
+            return sum(1 for f in os.listdir(upload_dir) if f.endswith(ext))
+
+        xlsx_before = count_by_ext('.xlsx')
+
+        generate_inspection_report(inspection)
+        inspection.refresh_from_db()
+
+        self.assertEqual(
+            xlsx_before, count_by_ext('.xlsx'),
+            'Regeneration orphaned an xlsx',
+        )
 
     def test_template_population_by_label(self):
         """Values land in the exact template cells (cover D-column, confirmation C-column)."""
