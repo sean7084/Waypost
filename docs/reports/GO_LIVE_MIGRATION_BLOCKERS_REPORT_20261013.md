@@ -22,6 +22,29 @@ Re-run `git rev-parse origin/main` before acting on any of them — this report 
 re-anchored twice in one day (`8723786` → `5f05dfe` → `ccadb1e`), which is the argument in the
 previous paragraph made concrete.
 
+> **Resolution status (2026-10-20).** Blockers **5** (no client-side image compression) and **7**
+> (`photo_zip` stores every photo twice) — effort items **1** and **12** — are **resolved** on branch
+> `feat/go-live-media-cost-reduction` (issues #97, #98, #99). Item 12 was pulled forward from its
+> Phase 2 trigger gate by request.
+>
+> - **Blocker 5:** `miniprogram/utils/image.js` (`pickPhotos`) now runs
+>   `chooseMedia({sizeType:['compressed']})` → `getImageInfo` → `compressImage` (quality 80, 1920 px
+>   long edge) → `saveFile` at both capture sites (`device-verify.js`, `rack-network.js`), targeting
+>   ~300 KB/photo. Guarded by `MiniprogramCompressionTests` in `tests/test_repo_hygiene.py` so a raw
+>   `wx.chooseMedia` in a page fails CI.
+> - **Blocker 7:** the `photo_zip` column is dropped in `inspections/0006_remove_photo_zip`; archives
+>   stream on demand via `bundle_export.build_bundle` (web `GET /inspections/{id}/photos.zip/`, API
+>   `GET /api/v1/inspections/{id}/photo-bundle/`). `POST …/report/` no longer returns a `photo_zip`
+>   key. Single-store downloads move from flat `Photo/…` to the per-store `{store}/Photo/…` layout.
+> - **Related finding (not previously numbered):** `FieldFile.save()` orphaned the prior
+>   `report_file`/`photo_zip` on every regeneration (one dev store had 3 ZIPs + 3 XLSX). Fixed by
+>   deleting before re-saving; `cleanup_orphan_photo_zips` sweeps the existing orphans.
+>
+> The remaining OSS blockers (1–4, 6, 8) are untouched and still gate the storage migration; landing
+> blocker 7 first removes one `.path` site (`inspections/tests.py`) from blocker 2's test rework. The
+> `file:line` citations below remain anchored to `ccadb1e` and were **not** re-verified against the
+> fix branch.
+
 ---
 
 ## 1. Code-level blockers

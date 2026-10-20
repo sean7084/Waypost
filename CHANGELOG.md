@@ -4,7 +4,7 @@
 
 **Version:** to be assigned by the next release-prep PR
 **Release Date:** —
-**Focus:** Repair the release pipeline's summary step, keep releases working when github.com's apex host is unreachable from the deployment host, and make documentation placement a CI gate instead of a convention
+**Focus:** Repair the release pipeline's summary step, keep releases working when github.com's apex host is unreachable from the deployment host, make documentation placement a CI gate instead of a convention, and cut inspection media storage ahead of go-live (client-side photo compression + on-demand photo bundles)
 
 ---
 
@@ -50,9 +50,15 @@
 - `docs/reports/GO_LIVE_MIGRATION_BLOCKERS_REPORT_20261013.md` (new) is the application-side half of the go-live migration: 15 code-level blockers with `file:line` citations verified against `origin/main`, a 22.0 person-day estimate and the ordering constraints. Its blocker 9 records what item 4 above leaves open — once the `db` service moves to RDS, `DEPLOYED_BEFORE` is 1 and every deploy dies at `ci-deploy.sh:568` until the checkpoint learns the new DSN. The procurement half deliberately stays in the Aliyun ops knowledge base: a cloud-account cost document outlives any one commit, whereas these citations go stale the moment the code moves.
 - `docs/reports/DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md` renamed to `REPO_DOCUMENTATION_ALIGNMENT_AUDIT_20260906.md`. The ops knowledge base holds a same-named, same-day document auditing a different subject (the knowledge base against the live ECS, rather than this repository's docs against its code), and both were being cited by a filename that did not say which was which. Each now opens with a note naming the other.
 
+6. Inspection media storage cut ahead of go-live (blockers 5 & 7)
+- **Mini program photos are compressed at capture.** Both `wx.chooseMedia` calls omitted `sizeType` and there was no `wx.compressImage`, so 2.5–5 MB phone originals were queued and synced — at ~24k photos/month this drove the infeasible bandwidth figure and the disk-fill cliff in the go-live cost estimate. A new helper `miniprogram/utils/image.js` (`pickPhotos`) runs `chooseMedia({sizeType:['compressed']})` → `getImageInfo` → `compressImage` (quality 80, long edge capped at 1920 px) → `saveFile`, targeting ~300 KB/photo while keeping serial numbers and asset tags legible; each step falls back to the previous path so PNG/HEIC picks and `saveFile` errors never break capture. `device-verify` and `rack-network` route through it, and `tests/test_repo_hygiene.py` gained a `MiniprogramCompressionTests` gate (no page may call `wx.chooseMedia` directly) so the uncompressed path cannot silently return.
+- **`photo_zip` is retired.** `generate_inspection_report` no longer writes a per-store ZIP of every photo next to the workbook — that duplicated each photo byte on disk (~47% of projected monthly media growth). The column is dropped in `inspections/0006_remove_photo_zip`; archives are now **streamed on demand** by `bundle_export.build_bundle` through web `GET /inspections/{id}/photos.zip/` and API `GET /api/v1/inspections/{id}/photo-bundle/`, named `<store> Photo.zip`. Detail/batch download buttons point at the streaming route and show whenever a store has photos. **Breaking:** `POST /api/v1/inspections/{id}/report/` no longer returns a `photo_zip` key (nothing consumed it — the mini program never downloaded the archive), and single-store downloads move from a flat `Photo/…` layout to the per-store `{store}/Photo/…` layout batch export already uses.
+- **Orphaned deliverables no longer accumulate.** `FieldFile.save()` does not delete the previously stored file, so every regeneration of `report_file` (and, before retirement, `photo_zip`) left the old copy on disk — one dev store had collected 3 ZIPs + 3 XLSX. `generate_inspection_report` now deletes the prior file before re-saving.
+- New management command `cleanup_orphan_photo_zips` (`--dry-run`) sweeps the `*Photo*.zip` archives already orphaned under `MEDIA_ROOT/inspections/`. Run it **after** applying migration 0006 and **before** any OSS backfill so the orphans are not copied to object storage.
+
 ### Migration Files Added
 
-None.
+- `inspections/0006_remove_photo_zip` — drops the retired `StoreInspection.photo_zip` column. **One-way door:** reversing it restores the column but not the deleted archives. Existing `*Photo*.zip` files on disk are orphaned once this applies; sweep them with `cleanup_orphan_photo_zips`.
 
 ### Validation
 
