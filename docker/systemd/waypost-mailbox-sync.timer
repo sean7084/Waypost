@@ -1,0 +1,27 @@
+# Drive waypost-mailbox-sync.service every five minutes.
+#
+# Install with the service file (its header has the steps):
+#   systemctl --user enable --now waypost-mailbox-sync.timer
+# Verify:
+#   systemctl --user list-timers waypost-mailbox-sync.timer
+#   journalctl --user -u waypost-mailbox-sync.service -n 40
+[Unit]
+Description=Poll Waypost mailboxes every five minutes
+
+[Timer]
+# OnUnitActiveSec, not OnCalendar: it counts from the END of the previous
+# activation, so a slow pass delays the next tick instead of starting a second
+# one beside it. Two overlapping passes would classify the same mail twice and
+# pay the RFQ LLM twice for it - the cost this whole change exists to prevent.
+# OnCalendar=*:0/5 would fire on the wall clock regardless of what is running.
+OnUnitActiveSec=5min
+# Jitter keeps a fleet of hosts from hitting the same mailbox provider together;
+# it also means the real interval is 5 minutes plus up to 30 seconds.
+RandomizedDelaySec=30
+# Catch up after downtime instead of waiting a full interval for mail that
+# arrived while the host was off.
+Persistent=true
+Unit=waypost-mailbox-sync.service
+
+[Install]
+WantedBy=timers.target

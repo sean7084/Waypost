@@ -14,6 +14,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import logging
 import os
 import sys
 from datetime import timedelta
@@ -21,6 +22,11 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Used by the deprecation warnings below. Logging is configured later, by the
+# LOGGING dict, so at this point a warning reaches the last-resort handler -
+# which is exactly the gunicorn error log that `--capture-output` fills.
+SETTINGS_LOGGER = logging.getLogger(__name__)
 
 
 # Quick-start development settings - unsuitable for production
@@ -33,6 +39,39 @@ def _env_bool(name, default):
     if raw is None:
         return default
     return raw.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _env_first(*names, default=''):
+    """Return the value of the first environment variable that is set and non-empty."""
+    for name in names:
+        value = (os.environ.get(name) or '').strip()
+        if value:
+            return value
+    return default
+
+
+def _env_first_with_legacy(new_name, legacy_name, default=''):
+    """Read an RFQ LLM setting, honouring the retired MINIMAX_* name for one release.
+
+    The deployed `.env` is hand-edited and deliberately protected across deploys
+    (`docker/bin/ci-deploy.sh:368` rsyncs with `--exclude .env`), so requiring the
+    new and old names to change over inside one deploy window - against a running
+    production system, with no staging - is the risk to avoid. Either name works;
+    the warning is what makes the debt visible until the old names are deleted.
+    """
+    new_value = _env_first(new_name)
+    if new_value:
+        return new_value
+    legacy_value = _env_first(legacy_name)
+    if legacy_value:
+        SETTINGS_LOGGER.warning(
+            'Environment variable %s is deprecated; rename it to %s. '
+            'The legacy name is read for one more release only.',
+            legacy_name,
+            new_name,
+        )
+        return legacy_value
+    return default
 
 
 # True when this process is a test runner rather than a server.
@@ -146,11 +185,47 @@ if not DEBUG and (not WECHAT_MINI_APPID or not WECHAT_MINI_APPSECRET):
         'DJANGO_DEBUG is False.'
     )
 
-MINIMAX_TOKEN_PLAN_KEY = os.environ.get('minimax_token_plan_key', '')
-MINIMAX_RFQ_API_URL = os.environ.get('MINIMAX_RFQ_API_URL', 'https://api.minimaxi.com/anthropic/v1/messages')
-MINIMAX_RFQ_MODEL = os.environ.get('MINIMAX_RFQ_MODEL', 'MiniMax-M2.7-highspeed')
-MINIMAX_RFQ_TIMEOUT_SECONDS = float(os.environ.get('MINIMAX_RFQ_TIMEOUT_SECONDS', '30'))
-MINIMAX_RFQ_MAX_TOKENS = int(os.environ.get('MINIMAX_RFQ_MAX_TOKENS', '800'))
+# ---------------------------------------------------------------------------
+# RFQ LLM. Names are provider-neutral because the provider is configuration,
+# not identity: switching vendor must not rename settings, rewrite `.env`, and
+# re-read the cost report under deploy pressure. The legacy MINIMAX_* names are
+# still read (see _env_first_with_legacy) and aliased at the bottom of this
+# block for one release; delete the fallbacks and the aliases together once
+# production `.env` uses the new names.
+# ---------------------------------------------------------------------------
+RFQ_LLM_API_KEY = _env_first_with_legacy('RFQ_LLM_API_KEY', 'minimax_token_plan_key')
+RFQ_LLM_API_URL = _env_first_with_legacy(
+    'RFQ_LLM_API_URL',
+    'MINIMAX_RFQ_API_URL',
+    default='https://api.minimaxi.com/anthropic/v1/messages',
+)
+RFQ_LLM_MODEL = _env_first_with_legacy('RFQ_LLM_MODEL', 'MINIMAX_RFQ_MODEL', default='MiniMax-M2.7-highspeed')
+RFQ_LLM_TIMEOUT_SECONDS = float(_env_first_with_legacy('RFQ_LLM_TIMEOUT_SECONDS', 'MINIMAX_RFQ_TIMEOUT_SECONDS', default='30'))
+RFQ_LLM_MAX_TOKENS = int(_env_first_with_legacy('RFQ_LLM_MAX_TOKENS', 'MINIMAX_RFQ_MAX_TOKENS', default='800'))
+
+# Price per million tokens, in CNY - the MiniMax-M2.7-highspeed tier of the
+# go-live cost estimate. Prices live here rather than in the database so a
+# provider or tier change is an `.env` edit, not a migration; the recorded
+# token counts stay valid whatever the price was at the time.
+RFQ_LLM_PRICE_PER_MTOK_INPUT = float(os.environ.get('RFQ_LLM_PRICE_PER_MTOK_INPUT', '4.2'))
+RFQ_LLM_PRICE_PER_MTOK_OUTPUT = float(os.environ.get('RFQ_LLM_PRICE_PER_MTOK_OUTPUT', '16.8'))
+# Hard stop for the month, in CNY. 0 means unlimited, so a development box with
+# no key (and no rows) is never affected by the default.
+RFQ_LLM_MONTHLY_BUDGET_CNY = float(os.environ.get('RFQ_LLM_MONTHLY_BUDGET_CNY', '200'))
+# Off by default. Skipping unsubscribe/auto-reply mail is pure saving with no
+# false-negative risk; requiring a whitelisted sender instead silently drops a
+# real RFQ from a new contact at an existing customer, which the business would
+# only notice when a quotation went missing. Flip it once rfq_llm_usage shows
+# how many calls the rule would have saved.
+RFQ_LLM_REQUIRE_AUTHORIZED_SENDER = _env_bool('RFQ_LLM_REQUIRE_AUTHORIZED_SENDER', False)
+
+# Retired aliases - read-for-compatibility only, nothing new should use them.
+MINIMAX_TOKEN_PLAN_KEY = RFQ_LLM_API_KEY
+MINIMAX_RFQ_API_URL = RFQ_LLM_API_URL
+MINIMAX_RFQ_MODEL = RFQ_LLM_MODEL
+MINIMAX_RFQ_TIMEOUT_SECONDS = RFQ_LLM_TIMEOUT_SECONDS
+MINIMAX_RFQ_MAX_TOKENS = RFQ_LLM_MAX_TOKENS
+
 TEST_OUTBOUND_EMAIL_OVERRIDE = os.environ.get('TEST_OUTBOUND_EMAIL_OVERRIDE', 'sean.liu@istore-tech.com').strip()
 
 # ---------------------------------------------------------------------------

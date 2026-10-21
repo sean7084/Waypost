@@ -78,6 +78,13 @@ def _lookback_start(mailbox_settings):
 
 def _build_defaults(mailbox_settings, parsed_message, body_text, direction, folder_name, message_dt, protocol, extra_metadata=None):
     metadata = {'protocol': protocol}
+    # The machine-generated markers are copied verbatim because accounts/rfq_ai.py
+    # reads them to decide whether a mail is worth an LLM call: a header the
+    # sending server wrote about itself beats any match against the body text.
+    for header in ('Auto-Submitted', 'X-Autoreply', 'List-Unsubscribe'):
+        value = parsed_message.get(header)
+        if value:
+            metadata[header] = value
     if extra_metadata:
         metadata.update(extra_metadata)
     return {
@@ -234,6 +241,12 @@ def _sync_mailbox_messages_unlocked(mailbox_settings):
 
 
 def maybe_auto_sync_mailbox(mailbox_settings):
+    """Sync one mailbox if it is due, or return False without touching it.
+
+    Returns the per-folder message counts when it did sync, which is what the
+    `sync_mailboxes` command reports. Callers that only care about "did it run"
+    can test truthiness: the dict is never empty.
+    """
     if not mailbox_settings or not mailbox_settings.is_active or not mailbox_settings.auto_sync_enabled:
         return False
     if mailbox_settings.last_mailbox_sync_at and timezone.now() - mailbox_settings.last_mailbox_sync_at < timedelta(seconds=SYNC_INTERVAL_SECONDS):
@@ -242,10 +255,9 @@ def maybe_auto_sync_mailbox(mailbox_settings):
     if not lock.acquire(blocking=False):
         return False
     try:
-        _sync_mailbox_messages_unlocked(mailbox_settings)
+        return _sync_mailbox_messages_unlocked(mailbox_settings)
     finally:
         lock.release()
-    return True
 
 
 def cache_dispatch_outbox_message(dispatch, mailbox_settings):
@@ -269,23 +281,41 @@ def cache_dispatch_outbox_message(dispatch, mailbox_settings):
     )
 
 
-def sync_all_active_mailboxes():
+def sync_all_active_mailboxes(deadline=None):
+    """One pass over every auto-sync mailbox. Returns (mailboxes, messages) synced.
+
+    `deadline` is a `time.monotonic()` value: a timer tick must not outlive the
+    interval that scheduled it, so the pass stops **between** mailboxes rather
+    than mid-request. A mailbox it never reached is picked up by the next pass,
+    which is why the queue is ordered by primary key instead of by staleness -
+    ordering by last sync would starve the same mailbox every time.
+    """
     close_old_connections()
+    synced_mailboxes = 0
+    synced_messages = 0
     try:
-        mailboxes = UserMailboxSettings.objects.filter(is_active=True, auto_sync_enabled=True)
+        mailboxes = UserMailboxSettings.objects.filter(is_active=True, auto_sync_enabled=True).order_by('pk')
         for mailbox_settings in mailboxes:
+            if deadline is not None and time.monotonic() >= deadline:
+                LOGGER.warning('Mailbox sync hit its runtime limit with mailboxes still queued.')
+                break
             try:
-                maybe_auto_sync_mailbox(mailbox_settings)
+                result = maybe_auto_sync_mailbox(mailbox_settings)
             except Exception as exc:
                 mailbox_settings.last_connection_test_at = timezone.now()
                 mailbox_settings.last_connection_status = 'failed'
                 mailbox_settings.last_connection_message = str(exc)
                 mailbox_settings.save(update_fields=['last_connection_test_at', 'last_connection_status', 'last_connection_message', 'updated_at'])
                 LOGGER.warning('Mailbox auto-sync failed for %s: %s', mailbox_settings.pk, exc)
+                continue
+            if result:
+                synced_mailboxes += 1
+                synced_messages += sum(result.values())
     except (OperationalError, ProgrammingError):
         LOGGER.debug('Mailbox auto-sync skipped before database is ready.')
     finally:
         close_old_connections()
+    return synced_mailboxes, synced_messages
 
 
 def start_mailbox_sync_thread():

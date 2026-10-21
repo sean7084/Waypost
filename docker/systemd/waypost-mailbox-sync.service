@@ -1,0 +1,38 @@
+# One mailbox polling pass for the RFQ / invoice mail flow (issue #24).
+#
+# Install, as the same unprivileged user whose rootless Docker daemon runs the
+# stack (see docs/DEPLOYMENT.md 2.2/2.3 - a system-wide unit cannot reach that
+# daemon's socket):
+#   mkdir -p ~/.config/systemd/user
+#   cp docker/systemd/waypost-mailbox-sync.{service,timer} ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now waypost-mailbox-sync.timer
+# A user manager only exists while that user has a session, so on a host nobody
+# logs into, enable lingering first:  loginctl enable-linger <user>
+# Redeploys do not refresh an installed unit: re-copy and daemon-reload whenever
+# this file changes.
+#
+# Verify one sync per five minutes:
+#   systemctl --user list-timers waypost-mailbox-sync.timer
+#   journalctl --user -u waypost-mailbox-sync.service -n 40
+[Unit]
+Description=Waypost mailbox polling (one sync pass)
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+# systemd gives a unit a bare environment: no login shell, so ~/.bashrc is never
+# read and the docker CLI cannot find this user's rootless socket on its own.
+# These are the same two exports docker/bin/ci-deploy.sh:61-62 makes for the same
+# reason, with %U (the unit user's UID) standing in for $(id -u).
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=DOCKER_HOST=unix:///run/user/%U/docker.sock
+# waypost_app is the container_name pinned in docker-compose.yml, so `docker exec`
+# by name survives every rebuild; `docker compose exec` would instead need this
+# unit to know the checkout path and the compose project.
+ExecStart=/usr/bin/docker exec waypost_app python manage.py sync_mailboxes --once --max-runtime 240
+# The default start timeout is 90s, which would SIGKILL a pass that --max-runtime
+# explicitly allows 240s, leaving the mail half-synced and the lock held until its
+# lease expires. Must stay above --max-runtime plus the exec overhead.
+TimeoutStartSec=300

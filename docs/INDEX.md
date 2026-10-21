@@ -254,13 +254,14 @@ All documentation should:
 | **Write the missing tests** — `assets` (23.9%), `deliveries` (21.5%), `utils/import_rollback`, `invoices` first; overall coverage is 43.7% | High | 20+ hours | #16 (strategy done — test-writing is a separate epic) |
 | ADRs 0012–0018 for undocumented architectural decisions | High | 4 hours | #20 |
 | `docs/OPERATIONS_RUNBOOK.md` — troubleshooting, incident response, monitoring | Medium | 4 hours | #22 |
-| Production mailbox-sync strategy — the background thread is `runserver`-only, so nothing polls unattended in production | Medium | 3 hours | #24 |
 | WeChat MP registration, HTTPS/ICP domain, legal-domain whitelist | Medium | external | #53 |
 | Video tutorials for key workflows | Low | 20 hours | untracked |
 
 **Delivered since the table above was written:** lint tooling and enforcement
-(#21 — ruff is a required check on `main`) and the CI coverage step with
-PostgreSQL/Redis service containers (#17 — `backend-ci.yml`).
+(#21 — ruff is a required check on `main`), the CI coverage step with
+PostgreSQL/Redis service containers (#17 — `backend-ci.yml`) and unattended
+mailbox sync with the RFQ cost guards around it (#24 — `manage.py sync_mailboxes`,
+`docker/systemd/waypost-mailbox-sync.timer`, `accounts/llm_client.py`).
 
 > Effort estimates are indicative for one maintainer working in focused blocks; they are not
 > commitments. Priority reflects risk × size, per the gap analysis above.
