@@ -10,9 +10,15 @@ device `photo_required=False` so the engineer need not re-shoot it onsite.
 Idempotent: a device that already has a photo of a given kind is skipped, so running
 twice does not duplicate photos.
 """
+import logging
+
 from django.core.files.base import ContentFile
 
 from inspections.models import InspectionPhoto
+
+from .thumbnails import ensure_thumbnail
+
+LOGGER = logging.getLogger(__name__)
 
 REUSABLE_KINDS = (InspectionPhoto.Kind.OVERALL, InspectionPhoto.Kind.SERIAL)
 
@@ -77,6 +83,10 @@ def reuse_historical_photos(target_inspection, source_inspection=None, kinds=REU
             ext = photo.image.name.rsplit('.', 1)[-1] if '.' in photo.image.name else 'jpg'
             new_photo.image.save(f'hist_{photo.id}.{ext}', ContentFile(data), save=False)
             new_photo.save()
+            try:
+                ensure_thumbnail(new_photo)
+            except Exception:
+                LOGGER.warning('Thumbnail step failed for reused photo %s', new_photo.pk, exc_info=True)
             copied += 1
 
         if copied:

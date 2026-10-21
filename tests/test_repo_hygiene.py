@@ -28,6 +28,11 @@ So, as of 2026-10-13:
 The checks are static (walk the tree, match names) so they need no database and
 run in a fraction of a second. They derive the app list from `INSTALLED_APPS`
 rather than hardcoding it, so a newly added app is covered automatically.
+
+The file has since become the home for every "the tree must not contain X" gate,
+whatever X is: `MediaStorageApiTests` (no local filesystem media access, which a
+bucket backend cannot serve) and `MiniprogramCompressionTests` (photo capture
+must route through the compressing helper) both walk the tree the same way.
 """
 import os
 import re
@@ -96,6 +101,24 @@ REPORT_NAME_RE = re.compile(r"REPORT|AUDIT|GAP_ANALYSIS")
 # Raw photo picker. Pages must route through utils/image.js so capture is
 # compressed; a direct call bypasses sizeType + compressImage (blocker 5).
 CHOOSE_MEDIA_RE = re.compile(r"wx\.chooseMedia\s*\(")
+
+# Local filesystem media access, which cannot survive the OSS backend. Three
+# idioms, all of them invisible until the box flips:
+#   * ``<anything>.path`` - ``FieldFile.path`` raises NotImplementedError on a
+#     non-filesystem storage, so it breaks in production and nowhere else;
+#   * creating a directory under ``MEDIA_ROOT`` - a bucket has no directories;
+#   * ``Path(settings.MEDIA_ROOT)`` - assumes the media root is a real path.
+# ``os``/``sys``/``request`` receivers are exempt: module attribute access,
+# ``sys.path`` manipulation and WSGI routing are not media files. Template paths
+# derived from ``__file__`` route through ``os.path``, so they are exempt too.
+FIELD_PATH_RE = re.compile(r"(?P<recv>[A-Za-z_][A-Za-z0-9_]*)\.path\b")
+NON_MEDIA_PATH_RECEIVERS = {"os", "sys", "request"}
+MEDIA_ROOT_WRITE_RE = re.compile(r"\bmkdir\b|\bmakedirs\b")
+MEDIA_ROOT_AS_PATH_RE = re.compile(r"Path\(\s*(?:settings\.)?MEDIA_ROOT\b")
+
+# Test modules are exempt: pinning a temporary ``MEDIA_ROOT`` or asserting that
+# ``Storage.path()`` raises is exactly what they are for.
+TEST_MODULE_NAME_RE = re.compile(r"^(?:test_.*|.*_test|tests)\.py$")
 
 
 def _walk(root):
@@ -294,6 +317,53 @@ class MarkdownLinkIntegrityTests(SimpleTestCase):
             "directory. Moving a document usually means its own links need "
             "re-anchoring (`../docs/X.md` -> `../X.md`), and anything linking "
             "*to* it needs updating too.",
+        )
+
+
+class MediaStorageApiTests(SimpleTestCase):
+    """Application code must reach media through the storage API, never the disk.
+
+    ``waypost/settings.py`` flips ``STORAGES['default']`` to a bucket as soon as
+    an operator fills in the four ``OSS_*`` keys, and every one of the idioms
+    below still works on a development box: that asymmetry is what lets a stray
+    ``.path`` survive review and fail on the first production upload.
+    """
+
+    def test_no_local_filesystem_media_access(self):
+        offenders = []
+        scanned = 0
+        for path in _walk(BASE_DIR):
+            if path.suffix != ".py" or TEST_MODULE_NAME_RE.match(path.name):
+                continue
+            if "tests" in path.relative_to(BASE_DIR).parts:
+                continue
+            scanned += 1
+            try:
+                lines = _read(path).splitlines()
+            except (UnicodeDecodeError, OSError):  # pragma: no cover - binary/locked
+                continue
+            for lineno, line in enumerate(lines, start=1):
+                matched = FIELD_PATH_RE.search(line)
+                if matched and matched.group("recv") not in NON_MEDIA_PATH_RECEIVERS:
+                    offenders.append(f"{_relative(path)}:{lineno} {line.strip()}")
+                elif "MEDIA_ROOT" in line and MEDIA_ROOT_WRITE_RE.search(line):
+                    offenders.append(f"{_relative(path)}:{lineno} {line.strip()}")
+                elif MEDIA_ROOT_AS_PATH_RE.search(line):
+                    offenders.append(f"{_relative(path)}:{lineno} {line.strip()}")
+
+        self.assertGreater(
+            scanned,
+            100,
+            f"Only {scanned} Python files were scanned - the walk has probably "
+            "stopped matching, which would make this check pass vacuously.",
+        )
+        self.assertEqual(
+            offenders,
+            [],
+            "Local filesystem media access found; use default_storage / "
+            "FieldFile.name / absolute_media_url instead:\n  " + "\n  ".join(offenders)
+            + "\nThese raise NotImplementedError or silently write outside the "
+            "bucket once STORAGES['default'] is waypost.storage.WaypostOSSStorage.",
         )
 
 

@@ -4,16 +4,15 @@ from decimal import Decimal, ROUND_HALF_UP
 from email.message import EmailMessage as SMTPEmailMessage
 from email.utils import formataddr
 from pathlib import Path
-import shutil
-import subprocess
+import posixpath
 import mimetypes
 import smtplib
-import tempfile
 
 import openpyxl
 from openpyxl import load_workbook
 
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.core.mail import EmailMessage as DjangoEmailMessage
 from django.db import transaction
 from django.http import HttpResponse
@@ -22,6 +21,11 @@ from django.utils import timezone
 from accounts.mailbox_sync import cache_dispatch_outbox_message
 from accounts.models import UserMailboxSettings
 from quotations.services import render_quotation_pdf_html
+from utils.generated_documents import (
+    convert_xlsx_to_pdf,
+    generated_document_dir,
+    save_workbook_to_temp,
+)
 
 from .models import EmailDispatch, InvoiceInfo, InvoiceInfoItem, WeeklyOrderBatch
 
@@ -287,7 +291,13 @@ def _find_invoice_item_header(sheet):
     return None, {}
 
 
-def fill_invoice_template(invoice):
+def fill_invoice_template(invoice, output_dir):
+    """Fill the invoice information template into ``output_dir`` and return its path.
+
+    The caller owns ``output_dir`` so the generated workbook is ephemeral: it is
+    consumed immediately by a download response or an email attachment and is
+    never written into MEDIA_ROOT or storage.
+    """
     template_path = Path(settings.BASE_DIR) / 'template_files' / 'invoice information template.xlsx'
     if not template_path.exists():
         raise FileNotFoundError(f'Template not found: {template_path}')
@@ -327,58 +337,7 @@ def fill_invoice_template(invoice):
                 sheet.cell(row=row_idx, column=col).value = row_values.get(key, '')
             row_idx += 1
 
-    output_dir = Path(settings.MEDIA_ROOT) / 'invoices' / 'generated'
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    xlsx_path = output_dir / f'{invoice.invoice_number}.xlsx'
-    workbook.save(xlsx_path)
-    return xlsx_path
-
-
-def _find_soffice_binary():
-    candidates = [
-        shutil.which('soffice'),
-        shutil.which('soffice.exe'),
-        r'C:\Program Files\LibreOffice\program\soffice.exe',
-        r'C:\Program Files (x86)\LibreOffice\program\soffice.exe',
-    ]
-
-    for candidate in candidates:
-        if candidate and Path(candidate).exists():
-            return str(candidate)
-
-    return None
-
-
-def convert_xlsx_to_pdf(xlsx_path):
-    soffice = _find_soffice_binary()
-    if not soffice:
-        return None
-
-    xlsx_path = Path(xlsx_path)
-    outdir = str(xlsx_path.parent)
-
-    try:
-        subprocess.run(
-            [
-                soffice,
-                '--headless',
-                '--convert-to',
-                'pdf',
-                '--outdir',
-                outdir,
-                str(xlsx_path),
-            ],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=120,
-        )
-    except Exception:
-        return None
-
-    pdf_path = xlsx_path.with_suffix('.pdf')
-    return pdf_path if pdf_path.exists() else None
+    return save_workbook_to_temp(workbook, output_dir, f'{invoice.invoice_number}.xlsx')
 
 
 def export_invoice_infos_to_excel(queryset):
@@ -455,8 +414,19 @@ def _get_effective_dispatch_recipients(dispatch):
     }
 
 
-def collect_email_attachments(dispatch):
-    """Collect all related quotation, delivery, and invoice files for email dispatch."""
+def collect_email_attachments(dispatch, *, output_dir):
+    """Collect all related quotation, delivery, and invoice files for email dispatch.
+
+    ``output_dir`` is a caller-owned temporary directory for the documents that
+    are generated on the spot; nothing here writes into MEDIA_ROOT.
+
+    Each manifest entry is ``{'category', 'label', 'name'}`` plus exactly one of
+    ``storage_name`` (a key in the default storage) or ``path`` (a local file).
+    Generated documents always use ``path``; uploads use ``storage_name`` so the
+    collector works on any storage backend. ``send_email_dispatch`` persists this
+    manifest to a JSONField, and rows written before this change carry ``path``
+    only - which is why the readers keep the ``path`` fallback.
+    """
     files = []
 
     quotation = dispatch.quotation
@@ -465,7 +435,7 @@ def collect_email_attachments(dispatch):
     except Exception:
         quotation_pdf_bytes = None
     if quotation_pdf_bytes:
-        temp_pdf = Path(tempfile.gettempdir()) / f'{quotation.quotation_number}.pdf'
+        temp_pdf = Path(output_dir) / f'{quotation.quotation_number}.pdf'
         temp_pdf.write_bytes(quotation_pdf_bytes)
         files.append(
             {
@@ -479,37 +449,33 @@ def collect_email_attachments(dispatch):
     for attachment in quotation.attachments.all().order_by('uploaded_at'):
         if not attachment.file:
             continue
-        file_path = Path(attachment.file.path)
-        if not file_path.exists():
+        if not attachment.file.storage.exists(attachment.file.name):
             continue
         files.append(
             {
                 'category': 'quotation_attachment',
                 'label': attachment.get_attachment_type_display(),
-                'name': file_path.name,
-                'path': str(file_path),
+                'name': posixpath.basename(attachment.file.name),
+                'storage_name': attachment.file.name,
             }
         )
 
     if dispatch.delivery_order_id:
         delivery = dispatch.delivery_order
-        if delivery.signed_file:
-            signed_path = Path(delivery.signed_file.path)
-            if signed_path.exists():
-                files.append(
-                    {
-                        'category': 'delivery_signed',
-                        'label': 'Signed Delivery Copy',
-                        'name': signed_path.name,
-                        'path': str(signed_path),
-                    }
-                )
+        if delivery.signed_file and delivery.signed_file.storage.exists(delivery.signed_file.name):
+            files.append(
+                {
+                    'category': 'delivery_signed',
+                    'label': 'Signed Delivery Copy',
+                    'name': posixpath.basename(delivery.signed_file.name),
+                    'storage_name': delivery.signed_file.name,
+                }
+            )
 
-        from deliveries.services import convert_xlsx_to_pdf as delivery_convert_xlsx_to_pdf
         from deliveries.services import fill_delivery_template
 
         try:
-            delivery_xlsx = fill_delivery_template(delivery)
+            delivery_xlsx = fill_delivery_template(delivery, output_dir)
             files.append(
                 {
                     'category': 'delivery_document',
@@ -519,7 +485,7 @@ def collect_email_attachments(dispatch):
                 }
             )
 
-            delivery_pdf = delivery_convert_xlsx_to_pdf(delivery_xlsx)
+            delivery_pdf = convert_xlsx_to_pdf(delivery_xlsx)
             if delivery_pdf:
                 files.append(
                     {
@@ -541,7 +507,7 @@ def collect_email_attachments(dispatch):
 
     if dispatch.invoice_info_id:
         invoice = dispatch.invoice_info
-        invoice_xlsx = fill_invoice_template(invoice)
+        invoice_xlsx = fill_invoice_template(invoice, output_dir)
         files.append(
             {
                 'category': 'invoice_document',
@@ -563,9 +529,25 @@ def collect_email_attachments(dispatch):
 
     dedup = {}
     for entry in files:
-        dedup[entry['path']] = entry
+        # Keying on the bare path would collapse two same-named uploads coming
+        # from different storage locations, silently dropping one attachment.
+        dedup[entry.get('storage_name') or entry['path']] = entry
 
     return list(dedup.values())
+
+
+def _open_attachment(entry):
+    """Yield a binary handle for a manifest entry, or ``None`` when it is gone."""
+    storage_name = entry.get('storage_name')
+    if storage_name:
+        if not default_storage.exists(storage_name):
+            return None
+        return default_storage.open(storage_name, 'rb')
+
+    path = Path(entry.get('path') or '')
+    if not path.exists():
+        return None
+    return open(path, 'rb')
 
 
 def _build_smtp_message(dispatch, attachments, mailbox_settings, recipients):
@@ -584,13 +566,18 @@ def _build_smtp_message(dispatch, attachments, mailbox_settings, recipients):
     message.set_content(dispatch.body or '')
 
     for entry in attachments:
-        path = Path(entry['path'])
-        if not path.exists():
+        file_obj = _open_attachment(entry)
+        if file_obj is None:
             continue
-        mime_type, _ = mimetypes.guess_type(path.name)
-        main_type, sub_type = (mime_type or 'application/octet-stream').split('/', 1)
-        with open(path, 'rb') as file_obj:
-            message.add_attachment(file_obj.read(), maintype=main_type, subtype=sub_type, filename=path.name)
+        with file_obj:
+            mime_type, _ = mimetypes.guess_type(entry['name'])
+            main_type, sub_type = (mime_type or 'application/octet-stream').split('/', 1)
+            message.add_attachment(
+                file_obj.read(),
+                maintype=main_type,
+                subtype=sub_type,
+                filename=entry['name'],
+            )
 
     return message
 
@@ -632,29 +619,40 @@ def _send_via_user_mailbox(dispatch, attachments):
 
 
 def send_email_dispatch(dispatch):
-    """Send dispatch email and persist the attachment manifest."""
-    attachments = collect_email_attachments(dispatch)
+    """Send dispatch email and persist the attachment manifest.
 
-    sent_via_mailbox = _send_via_user_mailbox(dispatch, attachments)
-    if not sent_via_mailbox:
-        recipients = _get_effective_dispatch_recipients(dispatch)
-        email_message = DjangoEmailMessage(
-            subject=dispatch.subject,
-            body=dispatch.body,
-            to=recipients['send_to'],
-            cc=recipients['send_cc'],
-            bcc=recipients['send_bcc'],
-        )
+    The generated documents are written into one temporary directory owned here
+    and reaped when the send completes, so nothing accumulates under MEDIA_ROOT.
+    The persisted manifest therefore records names and categories, not retrievable
+    paths, for those entries - same as it always did for the quotation PDF.
+    """
+    with generated_document_dir('dispatch') as output_dir:
+        attachments = collect_email_attachments(dispatch, output_dir=output_dir)
 
-        for entry in attachments:
-            path = Path(entry['path'])
-            if not path.exists():
-                continue
-            mime_type, _ = mimetypes.guess_type(path.name)
-            with open(path, 'rb') as file_obj:
-                email_message.attach(path.name, file_obj.read(), mime_type or 'application/octet-stream')
+        sent_via_mailbox = _send_via_user_mailbox(dispatch, attachments)
+        if not sent_via_mailbox:
+            recipients = _get_effective_dispatch_recipients(dispatch)
+            email_message = DjangoEmailMessage(
+                subject=dispatch.subject,
+                body=dispatch.body,
+                to=recipients['send_to'],
+                cc=recipients['send_cc'],
+                bcc=recipients['send_bcc'],
+            )
 
-        email_message.send(fail_silently=False)
+            for entry in attachments:
+                file_obj = _open_attachment(entry)
+                if file_obj is None:
+                    continue
+                with file_obj:
+                    mime_type, _ = mimetypes.guess_type(entry['name'])
+                    email_message.attach(
+                        entry['name'],
+                        file_obj.read(),
+                        mime_type or 'application/octet-stream',
+                    )
+
+            email_message.send(fail_silently=False)
 
     dispatch.attachments = attachments
     dispatch.sent_at = timezone.now()

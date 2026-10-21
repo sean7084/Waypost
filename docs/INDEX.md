@@ -43,6 +43,7 @@ Complete list of project documentation for reference and navigation.
 | **DEPLOYMENT.md** | `docs/` | DevOps engineers deploying production |
 | **DEPLOYMENT_MINIPROGRAM.md** | `docs/` | Deploying the WeChat mini program (console, legal domains, CI, release) |
 | **RELEASE_PROCEDURE.md** | `docs/` | Cutting, deploying, verifying, and rolling back a release |
+| **OSS_STORAGE.md** | `docs/` | Media storage on Aliyun OSS: bucket, RAM policy, lifecycle rules, backfill, cutover order, nginx retirement |
 | **WORKFLOW_GUIDE.md** | `docs/` | Business users operating daily workflows |
 | **WEB_ROUTES.md** | `docs/` | Every HTML route → view → purpose → required capability |
 | **GITHUB_SETTINGS.md** | `docs/` | Maintainers managing repo configuration |
@@ -134,6 +135,7 @@ waypost/
 │   ├── DEPLOYMENT_MINIPROGRAM.md ← WeChat mini program deployment runbook
 │   ├── MINIPROGRAM_SPEC.md      ← WeChat mini program spec
 │   ├── RELEASE_PROCEDURE.md     ← Versioning, tagging, deploy & rollback
+│   ├── OSS_STORAGE.md           ← Media on Aliyun OSS: cutover runbook
 │   ├── DATABASE_MIGRATION.md    ← SQLite → PostgreSQL data migration
 │   ├── DATABASE_SCHEMA.md       ← ER diagrams + table reference
 │   ├── BACKUP_RESTORE.md        ← Backup & restore runbook
@@ -175,7 +177,9 @@ waypost/
    what deploys; merging to `main` does not
 4. **Data**: `DATABASE_MIGRATION.md` for SQLite → PostgreSQL
 5. **Recovery**: `BACKUP_RESTORE.md` §2b/§3a for the containerised stack
-6. **Verify**: `curl https://<host>/healthz/` (`waypost/health.py`), then the
+6. **Media on OSS**: `OSS_STORAGE.md` — the cutover is a separate, operator-run
+   change; the code is merged but nothing flips until four `OSS_*` keys are set
+7. **Verify**: `curl https://<host>/healthz/` (`waypost/health.py`), then the
    `RELEASE_PROCEDURE.md` §7 checklist
 
 ### For API Integration

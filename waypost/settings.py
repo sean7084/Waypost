@@ -441,6 +441,55 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# ---------------------------------------------------------------------------
+# Media storage (default backend) and Aliyun OSS.
+#
+# Nothing here changes behaviour until an operator fills in all four required
+# OSS_* keys: with them unset `OSS_STORAGE_ENABLED` is False, the backend string
+# is the exact FileSystemStorage literal this project has always used, and
+# MEDIA_URL is still '/media/' - so the nginx `alias` blocks
+# (docker/nginx/waypost.conf:114,120) keep matching. That is deliberate: there is
+# no staging environment and no bucket yet, so the cutover has to be a one-line
+# .env edit that reverts the same way.
+#
+# On an ECS prefer the *internal* endpoint (oss-cn-heyuan-internal.aliyuncs.com):
+# it bills no public egress, and waypost.storage.public_oss_host() derives the
+# browser-reachable host for signed URLs from it, so off-VPC clients still work.
+#
+# Setting only some of the four in production is a half-finished edit, and the
+# failure mode is silent (media quietly stays on disk, then vanishes on a rebuild)
+# - so it raises instead. Shaped as "if you started, finish", never "OSS is
+# required", and gated on DEBUG so no development box can trip it.
+# ---------------------------------------------------------------------------
+OSS_ENDPOINT = os.environ.get('OSS_ENDPOINT', '').strip()
+OSS_BUCKET_NAME = os.environ.get('OSS_BUCKET_NAME', '').strip()
+OSS_ACCESS_KEY_ID = os.environ.get('OSS_ACCESS_KEY_ID', '').strip()
+OSS_ACCESS_KEY_SECRET = os.environ.get('OSS_ACCESS_KEY_SECRET', '').strip()
+# Key prefix inside the bucket, so one bucket can hold several environments.
+OSS_MEDIA_PREFIX = os.environ.get('OSS_MEDIA_PREFIX', 'media').strip('/')
+# How long a media URL stays valid. Media URLs are therefore NOT bookmarkable and
+# must never be persisted; nothing in the project stores one (email attachments
+# store a storage name), and the mini program re-fetches them per request.
+OSS_SIGNED_URL_EXPIRY_SECONDS = int(os.environ.get('OSS_SIGNED_URL_EXPIRY_SECONDS', '3600'))
+
+_OSS_REQUIRED = (OSS_ENDPOINT, OSS_BUCKET_NAME, OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET)
+OSS_STORAGE_ENABLED = all(_OSS_REQUIRED)
+
+if not DEBUG and any(_OSS_REQUIRED) and not OSS_STORAGE_ENABLED:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        'OSS is half-configured: set all four OSS_* keys (OSS_ENDPOINT, '
+        'OSS_BUCKET_NAME, OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET), or none '
+        'of them.'
+    )
+
+# The gate itself lives in waypost/storage.py as a pure function of the
+# environment, so the decision is testable without reloading settings and
+# settings cannot drift from it. Importing that module never imports oss2.
+from waypost.storage import public_oss_host, resolve_default_storage_backend
+
+_DEFAULT_STORAGE_BACKEND = resolve_default_storage_backend(os.environ)
+
 # Static files storage (Django 5.x STORAGES API).
 # Production: WhiteNoise's CompressedManifestStaticFilesStorage - hashed
 #   filenames for cache-busting plus pre-compressed .gz/.br. Nginx serves the
@@ -449,7 +498,7 @@ STATICFILES_DIRS = [
 #   required locally and the whitenoise package need not be installed.
 STORAGES = {
     'default': {
-        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        'BACKEND': _DEFAULT_STORAGE_BACKEND,
     },
     'staticfiles': {
         'BACKEND': (
@@ -461,7 +510,14 @@ STORAGES = {
 }
 
 # Media files (user uploads) - served by Nginx in production.
-MEDIA_URL = '/media/'
+# Under OSS this is the bucket's public base: Django never needs it to build a
+# FileField URL (storage.url() does that, signed), but anything that joins
+# MEDIA_URL by hand must still get a reachable prefix.
+MEDIA_URL = (
+    f'https://{OSS_BUCKET_NAME}.{public_oss_host(OSS_ENDPOINT)}/{OSS_MEDIA_PREFIX}/'
+    if OSS_STORAGE_ENABLED
+    else '/media/'
+)
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Cache backend.

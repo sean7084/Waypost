@@ -3,30 +3,26 @@ Tests for the mini-program REST surface: WeChat bind/login auth and the
 store-inspection API (engineer scoping, idempotent device upsert, checklist).
 """
 import io
-import tempfile
 from datetime import date
 from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
-from PIL import Image
 from rest_framework.test import APIClient
 
 from accounts.models import AdminRole, WeChatIdentity
 from companies.models import Company, Location
 from inspections.models import InspectionDevice, InspectionIssue, InspectionPhoto, StoreInspection
+from tests.storage import IsolatedMediaTestCase, png_bytes
 
 User = get_user_model()
 
 _FAKE_SESSION = {'openid': 'openid-123', 'unionid': 'union-1', 'session_key': 'secret-not-stored'}
-_TEMP_MEDIA = tempfile.mkdtemp(prefix='mp-api-test-media-')
 
 
 def _png_upload(name='photo.png', color='red'):
-    buffer = io.BytesIO()
-    Image.new('RGB', (8, 8), color).save(buffer, format='PNG')
-    return SimpleUploadedFile(name, buffer.getvalue(), content_type='image/png')
+    return SimpleUploadedFile(name, png_bytes(color=color), content_type='image/png')
 
 
 def _make_engineer(username):
@@ -156,8 +152,7 @@ class InspectionApiTests(TestCase):
         self.assertTrue(res.data['checklist'])
 
 
-@override_settings(MEDIA_ROOT=_TEMP_MEDIA)
-class InspectionWorkflowApiTests(TestCase):
+class InspectionWorkflowApiTests(IsolatedMediaTestCase):
     """Photo / issue / signoff / report endpoints (media-writing, offline-sync targets)."""
 
     def setUp(self):
