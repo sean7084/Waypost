@@ -6,6 +6,11 @@
 
 > ℹ️ Development continues to use **SQLite** by default. Production uses **PostgreSQL**, selected entirely through environment variables (see [`DEPLOYMENT.md`](DEPLOYMENT.md) and `.env.example`). No code changes are required to switch — only configuration.
 
+> 📌 **Scope: SQLite → PostgreSQL only.** Moving the *production* PostgreSQL server to Aliyun RDS is a
+> different operation with different failure modes — the engine does not change, but the deploy checkpoint,
+> the DSN source and the compose `db` service all do. That procedure is
+> [`RDS_MIGRATION.md`](RDS_MIGRATION.md).
+
 ---
 
 ## Overview
@@ -214,6 +219,7 @@ The source `db.sqlite3` is untouched by this process. To roll back, remove the `
 ## Related Documentation
 
 - [`DEPLOYMENT.md`](DEPLOYMENT.md) — full production setup (Gunicorn, Nginx, Redis, static files)
+- [`RDS_MIGRATION.md`](RDS_MIGRATION.md) — the *other* migration: production PostgreSQL → Aliyun RDS
 - [`GITHUB_SETTINGS.md`](GITHUB_SETTINGS.md) — repository configuration
 - [`INDEX.md`](INDEX.md) — documentation index
 

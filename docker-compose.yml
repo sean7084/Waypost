@@ -23,8 +23,11 @@
 #
 # Environment variables marked "interpolated" are read from `.env` by Compose
 # itself; everything under `environment:` is what the container sees. Where both
-# could apply, `environment:` wins - that is how DATABASE_* and the cache URL stay
-# consistent with the services defined here.
+# could apply, `environment:` wins - that is how the cache URL stays consistent with
+# the services defined here, and how DATABASE_NAME/USER/PASSWORD stay derived from
+# POSTGRES_*. DATABASE_HOST/PORT are the exception on purpose: they interpolate from
+# `.env`, which is what makes moving the database a one-line config edit rather than a
+# change to this file (see docs/RDS_MIGRATION.md).
 
 name: waypost
 
@@ -46,16 +49,27 @@ services:
     env_file:
       - .env
     environment:
-      # Single source of truth for the DSN: the app and the db service below read
-      # the same POSTGRES_* values, so they cannot drift apart. Do not also set
-      # DATABASE_* in .env - these entries override it, which is confusing to
-      # debug but never wrong.
+      # Name, user and password are derived from the POSTGRES_* values below, so the
+      # app and the db service cannot disagree about them.
+      #
+      # Host and port are interpolated from `.env`, and that is now the supported way
+      # to move the database: set DATABASE_HOST (and DATABASE_PORT when it is not
+      # 5432) there and the app connects wherever that line says, with no edit to this
+      # file. Unset, they resolve to `db` - the same literal this file carried before,
+      # which is why deploying this change alters nothing on the host. Along with it,
+      # set DB_CHECKPOINT_MODE=external so docker/bin/ci-deploy.sh dumps that database
+      # instead of the compose one; both belong in the same .env edit and the procedure
+      # is docs/RDS_MIGRATION.md.
+      #
+      # `environment:` overrides `env_file:` above, so the app's DATABASE_* always wins
+      # over a stray line in .env for name/user/password - and for host/port the value
+      # it wins with is the one .env supplied.
       DATABASE_ENGINE: django.db.backends.postgresql
       DATABASE_NAME: ${POSTGRES_DB:-waypost_db}
       DATABASE_USER: ${POSTGRES_USER:-waypost_django}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
-      DATABASE_HOST: db
-      DATABASE_PORT: "5432"
+      DATABASE_HOST: ${DATABASE_HOST:-db}
+      DATABASE_PORT: "${DATABASE_PORT:-5432}"
       # Hardcoded to the service name on purpose. `redis://127.0.0.1:6379/1` in
       # .env is the host-install habit and would point the app at itself.
       DJANGO_REDIS_CACHE_URL: redis://redis:6379/1
@@ -85,6 +99,11 @@ services:
     # 120s; the default 10s grace period would SIGKILL requests in flight.
     stop_grace_period: 60s
 
+  # The local database. After the RDS cutover this service is *stopped*
+  # (`docker compose stop db`), not deleted - see the volumes: block at the bottom of
+  # this file and docs/RDS_MIGRATION.md. The postgres:16 image it pulls is also what
+  # docker/bin/_pg_checkpoint.sh dumps an external database with, so it stays in the
+  # local image store even once no container uses it.
   db:
     # Debian-based, not -alpine, deliberately: PostgreSQL indexes are built with
     # the libc collation, and musl's collation order has changed between Alpine
@@ -127,4 +146,19 @@ services:
     restart: always
 
 volumes:
+  # NEVER run `docker compose down -v`, and never `docker volume rm waypost_pg_data`.
+  # This named volume is the only copy of every row in the database: the media and
+  # template_files mounts are host directories that survive it, `down -v` does not
+  # just stop the stack, it deletes the state. Nothing here can recover it except a
+  # dump from backups/pg (docs/BACKUP_RESTORE.md §3).
+  #
+  # It stays declared even after the database moves to RDS. Compose has no
+  # conditional `depends_on`, so retiring the `db` service would mean either dropping
+  # `app.depends_on.db.condition: service_healthy` - regressing cold-start ordering,
+  # because the entrypoint's `migrate` has no retry - or a `profiles:` dance, or a
+  # second override file needing Compose >= 2.24. All three change the file whose
+  # header exists to protect a plain `docker compose up -d` at 2am, and an idle
+  # container costs nothing. The cutover stops the service; removal is the dated
+  # follow-up in docs/RDS_MIGRATION.md §8, which may only run once this volume has
+  # been exported and the row counts on the new database have been verified.
   waypost_pg_data:
