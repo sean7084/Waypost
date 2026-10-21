@@ -96,14 +96,20 @@ previous paragraph made concrete.
 >   **before** that migration deploys — groups by the same three columns so a healthy AM/PM pair is
 >   never reported as a duplicate.
 >
-> **Landing status as of this writing.** Delivered as four stacked local branches —
+> **Landing status as of this writing.** Delivered as five stacked local branches —
 > `feat/rfq-llm-cost-guards` (blockers 13–15, commit `167204c`), then `feat/oss-storage-backend` with
 > blockers 1–4 and 6–8 (`517fce4`), then `feat/rds-checkpoint-and-compose-dsn` with 9, 9b, 10, 11 and 12
-> (`3e407e2`), then `feat/small-defects-and-doc-sync` (this branch) with the `(location,
+> (`3e407e2`), then `feat/small-defects-and-doc-sync` with the `(location,
 > inspection_date, slot)` invariant, its slot-aware `merge_duplicate_inspections` cleanup and the
 > importer dedup-key fix, the company-API 500→403
-> fix, credential-decryption observability, the two tracked strays and this block. Blocker 12 is
-> delivered as a **gate, not a deletion**: `docker/bin/waypost-backup.sh` skips the media tar when
+> fix, credential-decryption observability, the two tracked strays and this block (`0ae8546`), then
+> `chore/coverage-ratchet-and-report-correction` (this branch), which re-measures the coverage
+> baseline the ratchet was set from (79 tests / 43.7% on 2026-09-15 → 375 tests / 59.3% on
+> 2026-10-22), raises `fail_under` 40 → 57 and corrects `docs/TESTING.md` §1 and the gap rows in
+> `docs/INDEX.md`. It writes **no** tests for `assets` or `deliveries` — both still have zero test
+> modules — and `docs/TESTING.md` §1 now states how much of the 59.3% is import-time or incidental
+> rather than behavioural. Blocker 12 is delivered as a **gate, not a deletion**:
+> `docker/bin/waypost-backup.sh` skips the media tar when
 > `WAYPOST_MEDIA_IN_OSS=1` rather than dropping the step, because until the bucket exists that tar is
 > the only copy of the photos. **Nothing has been pushed, merged or deployed**, and no Aliyun resource
 > exists yet: the OSS and RDS cutovers remain operator actions, which is why every change here is gated
