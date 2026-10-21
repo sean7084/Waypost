@@ -4,6 +4,7 @@ Provides ViewSets and API views for assets, categories, brands, companies, and m
 """
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
@@ -25,17 +26,6 @@ from .serializers import (
     CompanySerializer, DivisionSerializer, LocationSerializer,
     UserSerializer
 )
-
-
-class IsSuperadminOrReadOnly:
-    """
-    Custom permission to only allow superadmins to edit.
-    """
-
-    def has_permission(self, request, view):
-        if request.method in ['GET', 'HEAD', 'OPTIONS']:
-            return True
-        return request.user and request.user.is_superuser
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -92,7 +82,9 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if not self.request.user.is_superadmin():
-            raise PermissionError("Only superadmins can create companies.")
+            # DRF only translates its own exceptions: raising the builtin
+            # PermissionError here answered a forbidden create with a 500.
+            raise PermissionDenied("Only superadmins can create companies.")
         serializer.save()
 
 

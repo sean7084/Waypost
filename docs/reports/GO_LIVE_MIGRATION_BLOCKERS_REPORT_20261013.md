@@ -45,6 +45,70 @@ previous paragraph made concrete.
 > `file:line` citations below remain anchored to `ccadb1e` and were **not** re-verified against the
 > fix branch.
 
+> **Re-verification and landing status (2026-10-21).** Every row of §1 and §2 was re-checked against the
+> tree, on the assumption that a citation is only useful if it is right. **The tables below are not
+> edited** — `docs/reports/README.md` says a report is a point-in-time snapshot, and this block is the
+> honourable form of that rule.
+>
+> **Citations still correct, unchanged:** blockers 1, 3, 4, 8, 9, 9b, 10, 11, 12, 13, 14 and 15 still
+> describe what the code did, at the line numbers given. That is a statement about this report's
+> accuracy, **not** about what is still open — the last paragraph records which of them the branches
+> below close. Blocker 9's silent-skip half had already been fixed by PR #95, and blocker 7's
+> orphaned-`FieldFile.save()` sibling by commit `2aeca68`.
+>
+> **Wrong in this report, as of its own citation basis `ccadb1e`:**
+>
+> - **Blocker 2 line numbers.** The five `.path` uses in `inspections/tests.py` are at
+>   `192, 265, 298, 466, 595`, not `192, 234, 255, 423, 552`. The count of five was right.
+> - **Blocker 6 line numbers.** The eight classes pinning `MEDIA_ROOT` are
+>   `inspections/tests.py:69, 176, 314, 433, 489, 557`, `api/tests_miniprogram.py:159` and
+>   `inspections/tests_frontend.py:71`. Again the count of eight was right, the lines were not.
+> - **Blocker 4's remedy.** "`requirements.txt` has no `django-storages` / `oss2` … one must be added" is
+>   true, but `django-storages` 1.14.6 ships **no Aliyun OSS backend** (apache_libcloud, azure, dropbox,
+>   ftp, gcloud, s3, sftp). The backend had to be written against `oss2` directly.
+> - **§2's effort total.** Items **1** (thumbnail pipeline) and **12** (in-repo backup script) are
+>   delivered, so the pending total is ≈**19.0**, not 22.0 — Phase 1 ≈15.0, Phase 2 ≈4.0.
+> - **Storage-volume arithmetic.** "1.2 Gbps", "3.3 months to fill the disk", "47% of the monthly storage
+>   **increment**" (should be **ceiling**), §2's "cannot be cut" argument, §8's three Phase-2 triggers and
+>   §9's disk-fill projection all moved with capture-side compression and the thumbnail derivative. Those
+>   are account-level figures and were corrected in the ops knowledge base, not here.
+> - **Backup script path.** `/opt/scripts/waypost-backup.sh` is not where production's backup lives: the
+>   runner is `/srv/waypost/bin/waypost-backup.sh`, now installed from the in-repo
+>   `docker/bin/waypost-backup.sh`. The path is right in `docs/RELEASE_PROCEDURE.md` and §2b of
+>   `docs/BACKUP_RESTORE.md`; `docs/DEPLOYMENT.md`'s "Backup Strategy" now says so at its top, and the
+>   remaining `/opt/scripts/` blocks in `docs/BACKUP_RESTORE.md` §2/§7 are left as written because they
+>   are the explicitly-labelled bare-metal shape.
+> - **Tracked strays.** `db.sqlite3` was never a stray — it is gitignored. The two tracked ones were
+>   `debug_roles.py` (deleted: a print dump of role attributes, owned by nothing) and
+>   `tmp_manual_verify_import_rollback.py` (moved to `scripts/manual_verify_import_rollback.py`, because
+>   `docs/TESTING.md` §7 calls that import/rollback path safety-critical and this was the only worked
+>   example of it). `RepoRootStrayTests` now refuses either prefix at the root.
+> - **The (store, inspection_date) "unique key" premise is wrong in both directions.** No database
+>   constraint existed, and the application-level dedup that did exist was keyed on
+>   `(location, inspection_date)` with `slot` in `defaults` only — so a schedule that booked one store
+>   in both the morning and the afternoon resolved the second row onto the first, never applied its
+>   slot, and silently attached its devices to the wrong round. The invariant is **not** "one
+>   inspection per store per day": `docs/reports/INSPECTIONS_ITERATION2_COMPLETION_REPORT_20260924.md`
+>   records that two visits per day are legitimate, the day view buckets by `(date, am)`/`(date, pm)`
+>   and the bundle export names one folder per slot. It is promoted to
+>   `uniq_store_inspection_location_date_slot` on `(location, inspection_date, slot)`, the importer key
+>   gains `slot`, and `merge_duplicate_inspections --dry-run` — which must run against production
+>   **before** that migration deploys — groups by the same three columns so a healthy AM/PM pair is
+>   never reported as a duplicate.
+>
+> **Landing status as of this writing.** Delivered as four stacked local branches —
+> `feat/rfq-llm-cost-guards` (blockers 13–15, commit `167204c`), then `feat/oss-storage-backend` with
+> blockers 1–4 and 6–8 (`517fce4`), then `feat/rds-checkpoint-and-compose-dsn` with 9, 9b, 10, 11 and 12
+> (`3e407e2`), then `feat/small-defects-and-doc-sync` (this branch) with the `(location,
+> inspection_date, slot)` invariant, its slot-aware `merge_duplicate_inspections` cleanup and the
+> importer dedup-key fix, the company-API 500→403
+> fix, credential-decryption observability, the two tracked strays and this block. Blocker 12 is
+> delivered as a **gate, not a deletion**: `docker/bin/waypost-backup.sh` skips the media tar when
+> `WAYPOST_MEDIA_IN_OSS=1` rather than dropping the step, because until the bucket exists that tar is
+> the only copy of the photos. **Nothing has been pushed, merged or deployed**, and no Aliyun resource
+> exists yet: the OSS and RDS cutovers remain operator actions, which is why every change here is gated
+> on an environment value and production behaviour is unchanged until `.env` is edited.
+
 ---
 
 ## 1. Code-level blockers

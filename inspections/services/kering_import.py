@@ -469,13 +469,17 @@ def import_kering_master(schedule_file, assets_file=None, *,
                 'company': company, 'division': division, 'jda_code': jda,
                 'brand_name': brand, 'store_name': store, 'store_label': store_label,
                 'engineer': engineer, 'status': StoreInspection.Status.PLANNED,
-                'slot': slot,
             }
             if batch is not None:
                 defaults['batch'] = batch
 
+            # ``slot`` is part of the key, not a default. A schedule that lists one
+            # store twice in a day (morning and afternoon) is two rounds; keyed
+            # without it, the second row resolved to the first one, its ``slot``
+            # default was never applied, and its devices silently attached to the
+            # wrong round. This is also the key migrations/0007 now enforces.
             inspection, insp_created = StoreInspection.objects.get_or_create(
-                location=location, inspection_date=inspection_date,
+                location=location, inspection_date=inspection_date, slot=slot,
                 defaults=defaults,
             )
             # If the inspection already existed but has no batch and one was

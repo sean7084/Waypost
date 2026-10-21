@@ -45,7 +45,6 @@ omit = [
     "manage.py",
     "conftest.py",
     "compile_translations.py",
-    "debug_roles.py",
     "tmp_*",
     "waypost/asgi.py",
     "waypost/wsgi.py",

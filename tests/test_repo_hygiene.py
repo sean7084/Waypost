@@ -32,9 +32,10 @@ rather than hardcoding it, so a newly added app is covered automatically.
 The file has since become the home for every "the tree must not contain X" gate,
 whatever X is: `MediaStorageApiTests` (no local filesystem media access, which a
 bucket backend cannot serve), `MiniprogramCompressionTests` (photo capture
-must route through the compressing helper) and `DeployScriptHygieneTests` (the
+must route through the compressing helper), `DeployScriptHygieneTests` (the
 host-side release scripts must stay runnable on Linux and the Compose DSN must stay
-configurable) all walk the tree the same way.
+configurable) and `RepoRootStrayTests` (no scratch script at the repository root)
+all walk the tree the same way.
 """
 import os
 import re
@@ -63,6 +64,12 @@ COMPOSE_FILE = BASE_DIR / "docker-compose.yml"
 CI_DEPLOY_SCRIPT = DOCKER_BIN_DIR / "ci-deploy.sh"
 BACKUP_SCRIPT = DOCKER_BIN_DIR / "waypost-backup.sh"
 CHECKPOINT_HELPER = DOCKER_BIN_DIR / "_pg_checkpoint.sh"
+
+# Repo-root scratch surface (see RepoRootStrayTests below), and the one root-level
+# script that is *not* scratch: the CSV import + rollback drill, moved out of the
+# root into `scripts/` rather than deleted.
+REPO_ROOT_STRAY_PREFIXES = ("tmp_", "debug_")
+IMPORT_ROLLBACK_DRILL = BASE_DIR / "scripts" / "manual_verify_import_rollback.py"
 
 # Directories that are not part of the shipped tree: VCS metadata, virtualenvs,
 # build/lint caches, browser-session dumps, runtime uploads and node modules.
@@ -588,4 +595,50 @@ class DeployScriptHygieneTests(SimpleTestCase):
             text[text.index(fmt) - 400: text.index(fmt) + 400],
             "The sixth deploy.log field must be `${CHECKPOINT:-none}` - `none` for "
             "the deploys that aborted before step 2, not an empty column.",
+        )
+
+
+class RepoRootStrayTests(SimpleTestCase):
+    """No scratch script may sit at the repository root.
+
+    Two files used to: `debug_roles.py` (a 34-line print dump) and
+    `tmp_manual_verify_import_rollback.py` (a real worked example of the asset CSV
+    import + rollback path). They were not tests, not management commands and not
+    imported by anything, so nothing kept them honest - and `.gitignore` matches
+    neither prefix, which means the next `git add .` ships them.
+
+    The check is a flat directory listing, not a `git ls-files` shell-out: it does
+    not care whether the offender is tracked, because an untracked scratch file at
+    the root is the same accident waiting to be staged. The remedy is the same in
+    both directions - a management command if it belongs to an app, `scripts/` if
+    it is a manual drill, which is where the rollback example now lives.
+    """
+
+    def test_no_tmp_or_debug_prefixed_file_at_the_repository_root(self):
+        entries = sorted(p for p in BASE_DIR.iterdir() if p.is_file())
+        self.assertIn(
+            "manage.py",
+            [p.name for p in entries],
+            "The root listing found no `manage.py`, so this scan is looking in the "
+            "wrong place and would pass vacuously.",
+        )
+        strays = [
+            _relative(p)
+            for p in entries
+            if p.name.startswith(REPO_ROOT_STRAY_PREFIXES)
+        ]
+        self.assertEqual(
+            strays,
+            [],
+            f"Scratch files at the repository root: {strays}. Move it to `scripts/` "
+            "if it is a manual drill, or to `<app>/management/commands/` if it needs "
+            "the app layer; `.gitignore` does not cover `tmp_*` or `debug_*`, so "
+            "leaving it here means the next `git add .` commits it.",
+        )
+        self.assertTrue(
+            IMPORT_ROLLBACK_DRILL.is_file(),
+            f"{_relative(IMPORT_ROLLBACK_DRILL)} is gone. It is the only worked "
+            "example of the asset/company CSV import + rollback path that docs/TESTING.md "
+            "names as safety-critical - if it is being deleted, its knowledge has to "
+            "land as a real test first.",
         )

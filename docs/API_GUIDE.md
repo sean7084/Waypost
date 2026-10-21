@@ -335,8 +335,8 @@ curl -X POST http://127.0.0.1:8000/api/v1/brands/ \
 |-----|--------|
 | No token/JWT auth | Only session auth is configured; machine-to-machine clients need a token scheme (e.g., DRF `TokenAuthentication` or SimpleJWT). |
 | No order-management API | Quotations, deliveries, invoices, products, purchases, reports are HTML-only. Exposing them via REST is future work. |
-| `IsSuperadminOrReadOnly` unused | Defined in `api/views.py` but no viewset applies it; write gating relies on queryset scoping + `perform_create` checks. |
+| How writes are actually gated | There is no permission class for write-only-superadmin: scoping happens in `get_queryset()` and the explicit refusal in `perform_create` (e.g. `CompanyViewSet`). A forbidden create returns **403**; until 2026-10-21 it returned **500**, because `perform_create` raised builtin `PermissionError`, which DRF does not translate. The `IsSuperadminOrReadOnly` class that used to sit unused in `api/views.py` was deleted rather than applied — its `has_permission` returns `False` for every non-superadmin write, so wiring it in would turn an IT administrator's in-scope write into a 403. |
 
 ---
 
-*Last Updated: September 6, 2026*
+*Last Updated: October 21, 2026*
