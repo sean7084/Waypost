@@ -599,6 +599,7 @@ These are tracked as open issues and are **not** solved by this document:
 | Mailbox sync runs unattended, but nothing watches it | #24 | Resolved in part: `manage.py sync_mailboxes --once` plus `docker/systemd/waypost-mailbox-sync.{service,timer}` poll every five minutes as a user unit; the `runserver`-only thread in `accounts/apps.py` stays as the dev path, because promoting it would multiply by the three gunicorn workers. A failed pass is still only visible to someone who reads the mailbox stats page or runs `manage.py rfq_llm_usage` — alerting is issue #22 |
 | No staging environment | — | Releases are verified **in production**. This is the single largest risk in the current process |
 | No notification channel for a failed deploy | — | A red `deploy-ecs.yml` run is only seen if someone looks at the Actions tab. The host writes `/srv/waypost/backups/deploy.log`, but nothing pages anyone |
+| Media storage is **merged but unswitched** | — | The OSS backend, the thumbnail pipeline and ephemeral generated documents are on `main` and tested, but no bucket exists and no `OSS_*` key is set, so production media is still `FileSystemStorage` on the bind mount and nginx still serves `/media/`. Do not record the OSS migration as done in a release note, a report or a bill review until [`OSS_STORAGE.md`](OSS_STORAGE.md) §8–§9 have been run by an operator on the host — that cutover is not a deploy and no CI job can verify it |
 | First release shipped; a real rollback has never been drilled | — | `v0.2.0` was tagged on 2026-10-10 and the pipeline has since run green end to end, including the codeload fallback path. The image-rollback branch was drilled with a deliberately bad tag, but no real release has been rolled back — and v0.2.0 is a one-way door (§9.2), so its only rollback is a database restore |
 | A missing pre-deploy checkpoint now stops the deploy | — | `ci-deploy.sh` refuses to continue when it cannot take a `pg_dump` and the host has been deployed before, because that dump is the only restore point a release gets. Override with `ALLOW_MISSING_CHECKPOINT=1`. **If the database moves off the compose stack (e.g. to RDS), repoint the checkpoint at the new DSN in the same change** — otherwise every deploy would either fail or be waved through with no safety net |
 
@@ -615,6 +616,7 @@ These are tracked as open issues and are **not** solved by this document:
 - [`DEPLOYMENT.md`](DEPLOYMENT.md) — server provisioning, Gunicorn/Nginx, environment variables
 - [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md) — backup, restore, and the verification drill (Tier 3 rollback depends on it)
 - [`DATABASE_MIGRATION.md`](DATABASE_MIGRATION.md) — SQLite → PostgreSQL data migration
+- [`OSS_STORAGE.md`](OSS_STORAGE.md) — the media-to-OSS cutover: an operator-run change, not a release step (§11)
 - [`SECURITY.md`](SECURITY.md) — secrets management and the Fernet credential-encryption standard
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — branch/commit conventions and the PR checklist
 - [`GITHUB_SETTINGS.md`](GITHUB_SETTINGS.md) — branch protection rules in force on `main`

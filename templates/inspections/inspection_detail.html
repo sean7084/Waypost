@@ -202,7 +202,10 @@
                         {% for photo in store_photos %}
                         <div class="col-4">
                             <a href="{{ photo.image.url }}" target="_blank">
-                                <img src="{{ photo.image.url }}" alt="{{ photo.get_kind_display }}"
+                                {# thumbnail_url: derived thumbs/ sibling, falling back to the #}
+                                {# original for photos predating the pipeline. The <a> keeps #}
+                                {# image.url - the full-size file is the deliverable. #}
+                                <img src="{{ photo.thumbnail_url }}" alt="{{ photo.get_kind_display }}"
                                      class="img-fluid rounded border" style="height: 80px; width: 100%; object-fit: cover;">
                             </a>
                             <div class="small text-muted text-center mt-1">{{ photo.get_kind_display }}</div>

@@ -16,6 +16,8 @@ Endpoints (mounted under /api/v1/):
 Device/photo writes are idempotent via client_device_uid / client_photo_uid so the
 offline-first client can safely re-sync.
 """
+import logging
+
 from django.conf import settings
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -43,6 +45,8 @@ from inspections.models import (
     InspectionWifiWeakPoint,
     StoreInspection,
 )
+from inspections.services.thumbnails import ensure_thumbnail
+from utils.media_urls import absolute_media_url
 
 from .inspection_serializers import (
     InspectionDeviceSerializer,
@@ -52,6 +56,8 @@ from .inspection_serializers import (
     StoreInspectionDetailSerializer,
     StoreInspectionSerializer,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 # Reading fields the client may submit on a device upsert.
 DEVICE_READING_FIELDS = (
@@ -156,6 +162,13 @@ class StoreInspectionViewSet(viewsets.ModelViewSet):
             )
         else:
             photo = InspectionPhoto.objects.create(store_inspection=inspection, **defaults)
+        # Rendered here, while the uploaded bytes are already in this process.
+        # ensure_thumbnail() swallows its own failures; the guard is so that a
+        # thumbnail can never be the reason a photo upload returns 500.
+        try:
+            ensure_thumbnail(photo)
+        except Exception:
+            LOGGER.warning('Thumbnail step failed for photo %s', photo.pk, exc_info=True)
         return photo
 
     @action(detail=False, methods=['get'])
@@ -493,7 +506,10 @@ class StoreInspectionViewSet(viewsets.ModelViewSet):
         generate_inspection_report(inspection)
         inspection.refresh_from_db()
         return Response({
-            'report_file': request.build_absolute_uri(inspection.report_file.url) if inspection.report_file else None,
+            # absolute_media_url(), not build_absolute_uri(field.url): once the
+            # storage backend signs URLs this one is already absolute, and
+            # re-qualifying it would produce a host + full-URL mashup.
+            'report_file': absolute_media_url(request, inspection.report_file) if inspection.report_file else None,
             'report_generated_at': inspection.report_generated_at,
         }, status=status.HTTP_200_OK)
 

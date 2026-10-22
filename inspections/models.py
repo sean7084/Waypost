@@ -18,6 +18,8 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from inspections.services import thumbnails
+
 from .constants import normalize_device_category
 
 
@@ -507,6 +509,18 @@ class InspectionPhoto(models.Model):
         if not self.client_photo_uid:
             self.client_photo_uid = uuid.uuid4().hex
         super().save(*args, **kwargs)
+
+    @property
+    def thumbnail_url(self):
+        """Sized-down ``thumbs/`` derivative URL, or the original when there is none.
+
+        Serves both the DRF payload (the mini program's photo grid) and the web
+        templates from one place, so a list never ships full-size JPEGs it will
+        display 80px high. Falls back per row: photos stored before the thumbnail
+        pipeline exists have no derivative until ``generate_photo_thumbnails``
+        runs, and must still display.
+        """
+        return thumbnails.thumbnail_url_for(self)
 
 
 class InspectionIssue(models.Model):

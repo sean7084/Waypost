@@ -1,8 +1,6 @@
 """Services for delivery template filling and PDF generation."""
 
 from pathlib import Path
-import shutil
-import subprocess
 
 from django.conf import settings
 from django.db.models import Q
@@ -14,6 +12,8 @@ from .models import DeliveryOrder
 
 from openpyxl import load_workbook
 from weasyprint import HTML
+
+from utils.generated_documents import save_workbook_to_temp
 
 
 INTERNAL_WAREHOUSE_LOCATION_ID = 3
@@ -177,8 +177,12 @@ def _find_item_header_map(sheet):
     return None, {}
 
 
-def fill_delivery_template(delivery_order):
-    """Fill delivery Excel template and return generated xlsx path."""
+def fill_delivery_template(delivery_order, output_dir):
+    """Fill delivery Excel template into ``output_dir`` and return the generated xlsx path.
+
+    The caller owns ``output_dir``: the workbook is ephemeral and is never written
+    under MEDIA_ROOT.
+    """
     template_path = Path(settings.BASE_DIR) / 'template_files' / '签收单 template.xlsx'
     if not template_path.exists():
         raise FileNotFoundError(f'Template not found: {template_path}')
@@ -212,60 +216,7 @@ def fill_delivery_template(delivery_order):
                 sheet.cell(row=row_idx, column=col).value = values.get(key, '')
             row_idx += 1
 
-    output_dir = Path(settings.MEDIA_ROOT) / 'deliveries' / 'generated'
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    xlsx_path = output_dir / f'{delivery_order.delivery_number}.xlsx'
-    workbook.save(xlsx_path)
-
-    return xlsx_path
-
-
-def _find_soffice_binary():
-    candidates = [
-        shutil.which('soffice'),
-        shutil.which('soffice.exe'),
-        r'C:\Program Files\LibreOffice\program\soffice.exe',
-        r'C:\Program Files (x86)\LibreOffice\program\soffice.exe',
-    ]
-
-    for candidate in candidates:
-        if candidate and Path(candidate).exists():
-            return str(candidate)
-
-    return None
-
-
-def convert_xlsx_to_pdf(xlsx_path):
-    """Convert xlsx to pdf with LibreOffice headless. Returns pdf path or None."""
-    soffice = _find_soffice_binary()
-    if not soffice:
-        return None
-
-    xlsx_path = Path(xlsx_path)
-    outdir = str(xlsx_path.parent)
-
-    try:
-        subprocess.run(
-            [
-                soffice,
-                '--headless',
-                '--convert-to',
-                'pdf',
-                '--outdir',
-                outdir,
-                str(xlsx_path),
-            ],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=120,
-        )
-    except Exception:
-        return None
-
-    pdf_path = xlsx_path.with_suffix('.pdf')
-    return pdf_path if pdf_path.exists() else None
+    return save_workbook_to_temp(workbook, output_dir, f'{delivery_order.delivery_number}.xlsx')
 
 
 def render_delivery_pdf_html(delivery_order):

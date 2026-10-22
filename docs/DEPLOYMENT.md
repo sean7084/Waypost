@@ -885,6 +885,24 @@ systemd kills a pass that the command was allowed to take.
 Failures are recorded per mailbox on `UserMailboxSettings.last_connection_status`
 / `last_connection_message`, the same fields the mailbox view shows.
 
+### 2.12 Media storage and the OSS cutover
+
+Media is on the local disk, and stays there. `waypost/storage.py` now ships an
+Aliyun OSS backend, but it is selected by a gate: `STORAGES['default']` becomes
+`WaypostOSSStorage` **only** when all four of `OSS_ENDPOINT`, `OSS_BUCKET_NAME`,
+`OSS_ACCESS_KEY_ID` and `OSS_ACCESS_KEY_SECRET` are non-empty in the environment.
+With none set, the backend string, `MEDIA_URL` and the nginx `alias` blocks above
+are exactly what they have always been, and `oss2` is never imported — which is
+why these keys are absent from the §2.4 block instead of commented there.
+
+So there is nothing to do at deploy time for media. The cutover itself — create
+the bucket, the RAM policy, the **noncurrent-version lifecycle rule**, sync
+`media/`, backfill thumbnails, verify, and only then set the four keys and
+restart — is [`OSS_STORAGE.md`](OSS_STORAGE.md). It is an operator-run change on
+a host, not a release step, and no deploy in the meantime is affected by it.
+Setting one, two or three of the four keys fails at boot with
+`ImproperlyConfigured` rather than half-working.
+
 ---
 
 ## Production Configuration Checklist

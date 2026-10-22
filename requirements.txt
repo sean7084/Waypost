@@ -32,3 +32,17 @@ whitenoise==6.12.0
 # Caching: Redis via django-redis (enabled when DJANGO_REDIS_CACHE_URL is set)
 django-redis==5.4.0
 redis==8.1.0
+
+# Object storage (Aliyun OSS), gated behind the four OSS_* keys - see
+# waypost/storage.py and the "# Object storage (Aliyun OSS)" block in .env.example.
+# Imported lazily inside WaypostOSSStorage, so a box that is not on OSS never
+# loads it and a broken install cannot break FileSystemStorage. oss2 needs the
+# native crcmod and pycryptodome wheels; build-essential is already in the deps
+# stage of docker/Dockerfile.
+oss2==2.19.1
+# Not imported by this repo: django-storages 1.14.6 (the latest release) ships no
+# Aliyun OSS backend - its extras are azure/boto3/dropbox/google/libcloud/s3/sftp
+# - so WaypostOSSStorage is written against oss2 directly. Pinned here because
+# django-storages is what the OSS plan assumed; delete it if the maintainer agrees
+# nothing in this repo needs it.
+django-storages==1.14.6

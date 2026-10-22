@@ -20,14 +20,18 @@ class InspectionPhotoSerializer(serializers.ModelSerializer):
     """A captured photo (device overall/serial or rack/network/issue)."""
 
     uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
+    # Model property, not a field: the derived thumbs/ sibling, falling back to the
+    # original for photos stored before the thumbnail pipeline. The client lists
+    # with this and only pulls `image` when the engineer opens the full-size one.
+    thumbnail_url = serializers.CharField(read_only=True)
 
     class Meta:
         model = InspectionPhoto
         fields = [
-            'id', 'kind', 'device', 'image', 'client_photo_uid', 'display_name',
+            'id', 'kind', 'device', 'image', 'thumbnail_url', 'client_photo_uid', 'display_name',
             'sort_index', 'captured_at', 'uploaded_by', 'uploaded_by_name', 'created_at',
         ]
-        read_only_fields = ['id', 'display_name', 'uploaded_by', 'created_at']
+        read_only_fields = ['id', 'display_name', 'uploaded_by', 'created_at', 'thumbnail_url']
 
 
 class InspectionIssueSerializer(serializers.ModelSerializer):

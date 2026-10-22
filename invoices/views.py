@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -7,11 +10,17 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import DetailView, ListView
 from django.utils import timezone
 
+from utils.generated_documents import (
+    TEMP_DIR_PREFIX,
+    convert_xlsx_to_pdf,
+    generated_document_dir,
+    open_generated_document,
+)
+
 from .forms import EmailDispatchForm, InvoiceInfoForm, SharepointImportForm
 from .models import EmailDispatch, InvoiceInfo, WeeklyOrderBatch
 from .services import (
     collect_email_attachments,
-    convert_xlsx_to_pdf,
     export_invoice_infos_to_excel,
     fill_invoice_template,
     process_sharepoint_batch,
@@ -260,18 +269,27 @@ def invoice_info_document_view(request, pk):
     if invoice_info.delivery_order_id:
         recalculate_invoice_from_delivery(invoice_info)
 
+    # Deliberately not a `with` block: FileResponse reads the file lazily while
+    # the view is already off the stack, so the directory has to be owned by the
+    # response itself (risk R2 - a context manager deletes it before byte one).
+    holder = tempfile.TemporaryDirectory(prefix=f'{TEMP_DIR_PREFIX}invoice-')
     try:
-        xlsx_path = fill_invoice_template(invoice_info)
+        xlsx_path = fill_invoice_template(invoice_info, Path(holder.name))
     except FileNotFoundError as exc:
+        holder.cleanup()
         messages.error(request, str(exc))
         return redirect('invoices:invoice_detail', pk=pk)
 
     pdf_path = convert_xlsx_to_pdf(xlsx_path)
-    if pdf_path:
-        return FileResponse(open(pdf_path, 'rb'), as_attachment=True, filename=pdf_path.name)
-
-    messages.warning(request, 'PDF converter not found. Downloading filled Excel file instead.')
-    return FileResponse(open(xlsx_path, 'rb'), as_attachment=True, filename=xlsx_path.name)
+    document_path = pdf_path or xlsx_path
+    if not pdf_path:
+        messages.warning(request, 'PDF converter not found. Downloading filled Excel file instead.')
+    try:
+        document = open_generated_document(document_path, holder)
+        return FileResponse(document, as_attachment=True, filename=document_path.name)
+    except Exception:
+        holder.cleanup()
+        raise
 
 
 @login_required
@@ -301,6 +319,21 @@ def invoice_info_export_view(request):
 
     queryset = queryset.order_by('-invoice_date', '-id')
     return export_invoice_infos_to_excel(queryset)
+
+
+def _preview_attachment_list(dispatch):
+    """Build the auto-attachment manifest for the compose preview only.
+
+    The compose template renders ``label`` and ``name`` and never reads the
+    bytes, so the generated documents are discarded as soon as the manifest is
+    back - they exist only to make the names known. A preview that fails is an
+    empty list: the draft itself is never at risk.
+    """
+    try:
+        with generated_document_dir('dispatch-preview') as output_dir:
+            return collect_email_attachments(dispatch, output_dir=output_dir)
+    except Exception:
+        return []
 
 
 @login_required
@@ -350,18 +383,12 @@ def email_dispatch_compose_view(request, quotation_pk=None):
                     return redirect('invoices:email_dispatch_list')
             else:
                 preview_dispatch = draft_dispatch
-                try:
-                    preview_files = collect_email_attachments(draft_dispatch)
-                except Exception as exc:
-                    messages.error(request, f'Preview generation failed: {exc}')
+                preview_files = _preview_attachment_list(draft_dispatch)
     else:
         form = EmailDispatchForm(quotation=quotation, instance=existing_draft)
         if existing_draft is not None:
             preview_dispatch = existing_draft
-            try:
-                preview_files = collect_email_attachments(existing_draft)
-            except Exception:
-                preview_files = []
+            preview_files = _preview_attachment_list(existing_draft)
 
     return render(
         request,

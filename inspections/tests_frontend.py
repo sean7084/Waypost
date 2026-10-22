@@ -6,13 +6,11 @@ import command) by exercising the server-rendered views and the new
 ``InspectionBatch`` grouping.
 """
 import io
-import tempfile
 from datetime import date, timedelta
 
 import pandas as pd
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
 from django.urls import reverse
 from openpyxl import load_workbook
 
@@ -21,10 +19,9 @@ from companies.models import Company, Division, Location
 from inspections.forms import AssetListExportForm, InspectionBatchByBrandForm
 from inspections.models import InspectionBatch, InspectionDevice, StoreInspection
 from inspections.services.asset_list_export import export_asset_list
+from tests.storage import IsolatedMediaTestCase
 
 User = get_user_model()
-
-TEMP_MEDIA = tempfile.mkdtemp(prefix='inspections-frontend-test-media-')
 
 # Role codes used by the tests; ensured to exist in setUpTestData.
 _ROLE_CODES = ['superadmin', 'it_administrator', 'inspection_engineer']
@@ -68,8 +65,7 @@ def _assets_xlsx_bytes(rows):
     return buffer.getvalue()
 
 
-@override_settings(MEDIA_ROOT=TEMP_MEDIA)
-class InspectionFrontendTestBase(TestCase):
+class InspectionFrontendTestBase(IsolatedMediaTestCase):
     """Shared fixtures: company, division, locations, users with roles."""
 
     @classmethod
