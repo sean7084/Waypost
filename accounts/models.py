@@ -867,6 +867,72 @@ class ReceivedEmailMessage(models.Model):
                 self.has_perm('accounts.add_user'))
 
 
+class LlmCallRecord(models.Model):
+    """One attempt against the RFQ language model, including the attempts that never left.
+
+    The provider's `usage` block is the only place token spend is stated, so
+    without these rows "what did RFQ AI cost this month?" is unanswerable and no
+    budget guard can be built. Rows are additive telemetry: the mail itself is
+    already stored, so nothing here is authoritative and both foreign keys
+    survive deletion of their target as NULL.
+    """
+
+    class Purpose(models.TextChoices):
+        RFQ_CLASSIFICATION = 'rfq_classification', _('RFQ classification')
+        PRODUCT_DISAMBIGUATION = 'product_disambiguation', _('Product disambiguation')
+
+    class Status(models.TextChoices):
+        OK = 'ok', _('OK')
+        ERROR = 'error', _('Error')
+        SKIPPED = 'skipped', _('Skipped by pre-gate')
+        BUDGET_EXCEEDED = 'budget_exceeded', _('Budget exceeded')
+        NOT_CONFIGURED = 'not_configured', _('Not configured')
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created At'))
+    purpose = models.CharField(max_length=40, choices=Purpose.choices, verbose_name=_('Purpose'))
+    status = models.CharField(max_length=40, choices=Status.choices, verbose_name=_('Status'))
+    provider = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name=_('Provider'),
+        help_text=_('Host the request was sent to, recorded rather than configured because the endpoint is what decides the provider.'),
+    )
+    model = models.CharField(max_length=120, blank=True, verbose_name=_('Model'))
+    mailbox = models.ForeignKey(
+        UserMailboxSettings,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='llm_calls',
+        verbose_name=_('Mailbox'),
+    )
+    message = models.ForeignKey(
+        ReceivedEmailMessage,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='llm_calls',
+        verbose_name=_('Message'),
+    )
+    input_tokens = models.PositiveIntegerField(default=0, verbose_name=_('Input Tokens'))
+    output_tokens = models.PositiveIntegerField(default=0, verbose_name=_('Output Tokens'))
+    latency_ms = models.PositiveIntegerField(default=0, verbose_name=_('Latency (ms)'))
+    error = models.TextField(blank=True, verbose_name=_('Error'))
+
+    class Meta:
+        verbose_name = _('LLM Call Record')
+        verbose_name_plural = _('LLM Call Records')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['purpose', '-created_at']),
+            models.Index(fields=['status', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.purpose} {self.status} {self.input_tokens}+{self.output_tokens} tok'
+
+
 class UserSession(models.Model):
     """
     Track user sessions for security and audit purposes.

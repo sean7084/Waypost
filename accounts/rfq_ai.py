@@ -1,11 +1,8 @@
-import json
 import logging
-import os
 import re
 from datetime import timedelta
 from decimal import Decimal
 from email.utils import parseaddr
-from urllib import error, request
 
 from django.conf import settings
 from django.db.models import Q
@@ -16,6 +13,9 @@ from companies.models import Company, CompanyUser
 from invoices.models import EmailDispatch
 from products.models import ProductPrice
 from quotations.models import Quotation, QuotationItem
+
+from .llm_client import call_llm_json, record_skipped_call
+from .models import LlmCallRecord
 
 
 LOGGER = logging.getLogger(__name__)
@@ -42,6 +42,15 @@ GENERIC_CATEGORY_ALIASES = {
     'aio': ['aio', 'all in one', 'all-in-one', '一体机'],
     'tablet': ['tablet', 'ipad', '平板', '平板电脑'],
 }
+
+# Machine-generated mail is never an RFQ, and its tell-tales are stable enough
+# to match as text: a list-unsubscribe footer, an automatic reply, a bounce.
+_NON_RFQ_SIGNATURES = re.compile(
+    'unsubscribe|退订|list-unsubscribe|auto-submitted|automatic reply|自动回复|'
+    'out of office|不在办公室|delivery status notification|undeliverable|'
+    'mailer-daemon|postmaster@|no-?reply|donotreply',
+    re.IGNORECASE,
+)
 
 
 def _normalized_text(value):
@@ -309,76 +318,6 @@ def _build_ambiguous_match_warning(requested, candidates):
     }
 
 
-def _parse_minimax_response(raw, log_label):
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        LOGGER.warning('Minimax %s response was not JSON', log_label)
-        return None
-
-    if isinstance(parsed, dict) and isinstance(parsed.get('content'), list):
-        text_blocks = []
-        for block in parsed['content']:
-            if isinstance(block, dict) and block.get('type') == 'text' and block.get('text'):
-                text_blocks.append(block['text'])
-        if text_blocks:
-            candidate_text = '\n'.join(text_blocks).strip()
-            try:
-                parsed = json.loads(candidate_text)
-            except json.JSONDecodeError:
-                LOGGER.warning('Minimax %s text block was not valid JSON', log_label)
-                return None
-    elif isinstance(parsed, dict) and 'output_text' in parsed:
-        try:
-            parsed = json.loads(parsed['output_text'])
-        except (TypeError, json.JSONDecodeError):
-            LOGGER.warning('Minimax %s output_text was not valid JSON', log_label)
-            return None
-
-    return parsed if isinstance(parsed, dict) else None
-
-
-def _call_minimax_json(system_prompt, user_prompt, log_label):
-    api_key = getattr(settings, 'MINIMAX_TOKEN_PLAN_KEY', '') or os.environ.get('minimax_token_plan_key', '')
-    api_url = getattr(settings, 'MINIMAX_RFQ_API_URL', '') or os.environ.get('MINIMAX_RFQ_API_URL', '')
-    if not api_key or not api_url:
-        return None
-
-    content = user_prompt if isinstance(user_prompt, str) else json.dumps(user_prompt, ensure_ascii=False)
-    payload = json.dumps(
-        {
-            'model': getattr(settings, 'MINIMAX_RFQ_MODEL', 'MiniMax-M2.7'),
-            'system': system_prompt,
-            'max_tokens': int(getattr(settings, 'MINIMAX_RFQ_MAX_TOKENS', 800)),
-            'temperature': 0.2,
-            'messages': [
-                {
-                    'role': 'user',
-                    'content': content,
-                }
-            ],
-        },
-        ensure_ascii=False,
-    ).encode('utf-8')
-    req = request.Request(
-        api_url,
-        data=payload,
-        headers={
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json',
-        },
-        method='POST',
-    )
-    try:
-        with request.urlopen(req, timeout=float(getattr(settings, 'MINIMAX_RFQ_TIMEOUT_SECONDS', 20))) as response:
-            raw = response.read().decode('utf-8')
-    except Exception as exc:
-        LOGGER.warning('Minimax %s request failed: %s', log_label, exc)
-        return None
-
-    return _parse_minimax_response(raw, log_label)
-
-
 def _select_product_price_candidate_with_llm(request_text, extracted, candidates):
     if len(candidates) < 2:
         return candidates[0] if candidates else None
@@ -407,7 +346,11 @@ def _select_product_price_candidate_with_llm(request_text, extracted, candidates
         },
         'candidates': [_serialize_product_price_candidate(candidate) for candidate in candidates[:8]],
     }
-    llm_result = _call_minimax_json(system_prompt, user_prompt, 'RFQ candidate disambiguation')
+    llm_result = call_llm_json(
+        system_prompt,
+        user_prompt,
+        purpose=LlmCallRecord.Purpose.PRODUCT_DISAMBIGUATION,
+    ).payload
     if not llm_result:
         return None
 
@@ -635,7 +578,80 @@ def _heuristic_classification(message):
     }
 
 
-def _call_minimax(message):
+def _definite_non_rfq(message, heuristic=None):
+    """Return ``(skip, reason)`` for mail that cannot be an RFQ.
+
+    Headers are read before text because the sending server writes them about
+    itself: `Auto-Submitted`, `X-Autoreply` and `List-Unsubscribe` mark bulk or
+    machine-generated traffic and a customer's prose cannot imitate them, while a
+    signature match can be coincidental. `Auto-Submitted` only counts when its
+    value states automation (`auto-replied`, `auto-generated`); the RFC allows
+    `manual` for human mail, and treating its presence as a skip would drop a
+    real RFQ from a well-configured sender.
+
+    A text signature therefore suppresses a call only when the heuristic found
+    no RFQ either. A customer who quotes a newsletter footer, or whose signature
+    block says `do not reply`, is still a customer asking for a price - and a
+    skipped RFQ is a quotation nobody drafted, which is a worse failure than the
+    tokens it would have cost.
+
+    The reason is returned rather than swallowed because it is persisted in
+    `rfq_extracted_data`: it is what lets an operator audit a wrong skip, and
+    the only evidence that the gate is saving anything.
+    """
+    metadata = getattr(message, 'metadata', None)
+    if isinstance(metadata, dict):
+        if str(metadata.get('Auto-Submitted') or '').strip().lower().startswith('auto'):
+            return True, 'auto_submitted_header'
+        if str(metadata.get('X-Autoreply') or '').strip().lower() in ('yes', 'true'):
+            return True, 'autoreply_header'
+        if str(metadata.get('List-Unsubscribe') or '').strip():
+            return True, 'list_unsubscribe_header'
+
+    if (heuristic or {}).get('is_rfq'):
+        return False, ''
+    match = _NON_RFQ_SIGNATURES.search(_message_text(message))
+    if match:
+        return True, f'non_rfq_signature:{match.group(0).lower()}'
+    return False, ''
+
+
+def _sender_is_authorized_rfq_sender(message, extracted=None):
+    """Whether the sender is a whitelisted RFQ contact at a known company.
+
+    An unidentified sender counts as unauthorised: the whitelist means nothing
+    until the customer behind the address is known.
+    """
+    extracted = extracted or {}
+    contact_email = (_recognized_sender(message)['email'] or extracted.get('contact_email') or _sender_email(message)).strip().lower()
+    if not contact_email:
+        return False
+    company = _resolve_customer(message, extracted)
+    if not company:
+        return False
+    return bool(_resolve_authorized_sender_contact(company, message, extracted))
+
+
+def _should_skip_llm(message, heuristic):
+    """Return ``(skip, reason)`` for a mail that must not be paid for.
+
+    The header rules are always on and cost nothing: machine-generated mail
+    cannot hide the headers a sending server writes about itself. A text
+    signature is honoured only when the heuristic also found no RFQ, and
+    requiring a whitelisted sender is opt-in
+    (`RFQ_LLM_REQUIRE_AUTHORIZED_SENDER`) because either rule's false negative is
+    a real quotation nobody drafted: a new contact at an existing customer is
+    silently dropped, which is business-visible rather than merely cheap.
+    """
+    skip, reason = _definite_non_rfq(message, heuristic)
+    if skip:
+        return True, reason
+    if settings.RFQ_LLM_REQUIRE_AUTHORIZED_SENDER and not _sender_is_authorized_rfq_sender(message, heuristic):
+        return True, 'sender_not_authorized'
+    return False, ''
+
+
+def _call_llm_classify(message):
     system_prompt = (
         '你是一个负责企业采购邮件识别与报价回复草拟的助手。'
         '请判断邮件是否属于客户询价/RFQ，并仅返回一个 JSON 对象，不要返回 Markdown，不要返回解释。'
@@ -663,12 +679,26 @@ def _call_minimax(message):
             'body_text': message.body_text or message.body_preview or '',
         },
     }
-    return _call_minimax_json(system_prompt, user_prompt, f'RFQ classification for message {message.pk}')
+    result = call_llm_json(
+        system_prompt,
+        user_prompt,
+        purpose=LlmCallRecord.Purpose.RFQ_CLASSIFICATION,
+        message=message,
+    )
+    return result.payload
 
 
 def classify_rfq_email(message):
     heuristic = _heuristic_classification(message)
-    llm_result = _call_minimax(message)
+
+    skip, reason = _should_skip_llm(message, heuristic)
+    if skip:
+        record_skipped_call(LlmCallRecord.Purpose.RFQ_CLASSIFICATION, message=message, reason=reason)
+        skipped = heuristic.copy()
+        skipped.update({'is_rfq': False, 'llm_skipped': True, 'llm_skip_reason': reason})
+        return skipped
+
+    llm_result = _call_llm_classify(message)
     if not llm_result:
         return heuristic
 

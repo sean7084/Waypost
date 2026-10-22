@@ -177,12 +177,15 @@ DATABASE_PORT=5432
 # Cache (Redis) - production
 DJANGO_REDIS_CACHE_URL=redis://127.0.0.1:6379/1
 
-# Minimax RFQ integration (note the LOWERCASE key name)
-minimax_token_plan_key=${YOUR_MINIMAX_API_KEY}
-MINIMAX_RFQ_API_URL=https://api.minimaxi.com/anthropic/v1/messages
-MINIMAX_RFQ_MODEL=MiniMax-M2.7-highspeed
-MINIMAX_RFQ_TIMEOUT_SECONDS=30
-MINIMAX_RFQ_MAX_TOKENS=800
+# RFQ LLM (any provider; the endpoint decides)
+RFQ_LLM_API_KEY=${YOUR_LLM_API_KEY}
+RFQ_LLM_API_URL=https://api.minimaxi.com/anthropic/v1/messages
+RFQ_LLM_MODEL=MiniMax-M2.7-highspeed
+RFQ_LLM_MONTHLY_BUDGET_CNY=200
+RFQ_LLM_REQUIRE_AUTHORIZED_SENDER=0
+# An existing .env may still carry the retired minimax_token_plan_key /
+# MINIMAX_RFQ_* names: they are read for one more release and log a
+# deprecation warning when one of them wins over the name above.
 
 # Safety override for non-production email testing (leave empty in prod)
 TEST_OUTBOUND_EMAIL_OVERRIDE=
@@ -376,20 +379,22 @@ under `runserver`. `accounts/apps.py::AccountsConfig.ready` returns early unless
 - Development (`runserver`): the thread starts once and polls every
   `SYNC_INTERVAL_SECONDS` (≈5 minutes).
 - **Production (Gunicorn, with or without Docker): the thread never starts.**
-  There is no `run_mailbox_sync` management command either, so nothing polls
-  unattended.
+  That is deliberate — see the ×3 worker trap in [2.11](#211-unattended-mailbox-sync).
 - Scope when it does run: only mailboxes with `is_active = true` **and**
   `auto_sync_enabled = true` (`accounts.models.UserMailboxSettings`).
 
-Sync still happens on demand: `accounts/views.py` calls `maybe_auto_sync_mailbox`
+Sync also happens on demand: `accounts/views.py` calls `maybe_auto_sync_mailbox`
 when a user opens their mailbox view, so an active user keeps their own mailbox
-fresh. What production lacks is *unattended* polling — if the invoice/RFQ flow
-must ingest mail with nobody logged in, add a management command and drive it
-from cron or a systemd timer. Tracked as a known gap, not a deployment blocker.
+fresh. Unattended polling is `python manage.py sync_mailboxes`, driven by
+`docker/systemd/waypost-mailbox-sync.timer`; the install and verification steps
+are in [2.11](#211-unattended-mailbox-sync). Without that timer the app still
+works — mail is simply only ingested when someone looks, which is what production
+did until issue #24 was closed.
 
 > ℹ️ The previous warning about "each Gunicorn worker starting its own thread" no
 > longer applies: the `runserver` guard makes duplicate syncing impossible. The
-> trade-off is that automatic syncing is off in production entirely.
+> trade-off is that automatic syncing is off in production entirely, and is
+> recovered by the timer rather than by removing the guard.
 
 ---
 
@@ -525,7 +530,7 @@ POSTGRES_USER=waypost_django
 POSTGRES_PASSWORD=<openssl rand -base64 24>
 WAYPOST_DATA_DIR=/home/deploy/waypost-data
 
-minimax_token_plan_key=<key>
+RFQ_LLM_API_KEY=<key>
 TEST_OUTBOUND_EMAIL_OVERRIDE=
 
 # Internal mirrors: same packages, no public bandwidth cost.
@@ -816,6 +821,69 @@ did not run or the manifest is stale), **log in and submit any form** — a 403
 here means `DJANGO_SECURE_PROXY_SSL_HEADER` or `DJANGO_CSRF_TRUSTED_ORIGINS` is
 missing, `/en-us/` and `/zh-cn/` both render, and generating a quotation PDF
 shows Chinese glyphs rather than empty boxes.
+
+---
+
+### 2.11 Unattended mailbox sync
+
+Mailbox polling is a **separate timed process**, not part of the web stack:
+
+```bash
+python manage.py sync_mailboxes --once --max-runtime 240   # what the timer runs
+python manage.py sync_mailboxes --loop --interval 300      # long-running alternative
+python manage.py sync_mailboxes --mailbox 42               # one mailbox, for diagnosis
+python manage.py rfq_llm_usage --by-mailbox                # what the RFQ AI cost
+```
+
+`--once` exits 0 after one pass and prints `synced N mailbox(es), M new
+message(s)`. Each pass also prunes `LlmCallRecord` rows older than 180 days
+(`--prune-llm-records`), so cost history does not need a second timer.
+
+**Units** — `docker/systemd/waypost-mailbox-sync.service` (oneshot, `docker exec`
+into the pinned `waypost_app` container) and `.timer` (`OnUnitActiveSec=5min`).
+Install them as *user* units, because the Docker daemon that runs this stack is
+rootless and belongs to one unprivileged user; a system-wide unit cannot see its
+socket. The units set `XDG_RUNTIME_DIR` and `DOCKER_HOST` themselves, since
+systemd starts units with a bare environment and never sources `~/.bashrc` — the
+same reason `docker/bin/ci-deploy.sh` exports them. Full install and verification
+steps are in the header of each file.
+
+**Why the `runserver` gate in `accounts/apps.py` stays.** Gunicorn runs
+`--workers 3` and the per-mailbox lock in `accounts/mailbox_sync.py` is a
+process-local dict, so deleting that gate would start three independent pollers:
+three times the RFQ LLM spend and three times the duplicate mail processing. The
+thread it starts is a development convenience only. Cross-process exclusion is
+the command's job, and it uses the Django cache (`waypost:mailbox-sync:lock`,
+leased for the interval plus 60 s) — Redis in production, and in development a
+per-process cache is fine because nobody runs two timers there.
+
+**Verify one sync per five minutes.** After an hour of the timer running:
+
+```bash
+systemctl --user list-timers waypost-mailbox-sync.timer        # last + next activation
+journalctl --user -u waypost-mailbox-sync.service --since -1h \
+  | grep -c 'synced '                                          # ≈ 12, not 24 or 36
+journalctl --user -u waypost-mailbox-sync.service --since -1h \
+  | grep 'RFQ LLM' | grep -c 'not attempted\|request failed\|not JSON'
+```
+
+The pass writes to the **unit's** journal, not to the container log: `docker exec`
+attaches its stdout/stderr to systemd, so `docker logs waypost_app` only ever
+shows gunicorn. Use the journal for sync output and for every LLM warning.
+
+A model call that succeeds logs nothing, so the last count is the number of calls
+that went wrong. `python manage.py rfq_llm_usage` counts every call and reports
+the spend, because `LlmCallRecord` — not the log — is the record of what was paid
+for.
+
+A doubled count means a second poller is alive (a stray `runserver`, or `--loop`
+and the timer running together); the cache lock makes the loser decline with
+`Another mailbox sync holds the lock; nothing done.` rather than duplicate work.
+`TimeoutStartSec=300` in the service must stay above `--max-runtime`, otherwise
+systemd kills a pass that the command was allowed to take.
+
+Failures are recorded per mailbox on `UserMailboxSettings.last_connection_status`
+/ `last_connection_message`, the same fields the mailbox view shows.
 
 ---
 
