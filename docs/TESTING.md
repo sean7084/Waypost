@@ -4,41 +4,66 @@
 conventions the existing suite follows, the **measured** coverage baseline, and a ratchet plan.
 Writing the missing tests is tracked as separate work (see §8 priorities).
 
-All numbers below were measured on 2026-09-15 against `main` with the full suite.
+All numbers below were measured on 2026-10-22 against `chore/coverage-ratchet-and-report-correction`
+with the full suite. The previous version of this table (2026-09-15, 79 tests, 43.7%) is kept in
+issue #71's body; the figures below replace it.
 
 ---
 
 ## 1. Measured baseline
 
-**79 tests, all passing** (1 skipped — env-gated), **43.7% overall coverage**
-(13,225 statements + 3,290 branches).
+**375 tests, all passing** (1 skipped — env-gated), **59.3% overall coverage**
+(17,987 statements + 4,162 branches, branch coverage on).
 
 | App | Tests | Coverage | Statements | Notes |
 |---|---|---|---|---|
-| `inspections` | 33 | **84.4%** | 1,367 | Newest code; models 97.9%, report/transform parity suite |
-| `api` | 18 | **73.8%** | 817 | `inspection_views.py` 82.2%; DRF `APIClient` throughout |
-| `audit` | 0 | 67.7% | 438 | Incidental coverage only — no dedicated tests |
+| `tests/` (harness) | 61 | **92.6%** | 795 | Storage-API guards, hygiene tripwires, deploy-script checks |
+| `inspections` | 167 | **87.9%** | 4,138 | Newest code; models, import scheduling, duplicate-inspection invariant |
+| `users` | 0 | 87.5% | 8 | Too small to matter |
+| `waypost` | 12 | 83.6% | 450 | Settings, health endpoint, URL surface |
+| `api` | 27 | **72.4%** | 1,046 | Mini-program + company API permission tests |
+| `mobile`, `customers` | 0 | 62.5% / 0.0% | 24 / 2 | Model-free apps |
+| `accounts` | 83 | **61.6%** | 3,640 | Was 40.3%. RFQ/LLM metering and crypto-logging tests |
+| `reports` | 0 | 57.9% | 519 | Incidental coverage only — no dedicated tests |
 | `products` | 7 | 57.6% | 973 | Price lifecycle covered |
-| `reports` | 0 | 46.3% | 462 | Incidental only |
-| `accounts` | 12 | 40.3% | 2,599 | Largest app. `mailbox_sync.py` **13.4%** |
+| `utils` | 0 | **50.6%** | 177 | Was 32.7% — still no direct tests; `import_rollback.py` is 40.8% |
+| `dashboard` | 0 | 41.4% | 128 | Covered from `inspections` view tests |
+| `invoices` | 1 | 40.5% | 1,044 | Was 27.9%; one test for a 291-statement `views.py` at 22.8% |
 | `purchases` | 0 | 38.9% | 284 | No test module |
-| `quotations` | 8 | 33.7% | 1,070 | `views.py` 584 stmts largely untested |
-| `utils` | 0 | 32.7% | 119 | Import rollback — safety-critical, untested directly |
-| `companies` | 0 | 31.8% | 1,199 | Zero tests, 1,344-line `views.py` |
-| `dashboard` | 0 | 30.9% | 128 | |
-| `invoices` | 1 | 27.9% | 1,045 | One test for a 417-line views module |
-| `assets` | 0 | **23.9%** | 2,046 | **Worst risk**: 2,230-line `views.py`, no tests |
-| `deliveries` | 0 | **21.5%** | 489 | No test module at all |
-| `customers` | 0 | 0.0% | 2 | Model-free app |
-| `mobile`, `users` | 0 | 62.5% / 87.5% | 24 / 8 | Too small to matter |
+| `quotations` | 8 | 35.9% | 994 | `views.py` 584 stmts at **11.1%** |
+| `companies` | 0 | 32.5% | 1,199 | Zero own tests; `views.py` 661 stmts at 20.9% |
+| `deliveries` | 0 | 31.4% | 467 | No test module; `views.py` 175 stmts at **14.5%** |
+| `assets` | 0 | **25.3%** | 2,099 | **Worst risk, unchanged in kind**: `views.py` 1,054 stmts at 15.5% |
+
+`audit` is gone from this table: the app now contains only `migrations/`, which
+`[tool.coverage.run]` omits, so it has no measurable code of its own.
 
 ### Reading coverage numbers honestly
 
-`assets/views.py` reports **37.6%** statement coverage despite having **zero tests**. That is
-not real behavioural coverage: class bodies, `def` statements and decorators all execute at
-*import* time, so any test run that imports the module "covers" them. Treat a module with no
-dedicated tests as ~0% behaviourally covered regardless of the reported figure, and prefer
-branch coverage (`branch = true` is on) as the more honest signal.
+`assets/models.py` reports **61.8%** coverage and `invoices/models.py` **84.3%** while the apps that
+contain them have **zero and one** tests respectively. That is not behavioural coverage: class
+bodies, `def` statements and decorators all execute at *import* time, so any test run that imports
+the module "covers" them. Treat a module with no dedicated tests as ~0% behaviourally covered
+regardless of the reported figure, and prefer branch coverage (`branch = true` is on) as the more
+honest signal.
+
+Three consequences of how this project measures, all of which make the headline number softer than
+it looks:
+
+1. **`source = ["."]` counts the test files themselves.** A `tests_*.py` module is nearly fully
+   covered by definition, so every test written raises the total twice - once by covering product
+   code, once by adding covered statements of its own. The `tests/` harness row (61 tests, 92.6%)
+   is in the total for exactly this reason. Compare per-app *behavioural* claims, not the headline.
+2. **Much of the movement since 2026-09-15 is incidental.** `deliveries` went 21.5% → 31.4% and
+   `dashboard` 30.9% → 41.4% with **no new tests in either app**: the inspection view and API tests
+   import and exercise their modules in passing. `assets` - the stated worst risk - moved 23.9% →
+   25.3% and still has no test module, which is the honest answer to "did the coverage work fix the
+   risk?".
+3. **The floor is enforced on PostgreSQL, the table above is measured on SQLite.** The one matched
+   pair available (2026-09-15, 79 tests) was **43.7% local / 43.0% CI**, so the backend delta is
+   about 0.7 points; CI skipped 3 tests there against 1 locally (`real_data`-gated). Nothing else
+   about the offset is measured, which is why §5 keeps a 2-point margin below the local figure
+   rather than setting the floor at the number in the table.
 
 ---
 
@@ -55,7 +80,7 @@ pip install -r requirements-dev.txt
 This is what CI uses and what the whole existing suite is written for:
 
 ```bash
-python manage.py test                          # everything (79 tests, ~17s)
+python manage.py test                          # everything (375 tests, ~63s)
 python manage.py test inspections              # one app
 python manage.py test api.tests_miniprogram    # one module
 python manage.py test inspections.tests.TransformTests.test_monitor_size_marker   # one test
@@ -66,7 +91,7 @@ python manage.py test -v 2                     # per-test names
 ### Equivalent runner — pytest
 
 ```bash
-python -m pytest                       # same 79 tests
+python -m pytest                       # same 375 tests (verified: collection reports 375)
 python -m pytest -k "idempotent"       # select by name
 python -m pytest --lf                  # re-run only last failures
 python -m pytest inspections/tests.py  # one file
@@ -85,15 +110,16 @@ python -m pytest inspections/tests.py  # one file
 
 ```bash
 python -m coverage run manage.py test      # or: python -m coverage run -m pytest
-python -m coverage report                  # per-file + TOTAL; enforces fail_under = 43
+python -m coverage report                  # per-file + TOTAL; enforces fail_under = 57
 python -m coverage report --include="assets/*"     # one app
 python -m coverage html                    # browsable report in htmlcov/
+python -m coverage json -o cov.json        # machine-readable, for per-app rollups
 python -m coverage erase                   # reset the .coverage data file
 ```
 
 Configuration lives in `pyproject.toml` (`[tool.coverage.run]` / `[tool.coverage.report]`):
 `branch = true`, migrations / `node_modules` / `media` / `scripts` / WSGI-ASGI entrypoints
-omitted, and `fail_under = 43` as the ratchet floor.
+omitted, and `fail_under = 57` as the ratchet floor.
 
 ---
 
@@ -176,7 +202,9 @@ key (see the unique-key table in [`DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md)), an
 
 ## 5. Coverage bar and ratchet plan
 
-**Current floor: `fail_under = 40`** in `pyproject.toml` (measured 43.7%).
+**Current floor: `fail_under = 57`** in `pyproject.toml` (measured 59.3% on 2026-10-22; raised from
+40 on the same date as the ratchet step, in its own commit so a coverage change is revertible
+without reverting anything else).
 
 The ratchet works one way:
 
@@ -185,18 +213,34 @@ The ratchet works one way:
    the same PR.
 3. Never lower it. If a legitimate refactor drops coverage, add the tests in the same PR.
 
-Milestones (each is a separate, reviewable PR):
+Step 2 is what produced 57: `floor(59.3) − 2`. The 2 is not decoration - CI enforces this number on
+PostgreSQL while the table above is measured on SQLite, and the only matched pair available
+(2026-09-15: 43.7% local against 43.0% on CI) says the delta is ~0.7 points. If the next
+`backend-ci` run on this branch reports below 57, the floor was a bet on that delta and should be
+corrected by the same rule, not by editing this sentence.
 
-| Milestone | Target | What it takes |
-|---|---|---|
-| M1 | `assets` ≥ 45%, overall ≥ 48% | Smoke tests for the asset CRUD + assign/return views; import/rollback round-trip |
-| M2 | `deliveries` ≥ 50%, `invoices` ≥ 45% | Dispatch/complete transitions, POD upload, batch import + recalculate |
-| M3 | `companies` ≥ 50%, `utils` ≥ 70% | Company/location/contact CRUD, CSV import + rollback ledger replay |
-| M4 | `quotations` ≥ 55%, overall ≥ 60% | confirm / cancel / send / convert-to-purchase transitions |
-| M5 | `accounts` ≥ 55% | Mailbox sync (mocked IMAP), RFQ classification (mocked Minimax), 2FA enrolment |
+Milestones, restated per **module** rather than per app: the 2026-09-15 app-level targets were
+partly satisfied by import-time and incidental coverage, which is not the thing anyone meant.
+`accounts` ≥ 55% was written as a mailbox-sync/2FA milestone and is already true at 61.6% while
+`mailbox_sync.py` sits at 19.0%.
+
+| Milestone | Target (module) | Where it is now | What it takes |
+|---|---|---|---|
+| M1 | `assets/views.py` | **15.5%** of 1,054 stmts, 0 tests | Asset CRUD + assign/return smoke tests; import/rollback round-trip |
+| M2 | `deliveries/views.py` | **14.5%** of 175 stmts, no test module | Dispatch/complete transitions, POD upload |
+| M3 | `utils/import_rollback.py` | 40.8% of 85 stmts, no direct tests | CSV import + rollback ledger replay (§7.3 has the worked example) |
+| M4 | `companies/views.py` | 20.9% of 661 stmts, 0 own tests | Company/location/contact CRUD |
+| M5 | `quotations/views.py` | **11.1%** of 584 stmts | confirm / cancel / send / convert-to-purchase transitions |
+| M6 | `accounts/mailbox_sync.py` | 19.0% | Mocked IMAP sync; assert the idempotency key |
+
+The two `overall ≥ 48%` / `overall ≥ 60%` gates that used to sit in this table are **dropped**: the
+first is long past, and the second is now within ~1 point of being reached without writing a single
+test in the named apps (§1, caveat 2). An overall gate that moves on incidental coverage is not a
+gate.
 
 **Per-app minimum for new code:** any newly added app or service module ships with tests and is
-expected to be ≥ 80% — that is the standard `inspections` (84.4%) and `api` (73.8%) already meet.
+expected to be ≥ 80% — that is the standard `inspections` (87.9%) and `api` (72.4%) already meet or
+come closest to.
 Do not let a new module land at the project average.
 
 ---
@@ -217,6 +261,12 @@ Steps:
 5. `python manage.py makemigrations --check --dry-run`
 6. `python -m coverage run manage.py test`, then `python -m coverage report` — the report
    **enforces `fail_under`**, so a coverage regression fails the build
+
+What that gate has actually reported, from the runs' own logs: **50.8%** at 221 tests
+(2026-10-13), **51.1%** at 228 tests (2026-10-13), **51.0%** at 232 tests (2026-10-20). Those
+figures are why the floor carries a margin instead of being set at §1's local number: CI runs a
+different backend and skips two more env-gated tests, and its own history shows the metric moving
+~0.1-0.3 points per merged PR once the suite stops growing.
 
 `DJANGO_DEBUG=True` is set in the workflow so the production fail-fast guards (secret key, field
 encryption key, WeChat credentials) do not block CI, and the `DATABASE_*` /
@@ -250,24 +300,27 @@ is recorded in [`GITHUB_SETTINGS.md`](GITHUB_SETTINGS.md).
 
 Ranked by risk × size, not by ease:
 
-1. **`assets/views.py`** — 1,057 statements, 23.9% app coverage, **no tests**. It is the largest
+1. **`assets/views.py`** — 1,054 statements at **15.5%**, **no tests**. It is the largest
    module in the project and holds the import + rollback flows, where a regression silently
-   corrupts the asset register.
-2. **`deliveries`** — no test module at all, and it owns the dispatch/complete state machine plus
-   the `unique_asset_per_delivery_order` invariant.
-3. **`utils/import_rollback.py`** — small (119 statements, 32.7%) but *safety-critical*: it is the
+   corrupts the asset register. Of the app's 2,099 statements only 650 execute at all, and the
+   largest contributors are `models.py` (265) and `views.py`'s own `def`/class bodies (210) -
+   import-time and cross-app incidental execution, not anything aimed at the asset flows.
+2. **`deliveries`** — no test module at all, `views.py` at 14.5%, and it owns the
+   dispatch/complete state machine plus the `unique_asset_per_delivery_order` invariant.
+3. **`utils/import_rollback.py`** — small (85 statements, 40.8%) but *safety-critical*: it is the
    only thing standing between a bad bulk import and manual DB surgery. Highest value per test
    written. A worked example of the path already exists as
    [`../scripts/manual_verify_import_rollback.py`](../scripts/manual_verify_import_rollback.py): a
    `django.test.Client` script that uploads company, location, contact and asset CSVs through the real
    views, asserts the row counts come back after rollback, and deletes everything it created in a
    `finally`. Start the tests from it rather than re-deriving the fixtures — and keep it until they land.
-4. **`invoices`** — 1 test for 1,045 statements; the SharePoint batch import and the
-   client-confirmed → Esker lifecycle are money paths.
+4. **`invoices`** — 1 test for 1,044 statements, and `views.py` is at 22.8%; the SharePoint batch
+   import and the client-confirmed → Esker lifecycle are money paths.
 5. **`quotations`** — the order-to-cash hub (see [`ARCHITECTURE.md`](ARCHITECTURE.md) §4);
-   confirm/cancel/send/convert transitions deserve explicit state-machine tests.
-6. **`accounts/mailbox_sync.py`** — 13.4%. Mock IMAP; verify the
-   `(mailbox, direction, external_id)` uniqueness makes sync idempotent.
+   `views.py` is 584 statements at **11.1%**, so the confirm/cancel/send/convert transitions have no
+   explicit state-machine tests at all.
+6. **`accounts/mailbox_sync.py`** — 19.0% (was 13.4%, and the app rose to 61.6% without it). Mock
+   IMAP; verify the `(mailbox, direction, external_id)` uniqueness makes sync idempotent.
 
 Prefer **behavioural** tests (post a request, assert the DB state and the side effect) over
 coverage-driven tests that merely import modules.
@@ -285,4 +338,4 @@ coverage-driven tests that merely import modules.
 
 ---
 
-*Last Updated: September 15, 2026*
+*Last Updated: October 22, 2026*

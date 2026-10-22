@@ -53,11 +53,14 @@ omit = [
 
 [tool.coverage.report]
 precision = 1
-# Ratchet floor. Measured 43.7% on 2026-09-15 (SQLite) with 79 tests. Set to 40
-# rather than 43 so the floor survives small backend-dependent variance between
-# SQLite (dev) and PostgreSQL (CI); raise it as coverage improves, never lower it.
-# See docs/TESTING.md for the ratchet plan.
-fail_under = 40
+# Ratchet floor. Measured 59.3% on 2026-10-22 (SQLite, 375 tests); the last CI
+# run on this code lineage reported 51.0% at 232 tests on 2026-10-20, and the
+# one matched local/CI pair the repo has - 2026-09-15, 79 tests - was 43.7%
+# local against 43.0% on PostgreSQL, so the backend delta is ~0.7 points and
+# CI for this branch is predicted at ~58.6%. Floor is that number rounded down
+# minus the same 2-point margin the old value used. Raise it as coverage
+# improves, never lower it. See docs/TESTING.md for the ratchet plan.
+fail_under = 57
 exclude_lines = [
     "pragma: no cover",
     "raise NotImplementedError",

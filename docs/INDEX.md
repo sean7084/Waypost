@@ -258,7 +258,7 @@ All documentation should:
 
 | Gap | Priority | Est. effort | Issue |
 |---|---|---|---|
-| **Write the missing tests** — `assets` (23.9%), `deliveries` (21.5%), `utils/import_rollback`, `invoices` first; overall coverage is 43.7% | High | 20+ hours | #16 (strategy done — test-writing is a separate epic) |
+| **Write the missing tests** — per module, not per app: `quotations/views.py` (11.1% of 584 stmts), `deliveries/views.py` (14.5%), `assets/views.py` (15.5% of 1,054), `accounts/mailbox_sync.py` (19.0%), `companies/views.py` (20.9%), then `utils/import_rollback.py` (40.8%). Overall coverage is **59.3%** as measured 2026-10-22, and the `fail_under` floor has been raised to 57 — so the remaining risk is concentrated in these modules, not in the headline | High | 20+ hours | #71 (strategy + tooling done in #16; test-writing is the open epic) |
 | ADRs 0012–0018 for undocumented architectural decisions | High | 4 hours | #20 |
 | `docs/OPERATIONS_RUNBOOK.md` — troubleshooting, incident response, monitoring | Medium | 4 hours | #22 |
 | WeChat MP registration, HTTPS/ICP domain, legal-domain whitelist | Medium | external | #53 |
