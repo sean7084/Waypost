@@ -2,7 +2,7 @@
 
 **Applies to:** Waypost (Django 5.2.8) on Ubuntu 24.04 LTS
 **Production DB:** PostgreSQL · **Dev DB:** SQLite (`db.sqlite3`)
-**Last Updated:** September 7, 2026
+**Last Updated:** October 21, 2026
 
 > ⚠️ **An untested backup is not a backup.** This runbook covers both backup **and restore**, including a verification drill. A basic `pg_dump` script also appears in [`DEPLOYMENT.md`](DEPLOYMENT.md); this document is the authoritative, fuller procedure.
 
@@ -27,6 +27,11 @@
 ---
 
 ## 2. PostgreSQL Backup (Production)
+
+> 📜 **Section 2 is the bare-metal (Option 1) shape.** Production today runs on Docker Compose; the script
+> that actually runs there is in §2b, and its authoritative copy is
+> [`../docker/bin/waypost-backup.sh`](../docker/bin/waypost-backup.sh) rather than a block transcribed into
+> this document.
 
 Use the **custom format** (`-Fc`) — it is compressed and allows selective/parallel restore via `pg_restore`.
 
@@ -66,8 +71,17 @@ Production runs PostgreSQL inside the compose stack with **no published port**,
 so `pg_dump` has to run in the `db` container — there is nothing on the host to
 connect to. Everything below runs as the `deploy` user from `/srv/waypost/app`.
 
+The **authoritative copy of the script is
+[`../docker/bin/waypost-backup.sh`](../docker/bin/waypost-backup.sh)**, installed on the host as
+`/srv/waypost/bin/waypost-backup.sh` by `scripts/deploy-dev-to-ecs.ps1`. It is in the repository so that a
+host-side change is a reviewable diff instead of an edit nobody sees, and so `sha256sum` between the two is
+meaningful. The block below is the compose (`DB_CHECKPOINT_MODE=auto`) shape, kept for reading; the shipped
+script sources `docker/bin/_pg_checkpoint.sh` for step 1, so under `external` it dumps the database the app
+container points at instead, and under `none` it skips the dump and says so
+([`RDS_MIGRATION.md`](RDS_MIGRATION.md)). It also gates the media tar on `WAYPOST_MEDIA_IN_OSS` — see §2c.
+
 ```bash
-# /srv/waypost/bin/waypost-backup.sh   (mode 750, owner deploy)
+# docker/bin/waypost-backup.sh  ->  /srv/waypost/bin/waypost-backup.sh  (mode 750, owner deploy)
 set -euo pipefail
 
 BACKUP_DIR="/srv/waypost/backups"
@@ -128,6 +142,24 @@ The container image itself is **not** backed up: it is reproducible from a git
 tag plus `docker/Dockerfile`. What is not reproducible is the database, the two
 bind mounts, and `.env`.
 
+### 2c. What the shipped script gates
+
+Two of the steps above are conditional in the repository copy, because both protect a
+copy that is about to stop being the only one:
+
+| Key | Default | Effect |
+|-----|---------|--------|
+| `WAYPOST_MEDIA_IN_OSS` | `0` | While media is on the bind mount the media tar **is** the only copy of every inspection photo, so it runs unchanged. Set `1` only after the OSS backfill has been verified ([`OSS_STORAGE.md`](OSS_STORAGE.md) §8–§9); the script then logs `media tar skipped` and stops making them. |
+| `MEDIA_TAR_RETENTION_DAYS` | `28` | How many days of media tars to keep while they are still the only copy. Raising it buys restore points; lowering it below 28 deletes the only copy of any photo newer than the window. |
+
+`template_files/` stays **unconditional**: it is a read-only bind mount the application only ever fills with
+copies, it is not going to object storage, and it is not in git.
+
+`.env` is still copied at mode `600` (§2b step 4) with a warning in the script header that matters more than
+the retention numbers: that copy is **on the same host as the database**. `DJANGO_FIELD_ENCRYPTION_KEY` has
+no off-host copy, so a total host loss takes the key with it and a restored database then decrypts nothing.
+The second copy has to be made by hand into a password manager until key governance exists.
+
 > ℹ️ `docker/bin/ci-deploy.sh` already writes a `pre-<tag>-<stamp>.dump`
 > checkpoint into `backups/pg/` before every deploy and keeps the newest 14.
 > That is the §6.1 release safety net, automated — the cron job above is the
@@ -167,6 +199,22 @@ docker compose exec -T db sh -c 'dropdb -U "$POSTGRES_USER" waypost_restore'
 
 Media and templates are host directories, so restore them with `tar xzf` into
 `${WAYPOST_DATA_DIR}` and re-apply the `www-data` ACLs (see `DEPLOYMENT.md` §2.3).
+
+**A dump taken with `DB_CHECKPOINT_MODE=external` is not from this container.** Those files in
+`/srv/waypost/backups/pg/` were written by `docker/bin/_pg_checkpoint.sh` against the DSN the app container
+carries (an RDS instance), so restoring one means `pg_restore` against that host — the `docker compose exec
+-T db` forms above would restore into a database the application is no longer using:
+
+```bash
+docker run --rm -i --network waypost_default -v /srv/waypost/backups/pg:/in \
+  -e PGPASSWORD='<the DATABASE_PASSWORD the app container holds>' postgres:16 \
+  pg_restore -h <the DATABASE_HOST the app container holds> -U <DATABASE_USER> -d <DATABASE_NAME> \
+  --no-owner --clean --if-exists /in/pre-<tag>-<stamp>.dump
+```
+
+Read those four values out of the running container rather than out of `.env`, which is where the checkpoint
+got them and why the two can never disagree. The procedure that moves the database to that state is
+[`RDS_MIGRATION.md`](RDS_MIGRATION.md).
 
 ### 3b. Bare-metal deployment (Option 1)
 
@@ -250,7 +298,7 @@ sudo systemctl daemon-reload && sudo systemctl restart waypost
 
 **Schedule** (cron):
 ```cron
-# Nightly at 02:00
+# Nightly at 02:00 (bare-metal path; the compose stack uses the 03:40 crontab in §2b)
 0 2 * * * /opt/scripts/waypost-backup.sh >> /var/log/waypost/backup.log 2>&1
 ```
 
@@ -320,7 +368,7 @@ Order matters:
 ## 11. Quick Reference
 
 ```bash
-# Backup (all)         -> /opt/scripts/waypost-backup.sh
+# Backup (all)         -> /srv/waypost/bin/waypost-backup.sh  (source: docker/bin/waypost-backup.sh)
 # DB backup            -> pg_dump -Fc -U waypost_django -h 127.0.0.1 waypost_db > db.dump
 # DB restore           -> pg_restore --clean --if-exists --no-owner -U waypost_django -h 127.0.0.1 -d waypost_db db.dump
 # Media restore        -> tar xzf media_<STAMP>.tar.gz -C /opt/waypost
@@ -333,6 +381,8 @@ Order matters:
 
 - [`DEPLOYMENT.md`](DEPLOYMENT.md) — server provisioning, Nginx/Gunicorn, basic backup script
 - [`DATABASE_MIGRATION.md`](DATABASE_MIGRATION.md) — SQLite → PostgreSQL data migration
+- [`RDS_MIGRATION.md`](RDS_MIGRATION.md) — the cutover that changes *which* database §2b/§3 protect
+- [`OSS_STORAGE.md`](OSS_STORAGE.md) — §8–§9, the verified backfill that gates the media tar (§2c)
 - [`SECURITY.md`](SECURITY.md) — secrets management & credential encryption
 - [`RELEASE_PROCEDURE.md`](RELEASE_PROCEDURE.md) — versioning, tagging, deploy sequence, and rollback tiers (§8 Tier 3 restores from this runbook)
 

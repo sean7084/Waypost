@@ -267,7 +267,8 @@ Optionally publish a GitHub Release from the tag, using the CHANGELOG entry as t
 ### 6.1 Before you touch the server
 
 - [ ] **Take a backup.** This is non-negotiable and is the *only* reliable rollback path (§9 Tier 3).
-      Run `/opt/scripts/waypost-backup.sh` per [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md) §2.
+      Run `/srv/waypost/bin/waypost-backup.sh` per [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md) §2b (authoritative
+      copy: `docker/bin/waypost-backup.sh`).
 - [ ] Confirm the backup succeeded and note its `<STAMP>` — you will need it if you roll back.
 - [ ] Read the release's **Migration Files Added** section. Are any of them in the `noop`-reverse list (§9.2)? If so, this release is a **one-way door** — decide *now* that rollback means DB restore, not migration reversal.
 - [ ] Confirm `template_files/` is present on the server (gitignored, but document generation raises `FileNotFoundError` without it — `DEPLOYMENT.md` Step 4b).
@@ -484,7 +485,7 @@ Only when **every** migration being reversed has a real reverse function (§9.1)
 
 ```bash
 # 1. BACK UP AGAIN — reversing migrations is itself a destructive operation
-/opt/scripts/waypost-backup.sh
+/srv/waypost/bin/waypost-backup.sh
 
 # 2. Check out the previous tag first, so the OLD migration graph is what runs
 git checkout v0.1.7
@@ -567,6 +568,26 @@ New data migrations should either:
 2. Explicitly pass `migrations.RunPython.noop` with a docstring stating why reversal is unsupported (the `0019` pattern — good practice, it makes the one-way door discoverable).
 
 Silently omitting the second argument is the worst option: `migrate` raises `NotSupportedError` mid-rollback, at the exact moment you are under pressure.
+
+### 9.4 Drill the checkpoint path before the release that needs it
+
+Every Tier-3 rollback in §8 starts from a dump that step 2 of `ci-deploy.sh` took automatically. That dump is
+worth nothing if the code path which writes it has never run on this host, so **drill the external
+checkpoint path once, deliberately, before the cutover release** — not during it:
+
+```bash
+DB_CHECKPOINT_MODE=external FORCE_TARBALL_SOURCE=1 /srv/waypost/bin/ci-deploy.sh <currently-live-tag>
+```
+
+While `.env` still says nothing about `DATABASE_HOST`, the app container carries `DATABASE_HOST=db`, so this
+exercises the whole external branch — the DSN read from inside the container, the `docker image inspect
+postgres:16` pre-flight, the throwaway `pg_dump` container and its bind-mounted output directory — against the
+database that is safe to dump. Confirm the log names the source and host, and that `deploy.log`'s sixth field
+is a real path to a non-empty file. Full procedure and the failure shapes worth rehearsing:
+[`RDS_MIGRATION.md`](RDS_MIGRATION.md) §3.
+
+This drill is not a rollback drill (§11 keeps that gap open): it proves a restore point *gets written*, not
+that one can be loaded.
 
 ---
 

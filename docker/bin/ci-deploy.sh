@@ -29,7 +29,11 @@
 #   0. resolve the ref and obtain its tree               (git fetch, or the
 #                                                         codeload fallback)
 #   1. alias the running image as waypost-app:rollback   (the rollback target)
-#   2. pg_dump checkpoint                                (the data safety net)
+#   2. pre-deploy database checkpoint                    (the data safety net; the
+#                                                        compose db service or the
+#                                                        DSN the app container
+#                                                        carries, per
+#                                                        DB_CHECKPOINT_MODE)
 #   3. git checkout the ref
 #   4. build + up                                        (the entrypoint runs
 #                                                         migrate/collectstatic)
@@ -88,6 +92,22 @@ FORCE_TARBALL_SOURCE="${FORCE_TARBALL_SOURCE:-0}"
 # default is to refuse, because the checkpoint is the only restore point a release
 # gets and some migrations are one-way doors.
 ALLOW_MISSING_CHECKPOINT="${ALLOW_MISSING_CHECKPOINT:-0}"
+
+# Which database step 2 dumps, and what it does when there is none: auto|compose|-
+# external|none. `auto` (the default) is today's behaviour unchanged - dump the
+# compose `db` service when it is running, otherwise report nothing to dump.
+# `none` is the honest form of ALLOW_MISSING_CHECKPOINT=1 for a database that has
+# its own managed backups, and `external` dumps the DSN the app container carries
+# (RDS). The modes, and the reason the mode is explicit rather than inferred, are
+# documented in docker/bin/_pg_checkpoint.sh; the cutover procedure is
+# docs/RDS_MIGRATION.md.
+#
+# Deliberately not defaulted to `auto` here: resolution happens once per run in the
+# helper, which reads the environment first and then a DB_CHECKPOINT_MODE line in
+# .env - so the cutover stays one atomic edit of the file that already holds
+# DATABASE_HOST. Setting it here would make every .env value look like an explicit
+# `auto` and be ignored.
+DB_CHECKPOINT_MODE="${DB_CHECKPOINT_MODE:-}"
 
 # The fallback talks to two hosts that stay reachable when the apex does not.
 GITHUB_API_URL="${GITHUB_API_URL:-https://api.github.com}"
@@ -181,9 +201,19 @@ fetch_with_retry() {
 record() {
     mkdir -p "$BACKUP_DIR"
     # TAG is only known once the pre-flight has resolved the ref, so fall back to
-    # the raw ref: without it, an abort during fetch logged "none none ABORTED" and
-    # the durable host-side record could not say which release was attempted.
-    printf '%s\t%s\t%s\t%s\t%s\n' "$(date -Is)" "${KIND}" "${TAG:-${REF:-none}}" "${SHA:-none}" "${1:-unknown}" >> "$DEPLOY_LOG"
+    # the raw ref: without it, an abort before that point (a failed fetch, say) must
+    # not claim kind=tag for a branch.
+    #
+    # Six tab-separated columns: timestamp, kind (with the source suffix), tag/ref,
+    # sha, result, checkpoint. The sixth is the pre-deploy dump path, or `none` when
+    # no dump was taken - so "was there a restore point for this deploy?" is
+    # permanently answerable from /srv/waypost/backups/deploy.log without reading a
+    # GitHub Actions log, which is what makes the post-deploy check in
+    # docs/RDS_MIGRATION.md one grep. Appending it keeps every existing row valid and
+    # every `tail`-based reader working (scripts/deploy-dev-to-ecs.ps1 prints lines,
+    # it never indexes by column), and old five-column rows simply have no sixth
+    # field.
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$(date -Is)" "${KIND}" "${TAG:-${REF:-none}}" "${SHA:-none}" "${1:-unknown}" "${CHECKPOINT:-none}" >> "$DEPLOY_LOG"
 }
 
 is_release() {
@@ -432,6 +462,7 @@ rollback() {
 
     log "database checkpoint (NOT restored - see RELEASE_PROCEDURE §8/§9): ${CHECKPOINT:-none}"
     log "to restore it manually: docker compose exec -T db pg_restore --clean --if-exists --no-owner -U <user> -d <db> < <checkpoint>"
+    log "  (with DB_CHECKPOINT_MODE=external the dump is from outside this compose stack - restore it with pg_restore against that host, see docs/BACKUP_RESTORE.md §3)"
     dump_logs
 }
 
@@ -504,14 +535,26 @@ fi
 # never restored automatically (§8/§9) and some migrations are one-way doors, so
 # this dump is the only restore point a release gets. Not having one is therefore
 # treated as a failed deploy, not a warning - unless the operator accepts that
-# explicitly with ALLOW_MISSING_CHECKPOINT=1.
+# explicitly with ALLOW_MISSING_CHECKPOINT=1, or declares that this database does
+# not need a per-deploy dump at all with DB_CHECKPOINT_MODE=none.
 #
-# That matters most for the "no db service" branch at the end. It used to log
+# That matters most for the "no db service" branch. It used to log
 # "database container not running yet", which reads like a harmless first deploy
 # whether or not it is one: if the database ever moves off this compose stack (to
 # RDS, say) the service disappears, every deploy silently stops taking a
 # checkpoint, and the log still looks routine.
+#
+# The dump itself is docker/bin/_pg_checkpoint.sh, shared with the nightly backup so
+# the two cannot drift apart on which database they protect.
 mkdir -p "${BACKUP_DIR}/pg"
+_BIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+CHECKPOINT_HELPER=""
+for _helper in "${_BIN_DIR}/_pg_checkpoint.sh" "${APP_DIR}/docker/bin/_pg_checkpoint.sh"; do
+    if [ -f "$_helper" ]; then CHECKPOINT_HELPER="$_helper"; break; fi
+done
+[ -n "$CHECKPOINT_HELPER" ] || die "the checkpoint helper is missing: expected ${_BIN_DIR}/_pg_checkpoint.sh (installed with ci-deploy.sh) or ${APP_DIR}/docker/bin/_pg_checkpoint.sh - see docs/RDS_MIGRATION.md"
+# shellcheck source=/dev/null
+. "$CHECKPOINT_HELPER"
 
 # Has anything been deployed here before? A genuine first deploy has no data to
 # checkpoint; a later one always does, and must not be allowed to look like one.
@@ -534,38 +577,35 @@ checkpoint_missing() {
     fi
     log "  This host has been deployed before, so there IS data to lose. Either fix the"
     log "  checkpoint, or re-run with ALLOW_MISSING_CHECKPOINT=1 to accept the risk."
-    log "  If the database has moved off this compose stack, point the checkpoint at the"
-    log "  new DSN rather than silencing this."
+    log "  If the database has moved off this compose stack, set DATABASE_HOST and"
+    log "  DB_CHECKPOINT_MODE=external in .env - do not silence this (docs/RDS_MIGRATION.md)."
     return 1
 }
 
-if docker compose ps --status running --services 2>/dev/null | grep -qx db; then
-    CHECKPOINT="${BACKUP_DIR}/pg/pre-${TAG}-${STAMP}.dump"
-    # The DSN is read from the db container's own environment rather than parsed
-    # out of .env here, so this cannot disagree with what Postgres was actually
-    # initialised with.
-    if docker compose exec -T db sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$CHECKPOINT"; then
-        # An empty dump is worse than no dump: it looks like a restore point and is
-        # not one, and pg_dump can exit 0 having written nothing when it is interrupted.
-        if [ -s "$CHECKPOINT" ]; then
-            log "database checkpoint written: $CHECKPOINT ($(du -h "$CHECKPOINT" | cut -f1))"
-        else
-            rm -f "$CHECKPOINT"
-            CHECKPOINT=""
-            checkpoint_missing "pg_dump exited 0 but wrote an empty file" \
-                || die "refusing to deploy without a restore point"
-        fi
-    else
-        rm -f "$CHECKPOINT"
-        CHECKPOINT=""
-        checkpoint_missing "pg_dump failed" || die "refusing to deploy without a restore point"
-    fi
+CHECKPOINT_MODE="$(db_checkpoint_mode)"
+if [ "$CHECKPOINT_MODE" = "invalid" ]; then
+    die "DB_CHECKPOINT_MODE='${DB_CHECKPOINT_MODE}' is not one of auto|compose|external|none (see docker/bin/_pg_checkpoint.sh)"
+fi
+
+if [ "$CHECKPOINT_MODE" = "none" ]; then
+    # A declared decision, not a missing checkpoint someone waved through: this
+    # database has backups of its own (an RDS instance with an automatic backup
+    # window), so a per-deploy dump is not the restore point. It says so on every
+    # deploy and records `none` in deploy.log's sixth column, which is the whole
+    # difference from ALLOW_MISSING_CHECKPOINT=1 - that silences a failure, this
+    # states a policy.
+    log "DB_CHECKPOINT_MODE=none: taking no pre-deploy dump. This release therefore has no"
+    log "  host-side restore point; the database's own managed backups are it. If a migration"
+    log "  in this release is a one-way door (RELEASE_PROCEDURE §9.2), confirm that a managed"
+    log "  backup exists and is restorable BEFORE deploying."
+elif take_database_checkpoint "pre-${TAG}-${STAMP}.dump" "$CHECKPOINT_MODE"; then
+    log "database checkpoint written from ${CHECKPOINT_SOURCE} (host ${CHECKPOINT_HOST}): $CHECKPOINT ($(du -h "$CHECKPOINT" | cut -f1))"
     # Keep the newest N pre-deploy checkpoints. Nightly backups are pruned by the
     # cron job instead (see docs/BACKUP_RESTORE.md).
     { ls -1t "${BACKUP_DIR}"/pg/pre-*.dump 2>/dev/null || true; } | tail -n +$(( KEEP_CHECKPOINTS + 1 )) | xargs -r rm -f
 else
-    checkpoint_missing "the compose stack has no running 'db' service" \
-        || die "refusing to deploy without a restore point (no running db service)"
+    checkpoint_missing "$CHECKPOINT_FAILURE_REASON" \
+        || die "refusing to deploy without a restore point (${CHECKPOINT_FAILURE_REASON})"
 fi
 
 # --- 3. put the released tree into the checkout ------------------------------

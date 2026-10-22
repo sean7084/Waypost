@@ -903,6 +903,25 @@ a host, not a release step, and no deploy in the meantime is affected by it.
 Setting one, two or three of the four keys fails at boot with
 `ImproperlyConfigured` rather than half-working.
 
+### 2.13 Moving the database to RDS
+
+The compose `db` service is the default, not the requirement. `DATABASE_HOST` and
+`DATABASE_PORT` interpolate from `.env` (`${DATABASE_HOST:-db}` / `${DATABASE_PORT:-5432}`), so pointing the
+application at another PostgreSQL server is a configuration edit rather than a change to
+`docker-compose.yml` — and an unset value resolves to the literal this file used to hardcode, which is why
+deploying that interpolation changed nothing on the host.
+
+`DB_CHECKPOINT_MODE` is the other half of the same edit and the reason it cannot be done in two steps: it
+tells step 2 of `docker/bin/ci-deploy.sh` which database to dump before a release runs. `auto` (the default)
+dumps the compose `db` service, `external` dumps the DSN the app container carries, `none` declares that the
+database has managed backups of its own. Both keys are set in the **one** `.env` save, because a host whose
+app is on RDS and whose deploys checkpoint the old local database looks healthy and has no restore point.
+
+The runbook — provisioning in the same VPC/vSwitch with no public endpoint, dump → restore → row-count
+comparison, the cutover edit, the verification, the 30 days the `waypost_pg_data` volume must be kept, and the
+dated follow-up that may retire the `db` service — is [`RDS_MIGRATION.md`](RDS_MIGRATION.md). **Not yet
+performed:** no RDS instance exists.
+
 ---
 
 ## Production Configuration Checklist
@@ -1109,8 +1128,8 @@ MIDDLEWARE += ['django.middleware.gzip.GZipMiddleware']
 ### Applying a Release or Hotfix
 
 ```bash
-# 0. BACK UP FIRST - the only reliable rollback path (see BACKUP_RESTORE.md §2)
-/opt/scripts/waypost-backup.sh
+# 0. BACK UP FIRST - the only reliable rollback path (see BACKUP_RESTORE.md §2b)
+/srv/waypost/bin/waypost-backup.sh
 
 cd /opt/waypost
 git fetch --tags origin

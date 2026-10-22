@@ -26,8 +26,9 @@
     What it does:
       1. fetches origin locally and shows you the commits and migrations that will
          go out, then asks for confirmation (-Force to skip);
-      2. installs the ci-deploy.sh *from the ref being deployed* onto the host, so
-         the runner always matches the code it is deploying (it lives outside the
+      2. installs the host-side scripts *from the ref being deployed* - ci-deploy.sh,
+         the _pg_checkpoint.sh it sources and waypost-backup.sh - onto the host, so
+         the runner always matches the code it is deploying (they live outside the
          git checkout because it rewrites that checkout);
       3. runs it with --allow-untagged, which builds, re-creates the containers,
          waits for /healthz/ on the loopback interface and then through Nginx, and
@@ -177,44 +178,73 @@ try {
 }
 
 # --- deploy ------------------------------------------------------------------
-# The runner is re-installed from the ref being deployed, so host-side logic and
-# application code cannot drift apart. It lives in /srv/waypost/bin (outside the
-# checkout) because ci-deploy.sh does `git checkout`/`git clean` inside it.
+# Every host-side script is re-installed from the ref being deployed, so host-side
+# logic and application code cannot drift apart. They live in /srv/waypost/bin
+# (outside the checkout) because ci-deploy.sh does `git checkout`/`git clean` inside
+# the checkout - and a checkout it has not yet performed cannot supply the script that
+# performs it.
 #
-# Refreshing the runner from the ref being deployed keeps host-side logic and
-# application code from drifting apart. It needs github.com's apex host, though,
-# which from this network is intermittently unreachable - so when it cannot be
-# read, keep the installed runner and say so loudly instead of refusing to deploy.
-# ci-deploy.sh has its own codeload fallback for exactly that situation, and the
-# capability check below still runs against the runner that will really execute.
+# Three files now, not one: the refreshed ci-deploy.sh sources _pg_checkpoint.sh from
+# its own directory, so installing only the runner would produce a deploy that dies at
+# the checkpoint step and looks exactly like a deploy bug. That is blocker 9b, and this
+# loop is the single highest-value change in it.
+#
+# Refreshing needs github.com's apex host, which from this network is intermittently
+# unreachable - so when a file cannot be read, keep the installed one and say so
+# loudly instead of refusing to deploy. ci-deploy.sh has its own codeload fallback for
+# that situation, and the capability checks below still run against what will really
+# execute.
 $envPrefix = if ($SkipPublicGate) { 'SKIP_PUBLIC_GATE=1 ' } else { '' }
 $remote = @"
 set -eu
 cd $AppDir
-RUNNER=/srv/waypost/bin/ci-deploy.sh
-rm -f /tmp/.ci-deploy.sh.next
-# `${Ref} is braced on purpose: in a double-quoted here-string PowerShell reads
-# `$Ref:docker as a drive-qualified variable (like `$env:PATH) and expands it to
-# nothing, which sends git the path '/bin/ci-deploy.sh' instead.
-if git fetch --tags --force origin --quiet \
-   && git show '${Ref}:docker/bin/ci-deploy.sh' > /tmp/.ci-deploy.sh.next \
-   && grep -q 'allow-untagged' /tmp/.ci-deploy.sh.next; then
-    install -m 0755 /tmp/.ci-deploy.sh.next "`$RUNNER"
-    echo "runner refreshed from ${Ref}"
-else
-    echo "WARNING: could not refresh the runner from ${Ref} - either github.com is"
-    echo "         unreachable from this host, or that ref predates --allow-untagged."
-    echo "         Continuing with the installed runner (`$(sha256sum "`$RUNNER" | cut -c1-16))."
-fi
-rm -f /tmp/.ci-deploy.sh.next
-# The runner that will actually execute is the one that must support the flag.
-if ! grep -q 'allow-untagged' "`$RUNNER"; then
-    echo 'FATAL: the installed ci-deploy.sh does not support --allow-untagged.' >&2
+BIN=/srv/waypost/bin
+# `${Ref} is braced everywhere on purpose: in a double-quoted here-string PowerShell
+# reads `$Ref:docker as a drive-qualified variable (like `$env:PATH) and expands it to
+# nothing, which would send git the path '/docker/bin/...'.
+REF_SPEC='${Ref}'
+refresh_ok=1
+git fetch --tags --force origin --quiet || refresh_ok=0
+for NAME in ci-deploy.sh _pg_checkpoint.sh waypost-backup.sh; do
+    NEXT="/tmp/.`${NAME}.next"
+    rm -f "`${NEXT}"
+    if [ "`${refresh_ok}" = 1 ] && git show "`${REF_SPEC}:docker/bin/`${NAME}" > "`${NEXT}" 2>/dev/null; then
+        # A ref older than the checkpoint modes cannot be deployed by this wrapper at
+        # all - the same guard the --allow-untagged marker used, on a newer knob.
+        if [ "`${NAME}" = ci-deploy.sh ] && ! grep -q 'DB_CHECKPOINT_MODE' "`${NEXT}"; then
+            echo "WARNING: `${REF_SPEC} predates DB_CHECKPOINT_MODE - keeping the installed ci-deploy.sh" >&2
+            rm -f "`${NEXT}"
+            continue
+        fi
+        case "`${NAME}" in
+            # 0755: run over SSH by CI. 0750: run by cron as this account; it reads .env.
+            # 0640: only ever sourced, never executed.
+            ci-deploy.sh)      install -m 0755 "`${NEXT}" "`${BIN}/`${NAME}" ;;
+            waypost-backup.sh) install -m 0750 "`${NEXT}" "`${BIN}/`${NAME}" ;;
+            *)                 install -m 0640 "`${NEXT}" "`${BIN}/`${NAME}" ;;
+        esac
+        echo "runner refreshed from `${REF_SPEC}: `${NAME}"
+    else
+        echo "WARNING: could not refresh `${NAME} from `${REF_SPEC} - either github.com is"
+        echo "         unreachable from this host, or that ref has no docker/bin/`${NAME}."
+        echo "         Continuing with what is installed (`$( (sha256sum "`${BIN}/`${NAME}" 2>/dev/null || echo missing) | cut -c1-16))."
+    fi
+    rm -f "`${NEXT}"
+done
+# The runner that will actually execute is the one that must support the checkpoint
+# modes, and it must have something to source.
+if ! grep -q 'DB_CHECKPOINT_MODE' "`${BIN}/ci-deploy.sh"; then
+    echo 'FATAL: the installed ci-deploy.sh does not support DB_CHECKPOINT_MODE.' >&2
     echo '       Install a current one (docs/DEPLOYMENT.md, "Updating the server from' >&2
     echo '       main without cutting a release"), or cut a tag and let CD deploy it.' >&2
     exit 1
 fi
-${envPrefix}`$RUNNER '${Ref}' --allow-untagged
+if ! grep -q 'DB_CHECKPOINT_MODE' "`${BIN}/_pg_checkpoint.sh" 2>/dev/null; then
+    echo "FATAL: `${BIN}/_pg_checkpoint.sh is missing or stale, so the runner has nothing" >&2
+    echo '       to source for the database checkpoint (docs/RDS_MIGRATION.md).' >&2
+    exit 1
+fi
+${envPrefix}`${BIN}/ci-deploy.sh '${Ref}' --allow-untagged
 "@
 # A here-string inherits this file's CRLF line endings, and bash rejects them
 # (`set -eu\r` -> "set: -\r: invalid option"). Normalize to LF before sending.
@@ -231,6 +261,8 @@ Write-Step 'Result'
 try {
     Invoke-Ssh 'docker ps --format "{{.Names}}\t{{.Status}}" | grep waypost_ || true' | ForEach-Object { Write-Host "    $_" }
     Write-Host '    last 5 deploy.log entries:'
+    # Six tab-separated columns (timestamp, kind, tag/ref, sha, result, checkpoint);
+    # printed whole, never split - an older row simply has no sixth field.
     Invoke-Ssh 'tail -5 /srv/waypost/backups/deploy.log 2>/dev/null || true' | ForEach-Object { Write-Host "      $_" }
 } catch {
     Write-Warn2 "Could not read the post-deploy status: $($_.Exception.Message)"

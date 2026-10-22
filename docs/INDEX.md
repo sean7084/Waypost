@@ -48,6 +48,7 @@ Complete list of project documentation for reference and navigation.
 | **WEB_ROUTES.md** | `docs/` | Every HTML route → view → purpose → required capability |
 | **GITHUB_SETTINGS.md** | `docs/` | Maintainers managing repo configuration |
 | **DATABASE_MIGRATION.md** | `docs/` | Migrating data from SQLite to PostgreSQL |
+| **RDS_MIGRATION.md** | `docs/` | Moving the production database to Aliyun RDS: provisioning, dump/restore/row counts, the atomic `.env` edit, the checkpoint mode, retiring the local `db` |
 | **DATABASE_SCHEMA.md** | `docs/` | ER diagrams, table/field reference, unique business keys |
 | **TESTING.md** | `docs/` | Running tests, conventions, coverage baseline + ratchet plan |
 | **SECURITY.md** | `docs/` | Security policy, RBAC, 2FA, encryption |
@@ -137,6 +138,7 @@ waypost/
 │   ├── RELEASE_PROCEDURE.md     ← Versioning, tagging, deploy & rollback
 │   ├── OSS_STORAGE.md           ← Media on Aliyun OSS: cutover runbook
 │   ├── DATABASE_MIGRATION.md    ← SQLite → PostgreSQL data migration
+│   ├── RDS_MIGRATION.md         ← production PostgreSQL → Aliyun RDS cutover
 │   ├── DATABASE_SCHEMA.md       ← ER diagrams + table reference
 │   ├── BACKUP_RESTORE.md        ← Backup & restore runbook
 │   ├── CONTRIBUTING.md          ← Contributing guidelines
@@ -175,7 +177,8 @@ waypost/
 2. **Bare-metal alternative**: `DEPLOYMENT.md` → "Option 1: Manual Installation"
 3. **Releasing**: `RELEASE_PROCEDURE.md` §4–§6 — pushing an annotated `v*` tag is
    what deploys; merging to `main` does not
-4. **Data**: `DATABASE_MIGRATION.md` for SQLite → PostgreSQL
+4. **Data**: `DATABASE_MIGRATION.md` for SQLite → PostgreSQL; `RDS_MIGRATION.md` for
+   the production server → Aliyun RDS (not yet performed)
 5. **Recovery**: `BACKUP_RESTORE.md` §2b/§3a for the containerised stack
 6. **Media on OSS**: `OSS_STORAGE.md` — the cutover is a separate, operator-run
    change; the code is merged but nothing flips until four `OSS_*` keys are set

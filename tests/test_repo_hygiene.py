@@ -31,8 +31,10 @@ rather than hardcoding it, so a newly added app is covered automatically.
 
 The file has since become the home for every "the tree must not contain X" gate,
 whatever X is: `MediaStorageApiTests` (no local filesystem media access, which a
-bucket backend cannot serve) and `MiniprogramCompressionTests` (photo capture
-must route through the compressing helper) both walk the tree the same way.
+bucket backend cannot serve), `MiniprogramCompressionTests` (photo capture
+must route through the compressing helper) and `DeployScriptHygieneTests` (the
+host-side release scripts must stay runnable on Linux and the Compose DSN must stay
+configurable) all walk the tree the same way.
 """
 import os
 import re
@@ -51,6 +53,16 @@ CANVAS_DIR = DOCS_REPORTS_DIR / "canvas"
 MINIPROGRAM_DIR = BASE_DIR / "miniprogram"
 MINIPROGRAM_PAGES_DIR = MINIPROGRAM_DIR / "pages"
 MINIPROGRAM_IMAGE_HELPER = MINIPROGRAM_DIR / "utils" / "image.js"
+
+# Host-side release scripts (see DeployScriptHygieneTests below). These are the
+# files that run *on* the ECS: `ci-deploy.sh` and the two scripts it shares with the
+# nightly cron job. They are installed into /srv/waypost/bin, outside the checkout,
+# so a defect here is only ever discovered by a deploy.
+DOCKER_BIN_DIR = BASE_DIR / "docker" / "bin"
+COMPOSE_FILE = BASE_DIR / "docker-compose.yml"
+CI_DEPLOY_SCRIPT = DOCKER_BIN_DIR / "ci-deploy.sh"
+BACKUP_SCRIPT = DOCKER_BIN_DIR / "waypost-backup.sh"
+CHECKPOINT_HELPER = DOCKER_BIN_DIR / "_pg_checkpoint.sh"
 
 # Directories that are not part of the shipped tree: VCS metadata, virtualenvs,
 # build/lint caches, browser-session dumps, runtime uploads and node modules.
@@ -119,6 +131,22 @@ MEDIA_ROOT_AS_PATH_RE = re.compile(r"Path\(\s*(?:settings\.)?MEDIA_ROOT\b")
 # Test modules are exempt: pinning a temporary ``MEDIA_ROOT`` or asserting that
 # ``Storage.path()`` raises is exactly what they are for.
 TEST_MODULE_NAME_RE = re.compile(r"^(?:test_.*|.*_test|tests)\.py$")
+
+# Shell-script invariants (DeployScriptHygieneTests). `.gitattributes` pins
+# `docker/bin/*.sh` to LF, but that only holds for a checkout that honours it; a
+# stray CR makes `/bin/bash^M` the interpreter and the script dies with "No such
+# file or directory" - on the release path, at the deploy step, with nothing else
+# changed. `docs/DEPLOYMENT.md` records this exact failure mode.
+BASH_SHEBANG = "#!/usr/bin/env bash"
+PIPEFAIL_DIRECTIVE = "set -euo pipefail"
+
+# A shell script sourcing another file: `.` or `source`, then the path. Comments
+# (`# shellcheck source=...`) never match because the pattern is anchored on the
+# statement itself.
+SOURCES_FILE_RE = re.compile(r"""^[ \t]*(?:\.|source)[ \t]+["']?\S""", re.MULTILINE)
+
+# The `deploy.log` row writer: the printf whose output is appended to $DEPLOY_LOG.
+DEPLOY_LOG_WRITE_RE = re.compile(r"""^[ \t]*printf[ \t]+'([^']*)'.*\$DEPLOY_LOG""", re.MULTILINE)
 
 
 def _walk(root):
@@ -403,4 +431,161 @@ class MiniprogramCompressionTests(SimpleTestCase):
         self.assertIn(
             "compressImage", text,
             "utils/image.js must call wx.compressImage for the deterministic cap",
+        )
+
+
+class DeployScriptHygieneTests(SimpleTestCase):
+    """The host-side release scripts must stay runnable, and the DSN stay configurable.
+
+    These files run on the production ECS and nowhere else: no test imports them and
+    no `manage.py check` sees them, so the only way a defect surfaces is a deploy -
+    which is the operation they are supposed to make safe. Each assertion below is
+    the machine form of a failure that has already happened or was one edit away:
+
+    * CR bytes and a missing `set -euo pipefail` are how a deploy dies with
+      `/bin/bash^M: bad interpreter`, or half-runs after the first failing command;
+    * `docker-compose.yml` hardcoding `DATABASE_HOST: db` is blocker 10 - the line
+      that made moving the database to RDS a change to the compose file, on a host
+      whose whole deployment rests on that file not changing;
+    * `deploy.log`'s sixth column is blocker 9b's "was there a restore point for
+      this release?", which must stay answerable without a GitHub Actions log.
+    """
+
+    def test_docker_bin_shell_scripts_are_lf_bash_and_fail_fast(self):
+        scripts = sorted(p for p in _walk(DOCKER_BIN_DIR) if p.suffix == ".sh")
+        self.assertGreaterEqual(
+            len(scripts),
+            3,
+            f"Only {len(scripts)} shell scripts found in {_relative(DOCKER_BIN_DIR)} "
+            "- the walk has probably stopped matching, which would make this check "
+            "pass vacuously.",
+        )
+        offenders = []
+        for path in scripts:
+            # Bytes, not text: read_text() applies universal newlines, so a CRLF file
+            # reads back with no '\r' in it and the exact defect being tested for
+            # would be silently normalised away.
+            raw = path.read_bytes()
+            cr_count = raw.count(b"\r")
+            if cr_count:
+                offenders.append(
+                    f"{_relative(path)}: contains {cr_count} CR byte(s)"
+                )
+                continue
+            text = raw.decode("utf-8")
+            first_line = text.split("\n", 1)[0]
+            if first_line != BASH_SHEBANG:
+                offenders.append(
+                    f"{_relative(path)}: starts with {first_line!r}, not {BASH_SHEBANG!r}"
+                )
+            if PIPEFAIL_DIRECTIVE not in text:
+                offenders.append(
+                    f"{_relative(path)}: no '{PIPEFAIL_DIRECTIVE}' - a failing "
+                    "command would let the script keep going"
+                )
+        self.assertEqual(
+            offenders,
+            [],
+            "Shell-script hygiene failures in docker/bin:\n  " + "\n  ".join(offenders)
+            + "\nA CR makes `/bin/bash^M` the interpreter (`docs/DEPLOYMENT.md`, "
+            "'A shell script fails with /bin/bash^M: bad interpreter'), and without "
+            "pipefail a pipeline can mask the failure that matters on the release "
+            "path. `.gitattributes` pins docker/bin/*.sh to LF - if a file is "
+            "missing from that pin, add it rather than fixing the file by hand.",
+        )
+
+    def test_backup_script_is_in_the_repo_where_the_docs_link_to_it(self):
+        """Blocker 12: the nightly backup used to exist only as prose in a document."""
+        self.assertTrue(
+            BACKUP_SCRIPT.is_file(),
+            f"{_relative(BACKUP_SCRIPT)} is missing. docs/BACKUP_RESTORE.md links to "
+            "it: the script must be in the tree, because a copy that only exists at "
+            "/srv/waypost/bin on one host cannot be diffed, reviewed or reinstalled.",
+        )
+        self.assertTrue(
+            CHECKPOINT_HELPER.is_file(),
+            f"{_relative(CHECKPOINT_HELPER)} is missing. Both dump sites source it, "
+            "so the pre-deploy checkpoint and the nightly backup cannot end up "
+            "protecting two different databases.",
+        )
+        doc = _read(BASE_DIR / "docs" / "BACKUP_RESTORE.md")
+        self.assertIn(
+            "docker/bin/waypost-backup.sh",
+            doc,
+            "docs/BACKUP_RESTORE.md must point at the in-repo script, not only carry "
+            "a prose block that can drift from what is installed.",
+        )
+
+    def test_ci_deploy_knows_the_checkpoint_mode_and_sources_the_helper(self):
+        text = _read(CI_DEPLOY_SCRIPT)
+        self.assertIn(
+            "DB_CHECKPOINT_MODE",
+            text,
+            "docker/bin/ci-deploy.sh no longer mentions DB_CHECKPOINT_MODE: the "
+            "pre-deploy checkpoint has gone back to knowing only the compose `db` "
+            "service, which is blocker 9.",
+        )
+        self.assertIn(
+            CHECKPOINT_HELPER.name,
+            text,
+            f"docker/bin/ci-deploy.sh does not reference {CHECKPOINT_HELPER.name}, "
+            "so it no longer shares the checkpoint logic with the nightly backup.",
+        )
+        self.assertIsNotNone(
+            SOURCES_FILE_RE.search(text),
+            "docker/bin/ci-deploy.sh contains no `.`/`source` statement, so it cannot "
+            "be loading the checkpoint helper it names.",
+        )
+        helper = _read(CHECKPOINT_HELPER)
+        self.assertIn(
+            'DB_CHECKPOINT_MODE="${DB_CHECKPOINT_MODE:-auto}"',
+            helper,
+            "The helper must default DB_CHECKPOINT_MODE to `auto`, which is today's "
+            "behaviour; a different default changes production deploy behaviour for "
+            "every host that never sets the knob.",
+        )
+
+    def test_compose_does_not_hardcode_the_database_host(self):
+        """The tripwire for blocker 10: re-hardcoding the DSN is the whole regression."""
+        text = _read(COMPOSE_FILE)
+        self.assertNotIn(
+            "DATABASE_HOST: db",
+            text,
+            "docker-compose.yml hardcodes `DATABASE_HOST: db` again. It must stay "
+            "`${DATABASE_HOST:-db}`: the literal resolves to the same value today, but "
+            "it makes moving the database an edit to the file whose header comment "
+            "exists to protect a plain `docker compose up -d` at 2am. Setting "
+            "DATABASE_HOST in .env is the supported path (docs/RDS_MIGRATION.md).",
+        )
+        self.assertIn(
+            "${DATABASE_HOST:-db}",
+            text,
+            "docker-compose.yml no longer interpolates DATABASE_HOST at all - the "
+            "check above must not pass because the line was deleted.",
+        )
+
+    def test_deploy_log_record_carries_six_tab_separated_fields(self):
+        text = _read(CI_DEPLOY_SCRIPT)
+        written = DEPLOY_LOG_WRITE_RE.search(text)
+        self.assertIsNotNone(
+            written,
+            "Could not find the printf that appends to $DEPLOY_LOG in "
+            "docker/bin/ci-deploy.sh - the durable host-side record of every deploy.",
+        )
+        fmt = written.group(1)
+        fields = fmt.count(r"\t") + 1
+        self.assertEqual(
+            fields,
+            6,
+            f"deploy.log rows now have {fields} tab-separated fields, expected 6 "
+            f"(timestamp, kind, tag/ref, sha, result, checkpoint) in {fmt!r}. "
+            "Column 6 is whether a pre-deploy restore point exists; readers such as "
+            "scripts/deploy-dev-to-ecs.ps1 print whole lines, so append a column "
+            "rather than reordering them.",
+        )
+        self.assertIn(
+            "${CHECKPOINT:-none}",
+            text[text.index(fmt) - 400: text.index(fmt) + 400],
+            "The sixth deploy.log field must be `${CHECKPOINT:-none}` - `none` for "
+            "the deploys that aborted before step 2, not an empty column.",
         )

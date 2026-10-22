@@ -13,6 +13,11 @@ name: Deploy to ECS
 # the exact same script can be run by hand during an incident, with no runner,
 # no secrets and no network path through GitHub involved.
 #
+# Because it lives on the host it can also be *stale* there: nothing reinstalls it
+# automatically, so the first deploy after a `docker/bin` change runs the previous
+# script. The drift gate below is what turns that from a silent production outage
+# into a legible pre-flight failure (blocker 9b).
+#
 # Required repository secrets (Settings -> Secrets and variables -> Actions):
 #   ECS_DEPLOY_HOST        public IP or DNS name of the ECS
 #   ECS_DEPLOY_PORT        SSH port (this host uses 49153, not 22)
@@ -29,6 +34,11 @@ name: Deploy to ECS
 #                          word "deploy" throughout the logs, which turned step
 #                          names into "Run the *** script on the ECS" and the
 #                          summary heading into "Waypost production ***".
+#   ALLOW_RUNNER_DRIFT     set to 1/true to downgrade the runner-drift gate below to a
+#                          warning. It exists for the incident where the host must be
+#                          deployed *now* and the reinstall is the thing that is slow -
+#                          which is exactly when a silent drift would otherwise be
+#                          worked around by hand and never fixed.
 
 on:
   pull_request:
@@ -40,6 +50,11 @@ on:
         description: 'Tag to deploy (for example v0.2.0)'
         required: true
         type: string
+      reinstall_runner:
+        description: 'Install the tag docker/bin/*.sh onto the host instead of failing the drift gate'
+        required: false
+        type: boolean
+        default: false
 
 # One deploy at a time. Cancelling a deploy in progress is how you end up with a
 # half-migrated database, so queued runs wait instead.
@@ -123,6 +138,15 @@ jobs:
       # A tag push gives the tag in ref_name; a manual run takes it from the input.
       DEPLOY_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
     steps:
+      # Checked out so the drift gate below can hash this tag's `docker/bin` files.
+      # For a tag push Actions already has the tag's SHA; a workflow_dispatch picks
+      # whatever branch it was dispatched *from*, so the ref is pinned explicitly -
+      # otherwise the gate would compare the host against main's runner, not the
+      # release's, and pass a deploy of a tag whose script is different.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+
       - name: Refuse to deploy anything that is not a release tag
         run: |
           echo "Requested deploy of: ${DEPLOY_TAG}"
@@ -163,6 +187,101 @@ jobs:
           chmod 600 "${HOME}/.ssh/id_waypost_deploy"
           printf '%s\n' "${KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
           chmod 600 "${HOME}/.ssh/known_hosts"
+
+      # Blocker 9b. The script that performs the deploy lives on the host in
+      # /srv/waypost/bin, outside the checkout, and nothing reinstalls it
+      # automatically - so the first deploy after any `docker/bin` change runs the
+      # *previous* script and fails at whatever step the new one added, looking
+      # exactly like a deploy bug. Comparing the hashes turns that into a legible
+      # pre-flight failure. It runs after the key is installed and before anything
+      # is executed, so a refusal leaves the host untouched.
+      #
+      # Deliberately a *failure*, not an automatic install, on a plain tag push:
+      # replacing the release path's own runner without being asked is a behaviour
+      # change to production. Installing is the explicit `reinstall_runner` dispatch
+      # option below; `ALLOW_RUNNER_DRIFT` is the incident escape hatch.
+      #
+      # The ssh flags are repeated from the deploy step because Actions steps get
+      # separate shells, so no helper function can be shared between them. Change
+      # both or neither.
+      - name: Check the host-side runner matches this tag
+        env:
+          HOST: ${{ secrets.ECS_DEPLOY_HOST }}
+          PORT: ${{ secrets.ECS_DEPLOY_PORT }}
+          USER_NAME: ${{ vars.ECS_DEPLOY_USER || 'deploy' }}
+          ALLOW_DRIFT: ${{ vars.ALLOW_RUNNER_DRIFT }}
+          REINSTALL: ${{ inputs.reinstall_runner }}
+        run: |
+          ssh_run() {
+            ssh -i "${HOME}/.ssh/id_waypost_deploy" \
+                -o StrictHostKeyChecking=yes \
+                -o UserKnownHostsFile="${HOME}/.ssh/known_hosts" \
+                -o BatchMode=yes \
+                -o ConnectTimeout=20 \
+                -p "${PORT}" "${USER_NAME}@${HOST}" "$@"
+          }
+
+          # Mode 755: run over SSH by CI. 750: run by cron as the deploy account,
+          # because it reads .env. 640: only ever sourced, never executed.
+          # These match scripts/deploy-dev-to-ecs.ps1 exactly - the two paths that
+          # install these files must not disagree about what they end up as.
+          mode_for() {
+            case "$1" in
+              ci-deploy.sh) printf '0755' ;;
+              waypost-backup.sh) printf '0750' ;;
+              *) printf '0640' ;;
+            esac
+          }
+
+          drift=""
+          for NAME in ci-deploy.sh _pg_checkpoint.sh waypost-backup.sh; do
+            # A tag from before this file existed has nothing to compare: re-dispatching
+            # an old tag (the documented way to redeploy a release) must not be refused
+            # because the host holds a script that tag never had.
+            if [ ! -f "docker/bin/${NAME}" ]; then
+              echo "not part of this tag, skipped: ${NAME}"
+              continue
+            fi
+            LOCAL=$(sha256sum "docker/bin/${NAME}" | cut -d' ' -f1)
+            REMOTE=$(ssh_run "sha256sum /srv/waypost/bin/${NAME} 2>/dev/null | cut -d' ' -f1" || true)
+            if [ "${LOCAL}" = "${REMOTE}" ]; then
+              echo "in sync: ${NAME} (${LOCAL})"
+            else
+              echo "DRIFT: ${NAME} local=${LOCAL} host=${REMOTE:-absent}"
+              drift="${drift} ${NAME}"
+            fi
+          done
+
+          if [ -z "${drift}" ]; then
+            exit 0
+          fi
+
+          if [ "${REINSTALL}" = "true" ]; then
+            for NAME in ${drift}; do
+              ssh_run "cat > /srv/waypost/bin/.${NAME}.next" < "docker/bin/${NAME}"
+              ssh_run "install -m $(mode_for "${NAME}") /srv/waypost/bin/.${NAME}.next /srv/waypost/bin/${NAME} && rm -f /srv/waypost/bin/.${NAME}.next"
+              echo "installed ${NAME} on the host (mode $(mode_for "${NAME}"))"
+            done
+            exit 0
+          fi
+
+          if [ "${ALLOW_DRIFT}" = "1" ] || [ "${ALLOW_DRIFT}" = "true" ]; then
+            echo "::warning::Host runner is stale (${drift}) but ALLOW_RUNNER_DRIFT is set - deploying the OLD script."
+            echo "This deploys whatever is in /srv/waypost/bin today. Clear the variable as soon as this release is out."
+            exit 0
+          fi
+
+          echo "::error::The host's runner differs from this tag for:${drift}"
+          echo "Nothing has been deployed and the host is unchanged."
+          echo
+          echo "Fix it by re-dispatching THIS workflow with the reinstall option:"
+          echo "    gh workflow run deploy-ecs.yml --ref <this-tag> -f tag=<this-tag> -f reinstall_runner=true"
+          echo "or from a checkout of this tag, on the host itself:"
+          for NAME in ${drift}; do
+            echo "    install -m $(mode_for "${NAME}") docker/bin/${NAME} /srv/waypost/bin/${NAME}"
+          done
+          echo "docs/RDS_MIGRATION.md and docs/RELEASE_PROCEDURE.md section 11 explain why this gate exists."
+          exit 1
 
       # Plain OpenSSH rather than a third-party action: one less supply-chain
       # dependency holding a private key that can reach production.
