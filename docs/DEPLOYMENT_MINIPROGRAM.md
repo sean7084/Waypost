@@ -165,12 +165,23 @@ The command maps Kering → `Company(Kering)` / `Division(brand)` /
 `Location(store, code=JDA)` / `Asset`, applies the EUS device-category
 normalization, cleans placeholder SN/Asset-ID values, dedupes by SN within a
 store, prints a per-store summary, and records every created object in an
-`ImportRun` (rollback-able). Optional: pre-fill reusable photos for planned
-inspections:
+`ImportRun` (rollback-able). Reusable photos are **not** imported from a folder:
+`reuse_historical_photos` copies them from the most recent prior inspection of the
+same store, matched by device serial number, and sets `photo_required=False` on the
+matched devices so engineers do not re-shoot them onsite. It selects targets by
+flag:
 
 ```bash
-python manage.py reuse_historical_photos --source /path/to/Photo
+python manage.py reuse_historical_photos --inspection <uuid>          # one round
+python manage.py reuse_historical_photos --jda 22149 --date 2026-09-02
+python manage.py reuse_historical_photos --all-planned
 ```
+
+`--prune-superseded` (off by default) additionally deletes the round it adopted
+from, but only when that round is the **same store, the same date and the same
+slot** as the target — the duplicate shape `inspections/migrations/0007` refuses. A
+prior round from an earlier date is history, and the other slot of the same day is a
+second real visit; neither is ever touched.
 
 ---
 

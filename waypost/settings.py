@@ -639,5 +639,14 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        # Without this entry a warning from accounts.crypto / accounts.mailbox_sync
+        # only reaches the last-resort handler at WARNING level on stderr, i.e. it
+        # never lands in logs/waypost.log where operators look. Shape matches the
+        # other app logger above.
+        'accounts': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }

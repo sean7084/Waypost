@@ -570,6 +570,7 @@ an onsite-new device has no register entry yet.
 | `DeliveryItem` | `unique_asset_per_delivery_order` |
 | `InspectionDevice` | `(store_inspection, client_device_uid)` |
 | `InspectionPhoto` | `(store_inspection, client_photo_uid)` |
+| `StoreInspection` | `uniq_store_inspection_location_date_slot` — `(location, inspection_date, slot)`, one inspection per store per slot per date. `slot` is in the key because two visits by one store in one day are legitimate: the day view buckets by `(date, am)` / `(date, pm)` and the bundle export names one folder per slot (`docs/reports/INSPECTIONS_ITERATION2_COMPLETION_REPORT_20260924.md` records the same rule). `location` is nullable `SET_NULL` and both PostgreSQL and SQLite treat NULLs as distinct, so a location-less row stays **unconstrained**; duplicates that predate the constraint are found and merged by `manage.py merge_duplicate_inspections --dry-run`, never auto-merged when two rows both carry photos. |
 | `ProductPrice` | one `is_current` per model; one `is_current` per service item |
 
 ---

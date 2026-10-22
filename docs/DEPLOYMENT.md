@@ -966,6 +966,11 @@ performed:** no RDS instance exists.
 
 ## Backup Strategy
 
+> The backup that actually runs on the ECS is `/srv/waypost/bin/waypost-backup.sh`, installed from the
+> authoritative copy [`docker/bin/waypost-backup.sh`](../docker/bin/waypost-backup.sh) and documented in
+> [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md) §2b. The blocks below are the bare-metal shape and the
+> rename history; they are kept because a host that was set up that way still reads them.
+
 ### Database Backups
 
 ```bash

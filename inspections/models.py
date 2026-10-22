@@ -297,9 +297,35 @@ class StoreInspection(models.Model):
         verbose_name = _('Store Inspection')
         verbose_name_plural = _('Store Inspections')
         ordering = ['-inspection_date', '-created_at']
+        constraints = [
+            # One onsite round per store per slot per day. ``merge_duplicate_inspections``
+            # is the pre-deploy cleanup this constraint assumes.
+            #
+            # ``slot`` is part of the key, not decoration: a store visited both
+            # morning and afternoon is two legitimate rows, and the readers depend
+            # on it - ``inspections/views.py`` builds the day view from
+            # ``(date, AM)`` and ``(date, PM)`` buckets, and the bundle export
+            # names one folder per slot. Constraining only (location, date) makes
+            # that shape impossible.
+            #
+            # NULL is distinct in a unique index on BOTH backends (Postgres
+            # DISTINCT_DEFAULT and SQLite's NULL handling), so a row with no
+            # location is not constrained at all - an unlimited number of
+            # location-less inspections may share one date and slot. Do not read
+            # this constraint as "one inspection per date".
+            models.UniqueConstraint(
+                fields=['location', 'inspection_date', 'slot'],
+                name='uniq_store_inspection_location_date_slot',
+            ),
+        ]
         indexes = [
             models.Index(fields=['engineer', 'status']),
-            models.Index(fields=['location', 'inspection_date']),
+            # No (location, inspection_date) index here on purpose: the
+            # UniqueConstraint above is a btree over (location, inspection_date,
+            # slot), and a composite index serves every left-prefix of itself -
+            # so the (location) and (location, inspection_date) lookups it used
+            # to do are exactly the ones the plain index did. Keeping both costs
+            # a second index write per insert for no read benefit.
             models.Index(fields=['jda_code']),
             models.Index(fields=['batch', 'inspection_date']),
             models.Index(fields=['batch', 'inspection_date', 'slot']),

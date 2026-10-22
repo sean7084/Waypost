@@ -257,7 +257,11 @@ Ranked by risk × size, not by ease:
    the `unique_asset_per_delivery_order` invariant.
 3. **`utils/import_rollback.py`** — small (119 statements, 32.7%) but *safety-critical*: it is the
    only thing standing between a bad bulk import and manual DB surgery. Highest value per test
-   written.
+   written. A worked example of the path already exists as
+   [`../scripts/manual_verify_import_rollback.py`](../scripts/manual_verify_import_rollback.py): a
+   `django.test.Client` script that uploads company, location, contact and asset CSVs through the real
+   views, asserts the row counts come back after rollback, and deletes everything it created in a
+   `finally`. Start the tests from it rather than re-deriving the fixtures — and keep it until they land.
 4. **`invoices`** — 1 test for 1,045 statements; the SharePoint batch import and the
    client-confirmed → Esker lifecycle are money paths.
 5. **`quotations`** — the order-to-cash hub (see [`ARCHITECTURE.md`](ARCHITECTURE.md) §4);

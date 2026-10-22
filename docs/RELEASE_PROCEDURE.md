@@ -271,6 +271,8 @@ Optionally publish a GitHub Release from the tag, using the CHANGELOG entry as t
       copy: `docker/bin/waypost-backup.sh`).
 - [ ] Confirm the backup succeeded and note its `<STAMP>` — you will need it if you roll back.
 - [ ] Read the release's **Migration Files Added** section. Are any of them in the `noop`-reverse list (§9.2)? If so, this release is a **one-way door** — decide *now* that rollback means DB restore, not migration reversal.
+- [ ] Are any of them in the schema-reversible / data-cleanup-irreversible list (§9.2b)? If the release carries `inspections/0007_remove_storeinspection_inspections_locatio_f449d8_idx_and_more`, run `python manage.py merge_duplicate_inspections` (the dry run, no `--apply`) against the production database **first**: a duplicate `(location, inspection_date, slot)` triple makes `migrate` fail, and the entrypoint migrates on start, so the app does not come up at all. Rows that differ only by `slot` are two real visits and the dry run does not report them.
+- [ ] Run `python manage.py check_encrypted_secrets` (`accounts/management/commands/check_encrypted_secrets.py`). Unlike the row above this is a **data audit, not a deploy gate** — a non-zero exit means some stored mailbox/SMTP credential can be decrypted by neither the Fernet key nor the legacy fallback, so its owner sees an empty password and what looks exactly like an IMAP outage. The fix is to re-enter that credential in the admin UI; it does not change what you deploy and it must not roll one back (`/healthz/` deliberately ignores it). A `legacy` row still authenticates and exits 0; the command prints counts and row pks only, never credential material, so its output is safe to paste into an issue.
 - [ ] Confirm `template_files/` is present on the server (gitignored, but document generation raises `FileNotFoundError` without it — `DEPLOYMENT.md` Step 4b).
 
 ### 6.2 Deploy sequence
@@ -287,10 +289,27 @@ gh run watch                      # or: the Actions tab
 ```
 
 What the host-side script does, in order — knowing this is what makes a failed
-run diagnosable:
+run diagnosable.
+
+Before it runs at all, the Actions job hashes the tag's `docker/bin` runners and the
+copies installed on the host (`/srv/waypost/bin/`) with `sha256sum` and **fails the run**
+when they differ, rather than quietly executing the old script. A merged change to
+`ci-deploy.sh` used to stay inert until someone remembered to reinstall it, and the
+symptom of forgetting read like a deploy bug. The refusal leaves the host untouched and
+prints the exact `install -m` command; `reinstall_runner` (a dispatch input) installs on
+purpose, and `ALLOW_RUNNER_DRIFT` (a repository variable) is the incident escape hatch.
+Failing rather than auto-installing is deliberate — replacing the release path's own
+runner without being asked is a change to production. See §11.
 
 1. Alias the running image as `waypost-app:rollback` (the rollback target).
-2. `pg_dump -Fc` checkpoint into `/srv/waypost/backups/pg/` (§6.1, automated).
+2. `pg_dump -Fc` checkpoint into `/srv/waypost/backups/pg/` (§6.1, automated). Which
+   database that dumps is **declared, not inferred**: `DB_CHECKPOINT_MODE` in `.env`
+   (`auto` | `compose` | `external` | `none`, implemented in `docker/bin/_pg_checkpoint.sh`
+   and sourced by `waypost-backup.sh` as well, so a deploy checkpoint and a nightly backup
+   can never end up protecting two different databases). `auto` keeps today's behaviour. A
+   checkpoint that cannot be taken stops the deploy, and the mode that was used is written
+   to `deploy.log`'s sixth column, so "did that release have a restore point?" is answerable
+   on the host without opening an Actions log.
 3. `git fetch --tags && git checkout -f <tag> && git clean -ffd` — **never
    `-x`**, because `.env` is gitignored and must survive. If the fetch cannot be
    made to work after `FETCH_ATTEMPTS` tries, the script falls back to downloading
@@ -532,7 +551,7 @@ Restore `.env` from its encrypted backup **only if** the encryption key changed 
 
 ## 9. Migration Rollback Reference
 
-Twelve data migrations use `RunPython`. Their reversibility differs, and this determines whether Tier 2 is available.
+Twelve data migrations use `RunPython`. Their reversibility differs, and this determines whether Tier 2 is available. One more — `inspections/0007` — has no data operation of its own and still is not safely reversible, which is why §9.2b exists as a third category.
 
 ### 9.1 Real reverse functions (reversible)
 
@@ -544,6 +563,7 @@ Twelve data migrations use `RunPython`. Their reversibility differs, and this de
 | `accounts/0012_admin_roles_m2m` | `migrate_user_roles_forward` ↔ `migrate_user_roles_reverse` |
 | `accounts/0016_split_order_management_role` | `forwards` ↔ `backwards` |
 | `companies/0011_migrate_location_legacy_values` | `migrate_location_legacy_values` ↔ `reverse_migrate_location_legacy_values` |
+| `accounts/0024_llmcallrecord` | `CreateModel(LlmCallRecord)` ↔ `DeleteModel` — no `RunPython` at all, so its reversibility is structural rather than a written reverse: the RFQ metering table is empty on both sides of it. **Not a one-way door**; Tier 2 is available for a release whose only migration is this one |
 
 Reversing these *does* undo the data change — but verify the outcome anyway; a reverse is only as good as the assumptions it was written against.
 
@@ -559,6 +579,28 @@ Reversing these *does* undo the data change — but verify the outcome anyway; a
 | `quotations/0007_backfill_quotationitem_service_item` | Backfilled `QuotationItem.service_item` | Backfilled links **lost**; quotation line items revert to hardware-only resolution |
 
 > **Rule of thumb:** any release touching `products`, `quotations`, `deliveries`, or mailbox credentials is a Tier-3-only rollback. Take the backup seriously.
+
+### 9.2b Schema-reversible, **data-cleanup irreversible** (the third category)
+
+§9.1 and §9.2 sort migrations by their own `RunPython` reverse, and that is the wrong
+lens for a pure-schema migration whose *deployment prerequisite* is a data cleanup.
+Rolling such a migration back reverts the schema completely and still loses data —
+which neither of the tables above warns about.
+
+| Migration | What the forward pass did | Effect of reversing | Why Tier 2 is still not enough |
+|-----------|---------------------------|---------------------|--------------------------------|
+| `inspections/0007_remove_storeinspection_inspections_locatio_f449d8_idx_and_more` | `RemoveIndex` for the plain `(location, inspection_date)` index the unique index now covers, then `AddConstraint` for `uniq_store_inspection_location_date_slot` on `(location, inspection_date, slot)`. Touches no rows — but it **cannot be applied while a duplicate triple exists**, and the container entrypoint runs `migrate` on start, so a duplicate in production data means the app never comes up | `RemoveConstraint` + `AddIndex`: the index and the unique index are all there is, so the schema reverts cleanly | Getting the constraint to apply at all requires `merge_duplicate_inspections --apply` first, and that deletes the losing rows after re-parenting their children. **Dropping the constraint does not un-merge an inspection**: the dropped rows and their own field values (status, arrival/leaving times, counts, notes) are gone, and photos were never moved, so nothing to restore them from. A release containing `0007` is reversible in schema and irreversible in data — its real rollback is Tier 3 |
+
+Two consequences worth writing down before the release rather than during the incident:
+
+- Classify the release as **Tier 3 for the data, Tier 2 for the constraint**. If the
+  constraint alone turns out to be the problem (an unexpected legitimate duplicate),
+  reversing `0007` is a fine and quick fix; it just does not undo any merge already run.
+- The dry run of `merge_duplicate_inspections` is part of the pre-release checklist for
+  this migration, not an optional extra: it is what tells you whether the deploy is a
+  no-op or a data event. Rows with a NULL `location` are outside the constraint on both
+  Postgres and SQLite (NULLs are distinct in a unique index) and are deliberately not
+  merged.
 
 ### 9.3 Going forward
 
@@ -617,12 +659,13 @@ These are tracked as open issues and are **not** solved by this document:
 |-----|-------|--------------|
 | No pytest/coverage tooling; thin coverage of `assets`/`deliveries`/`purchases` | #16 | Resolved in part: pytest + coverage are configured and CI enforces a 40% floor, but a low floor still gives little assurance for `assets` (2,230-line `views.py`) and `deliveries` |
 | No linter/formatter configured | #21 | Resolved in part: ruff runs in CI with a correctness-only rule set and is a required check. `ruff format` is still deliberately not enforced |
-| Mailbox sync runs unattended, but nothing watches it | #24 | Resolved in part: `manage.py sync_mailboxes --once` plus `docker/systemd/waypost-mailbox-sync.{service,timer}` poll every five minutes as a user unit; the `runserver`-only thread in `accounts/apps.py` stays as the dev path, because promoting it would multiply by the three gunicorn workers. A failed pass is still only visible to someone who reads the mailbox stats page or runs `manage.py rfq_llm_usage` — alerting is issue #22 |
-| No staging environment | — | Releases are verified **in production**. This is the single largest risk in the current process |
-| No notification channel for a failed deploy | — | A red `deploy-ecs.yml` run is only seen if someone looks at the Actions tab. The host writes `/srv/waypost/backups/deploy.log`, but nothing pages anyone |
+| ✅ **Closed** (the residual is alerting, not sync): mailbox sync ran unattended and nothing watched it | #24 | Closed by the earlier PR: sync now runs on its own clock — `manage.py sync_mailboxes --once --max-runtime 240` under `docker/systemd/waypost-mailbox-sync.service` + `.timer`, a user unit that polls every five minutes — instead of a thread started by `accounts/apps.py` inside `runserver`, which either did not exist in production or multiplied by the three gunicorn workers. What the timer does *not* do is tell anyone when a pass fails: a failed sync is still only visible to someone who reads the mailbox stats page or runs `manage.py rfq_llm_usage`. That is the alerting gap below (#22), not this one |
+| No staging environment | — | Releases are verified **in production**. This is the single largest risk in the current process, and it is an infrastructure purchase, not a code change. It is also why the recent PRs are deliberately **config-gated** rather than flag-flipped — `OSS_*` needs all four keys before the media backend changes at all (`docs/OSS_STORAGE.md`), `DB_CHECKPOINT_MODE` defaults to today's behaviour, `ALLOW_MISSING_CHECKPOINT` and `ALLOW_RUNNER_DRIFT` are opt-out hatches that must be set by hand: a change that reverts by editing `.env` and restarting is the closest thing to a staging environment a one-host deployment can buy. That mitigates the risk; it does not close this gap |
+| No notification channel for a failed deploy | — | A red `deploy-ecs.yml` run is only seen if someone looks at the Actions tab. The host writes `/srv/waypost/backups/deploy.log`, and a failed deploy is now far more *legible* in it — the sixth column names the checkpoint the deploy took (or `none`), the kind column records `tag` vs `tag+tarball`, and the runner-drift gate turns a stale-runner deploy into an explicit pre-flight refusal instead of a mystery. None of that pages anyone: every one of those signals still requires a human to go and read something |
 | Media storage is **merged but unswitched** | — | The OSS backend, the thumbnail pipeline and ephemeral generated documents are on `main` and tested, but no bucket exists and no `OSS_*` key is set, so production media is still `FileSystemStorage` on the bind mount and nginx still serves `/media/`. Do not record the OSS migration as done in a release note, a report or a bill review until [`OSS_STORAGE.md`](OSS_STORAGE.md) §8–§9 have been run by an operator on the host — that cutover is not a deploy and no CI job can verify it |
-| First release shipped; a real rollback has never been drilled | — | `v0.2.0` was tagged on 2026-10-10 and the pipeline has since run green end to end, including the codeload fallback path. The image-rollback branch was drilled with a deliberately bad tag, but no real release has been rolled back — and v0.2.0 is a one-way door (§9.2), so its only rollback is a database restore |
-| A missing pre-deploy checkpoint now stops the deploy | — | `ci-deploy.sh` refuses to continue when it cannot take a `pg_dump` and the host has been deployed before, because that dump is the only restore point a release gets. Override with `ALLOW_MISSING_CHECKPOINT=1`. **If the database moves off the compose stack (e.g. to RDS), repoint the checkpoint at the new DSN in the same change** — otherwise every deploy would either fail or be waved through with no safety net |
+| First release shipped; a real rollback has never been drilled | — | `v0.2.0` was tagged on 2026-10-10 and the pipeline has since run green end to end, including the codeload fallback path. The image-rollback branch was drilled with a deliberately bad tag, but no real release has been rolled back — and v0.2.0 is a one-way door (§9.2), so its only rollback is a database restore. **Drill the `external` checkpoint path once, deliberately, before the cutover release** (§9.4): that proves a restore point gets *written* by a deploy; loading one is still undrilled |
+| ✅ **Closed**: a missing pre-deploy checkpoint used to be waved through | #95, blockers 9–12 | `ci-deploy.sh` now refuses to continue when it cannot take a `pg_dump` on a host that has been deployed before, because that dump is the only restore point a release gets; `ALLOW_MISSING_CHECKPOINT=1` overrides and says out loud that a one-way-door migration would then be unrecoverable. What closed the *consequence* is `DB_CHECKPOINT_MODE=auto\|compose\|external\|none` (`docker/bin/_pg_checkpoint.sh`, sourced by `waypost-backup.sh` too, so a deploy checkpoint and a nightly backup cannot end up protecting two different databases): the mode is declared rather than inferred, because at the checkpoint step the running app container is still the previous release and "is `db` running?" would have dumped the database being left behind. The remaining work is operator work, not code: set `DATABASE_HOST` and `DB_CHECKPOINT_MODE=external` in **one** edit at the RDS cutover ([`RDS_MIGRATION.md`](RDS_MIGRATION.md) §5) |
+| ✅ **Closed** (merged; never yet exercised on a host): a stale host runner deployed silently | blocker 9b | The runner is `/srv/waypost/bin/ci-deploy.sh` — a copy installed by hand, so a merged change to it stayed inert until someone remembered to reinstall, and the symptom of forgetting read like a deploy bug. The Actions job now compares `sha256sum` of the tag's `docker/bin/{ci-deploy.sh,_pg_checkpoint.sh,waypost-backup.sh}` against the host's copies and **fails with the exact install command in the message** instead of deploying the old script; `reinstall_runner` installs on purpose, `ALLOW_RUNNER_DRIFT` is the incident escape hatch. Two honest caveats: the gate has never compared against a real installed script, so **the first deploy after this release is expected to go red for exactly this reason** — re-dispatch with `reinstall_runner=true` ([`RDS_MIGRATION.md`](RDS_MIGRATION.md) §7); and a refusal is a legible failure, not an alert (§11 alerting row) |
 
 > ✅ **Resolved since this document was first written:** CI now exists and both
 > `Django checks + tests` and `Python lint (ruff)` are required status checks on

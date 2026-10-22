@@ -268,7 +268,21 @@ All documentation should:
 (#21 — ruff is a required check on `main`), the CI coverage step with
 PostgreSQL/Redis service containers (#17 — `backend-ci.yml`) and unattended
 mailbox sync with the RFQ cost guards around it (#24 — `manage.py sync_mailboxes`,
-`docker/systemd/waypost-mailbox-sync.timer`, `accounts/llm_client.py`).
+`docker/systemd/waypost-mailbox-sync.timer`, `accounts/llm_client.py`), plus the
+media/storage work it unblocked: a backend-agnostic media layer with a gated Aliyun
+OSS backend (`waypost/storage.py`, `docs/OSS_STORAGE.md`), an RDS-aware deploy
+checkpoint and in-repo nightly backup (`docker/bin/_pg_checkpoint.sh`,
+`docker/bin/waypost-backup.sh`, `docs/RDS_MIGRATION.md`), and
+`manage.py check_encrypted_secrets` for mailbox/SMTP credentials that fail to
+decrypt.
+
+> **Read that list as code, not as production state.** Every item above is gated on
+> an environment value and **nothing has been switched on the ECS**: media still comes
+> from `FileSystemStorage`, nginx still serves `/media/`, the database is still the
+> compose `db` service, and there is no staging environment to prove otherwise — which
+> is precisely why each change is a config gate rather than a behaviour change.
+> `docs/RELEASE_PROCEDURE.md` §11 keeps the un-drilled-rollback and no-notification
+> gaps open for the same reason.
 
 > Effort estimates are indicative for one maintainer working in focused blocks; they are not
 > commitments. Priority reflects risk × size, per the gap analysis above.

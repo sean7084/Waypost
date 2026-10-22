@@ -686,7 +686,23 @@ class UserMailboxSettings(models.Model):
 
     @property
     def password(self):
-        return decrypt_secret(self.encrypted_password)
+        # ``decrypt_secret`` never raises: an unreadable credential reads back as
+        # '' here. The logged context is an identifier only - the pk and the host
+        # this row would actually connect to, never the address, token or
+        # plaintext (accounts logs pks, see mailbox_sync.py).
+        #
+        # The receive host is used rather than the address domain: MX and mail host
+        # routinely differ (``@brand.com`` served by ``imap.exmail.qq.com``), so a
+        # domain in an incident line would point an operator at the wrong server.
+        is_pop3 = self.receive_protocol == self.ReceiveProtocol.POP3
+        host = (self.pop3_host if is_pop3 else self.imap_host) or ''
+        if not host and self.email_address and '@' in self.email_address:
+            host = self.email_address.rsplit('@', 1)[-1]
+        return decrypt_secret(
+            self.encrypted_password,
+            context=(f'mailbox pk={self.pk} '
+                     f'{"POP3" if is_pop3 else "IMAP"} host={host or "unset"}'),
+        )
 
     def set_password(self, raw_password):
         self.encrypted_password = encrypt_secret(raw_password)
@@ -743,7 +759,13 @@ class SystemSMTPSettings(models.Model):
 
     @property
     def password(self):
-        return decrypt_secret(self.encrypted_password)
+        # Non-raising by contract, so an undecryptable stored value looks identical
+        # to an unset one here; the warning in ``decrypt_secret`` is what makes the
+        # difference visible. Identifier only, never credential material.
+        return decrypt_secret(
+            self.encrypted_password,
+            context=f'system SMTP pk={self.pk} host={self.smtp_host}',
+        )
 
     def set_password(self, raw_password):
         self.encrypted_password = encrypt_secret(raw_password)

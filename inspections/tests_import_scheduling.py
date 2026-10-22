@@ -272,6 +272,26 @@ class ImporterSlotBalancingTests(TestCase):
         )
         self.assertEqual(StoreInspection.objects.get().slot, 'am')
 
+    def test_one_store_booked_in_both_slots_is_two_rounds(self):
+        """Keyed without ``slot``, the afternoon visit became part of the morning report.
+
+        ``defaults`` only fire when the row is created, so the second row resolved to
+        the first inspection, its ``slot`` was never applied, and its devices attached
+        to the wrong round - silently, because nothing refused the shape.
+        """
+        rows = [
+            {'Brand': 'Gucci', 'Store Name': 'S22001', 'JDA code': 22001,
+             'Address': 'Same Mall', 'City': 'Beijing',
+             'inspection_date': '2026-10-05', 'AM/PM': slot}
+            for slot in ('AM', 'PM')
+        ]
+        for _run in range(2):
+            kering_import.import_kering_master(
+                _xlsx_bytes(rows), None, company_name='Kering', company_code='KER', batch=None,
+            )
+        self.assertEqual(
+            sorted(StoreInspection.objects.values_list('slot', flat=True)), ['am', 'pm'])
+
 
 class SampleFileTests(TestCase):
     """The downloadable samples are generated from the parser's own column maps."""
