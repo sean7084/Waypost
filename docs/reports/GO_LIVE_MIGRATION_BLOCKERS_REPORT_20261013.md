@@ -96,24 +96,33 @@ previous paragraph made concrete.
 >   **before** that migration deploys — groups by the same three columns so a healthy AM/PM pair is
 >   never reported as a duplicate.
 >
-> **Landing status as of this writing.** Delivered as five stacked local branches —
-> `feat/rfq-llm-cost-guards` (blockers 13–15, commit `167204c`), then `feat/oss-storage-backend` with
-> blockers 1–4 and 6–8 (`517fce4`), then `feat/rds-checkpoint-and-compose-dsn` with 9, 9b, 10, 11 and 12
-> (`3e407e2`), then `feat/small-defects-and-doc-sync` with the `(location,
-> inspection_date, slot)` invariant, its slot-aware `merge_duplicate_inspections` cleanup and the
-> importer dedup-key fix, the company-API 500→403
-> fix, credential-decryption observability, the two tracked strays and this block (`0ae8546`), then
-> `chore/coverage-ratchet-and-report-correction` (this branch), which re-measures the coverage
-> baseline the ratchet was set from (79 tests / 43.7% on 2026-09-15 → 375 tests / 59.3% on
-> 2026-10-22), raises `fail_under` 40 → 57 and corrects `docs/TESTING.md` §1 and the gap rows in
-> `docs/INDEX.md`. It writes **no** tests for `assets` or `deliveries` — both still have zero test
-> modules — and `docs/TESTING.md` §1 now states how much of the 59.3% is import-time or incidental
-> rather than behavioural. Blocker 12 is delivered as a **gate, not a deletion**:
-> `docker/bin/waypost-backup.sh` skips the media tar when
+> **Landing status.** All five branches are merged into `main` (2026-10-22, PRs #101–#105, in stack
+> order): `feat/rfq-llm-cost-guards` — blockers 13–15, `167204c`, #101; `feat/oss-storage-backend` —
+> blockers 1–4 and 6–8, `517fce4`, #102; `feat/rds-checkpoint-and-compose-dsn` — 9, 9b, 10, 11 and 12,
+> `3e407e2`, #103; `feat/small-defects-and-doc-sync` — the `(location, inspection_date, slot)`
+> invariant, its slot-aware `merge_duplicate_inspections` cleanup and the importer dedup-key fix, the
+> company-API 500→403 fix, credential-decryption observability, the two tracked strays and this block,
+> `0ae8546`, #104; and `chore/coverage-ratchet-and-report-correction` — `e28d98b` + `f201605`, #105 —
+> which re-measures the coverage baseline the ratchet was set from (79 tests / 43.7% on 2026-09-15 →
+> 375 tests / 59.3% locally, **58.8% on PostgreSQL in CI**, 2026-10-22), raises `fail_under` 40 → 57
+> and corrects `docs/TESTING.md` §1 and the gap rows in `docs/INDEX.md`. It writes **no** tests for
+> `assets` or `deliveries` — both still have zero test modules — and `docs/TESTING.md` §1 now states how
+> much of the 59.3% is import-time or incidental rather than behavioural. Blocker 12 is delivered as a
+> **gate, not a deletion**: `docker/bin/waypost-backup.sh` skips the media tar when
 > `WAYPOST_MEDIA_IN_OSS=1` rather than dropping the step, because until the bucket exists that tar is
-> the only copy of the photos. **Nothing has been pushed, merged or deployed**, and no Aliyun resource
-> exists yet: the OSS and RDS cutovers remain operator actions, which is why every change here is gated
-> on an environment value and production behaviour is unchanged until `.env` is edited.
+> the only copy of the photos.
+>
+> **Merged is not deployed, and the two are not the same risk.** No Aliyun resource exists — no bucket,
+> no RAM policy, no RDS instance — so the OSS and RDS cutovers remain operator actions. Every runtime
+> change here is gated on an environment value, which is why `main` and the running container behave
+> identically until `.env` is edited. **The exception is the migrations, which are not gated**: the next
+> tag runs `accounts/0024_llmcallrecord` (additive, reversible) and
+> `inspections/0007_remove_storeinspection_inspections_locatio_f449d8_idx_and_more` — whose
+> `AddConstraint` **fails on a table that already violates it**, and the container entrypoint migrates
+> on start, so a pre-existing duplicate `(location, inspection_date, slot)` triple means the app does
+> not come up at all. So `merge_duplicate_inspections` (the dry run, no `--apply`) against production
+> data is a pre-release step, not a tidy-up; it is on the checklist at `docs/RELEASE_PROCEDURE.md`
+> §9.2b for exactly this reason.
 
 ---
 
