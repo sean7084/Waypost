@@ -1,0 +1,34 @@
+{
+  "name": "helpdesk-mini-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "sync:env": "node scripts/sync-env.js",
+    "sync:devtools-project": "node scripts/sync-devtools-project-config.js",
+    "dev:mp-weixin": "npm run sync:env && uni -p mp-weixin",
+    "build:mp-weixin": "npm run sync:env && uni build -p mp-weixin && npm run sync:devtools-project",
+    "devtools:islogin": "node scripts/wechat-devtools.js islogin",
+    "devtools:reset": "node scripts/wechat-devtools.js reset",
+    "devtools:clean": "node scripts/wechat-devtools.js clean",
+    "devtools:open": "node scripts/wechat-devtools.js open",
+    "devtools:preview": "node scripts/wechat-devtools.js preview",
+    "devtools:upload": "node scripts/wechat-devtools.js upload",
+    "preview:mp-weixin": "npm run build:mp-weixin && npm run devtools:reset && npm run devtools:clean && npm run devtools:preview",
+    "release:mp-weixin": "npm run build:mp-weixin && npm run devtools:upload",
+    "dev:weixin": "npm run dev:mp-weixin",
+    "build:weixin": "npm run build:mp-weixin",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-alpha-1000920260626810",
+    "@dcloudio/uni-mp-weixin": "3.0.0-alpha-1000920260626810",
+    "vue": "3.5.39",
+    "update-browserslist-db": "^1.2.3"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "3.4.31",
+    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-1000920260626810",
+    "vite": "8.1.0",
+    "vitest": "4.1.9"
+  }
+}
