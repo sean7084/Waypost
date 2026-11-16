@@ -7,6 +7,8 @@
     "sync:devtools-project": "node scripts/sync-devtools-project-config.js",
     "dev:mp-weixin": "npm run sync:env && uni -p mp-weixin",
     "build:mp-weixin": "npm run sync:env && uni build -p mp-weixin && npm run sync:devtools-project",
+    "build:test": "node scripts/sync-env.js test && uni build -p mp-weixin && npm run sync:devtools-project",
+    "preview:test": "npm run build:test && npm run devtools:reset && npm run devtools:clean && npm run devtools:preview",
     "devtools:islogin": "node scripts/wechat-devtools.js islogin",
     "devtools:reset": "node scripts/wechat-devtools.js reset",
     "devtools:clean": "node scripts/wechat-devtools.js clean",

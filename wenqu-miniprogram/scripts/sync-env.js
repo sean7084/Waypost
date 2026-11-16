@@ -2,7 +2,10 @@ const fs = require('fs')
 const path = require('path')
 
 const rootDir = path.resolve(__dirname, '..')
-const envFiles = ['.env', '.env.local']
+// An optional positional name selects an extra overlay, e.g. `node sync-env.js test`
+// reads .env.test last. Production scripts pass no name, so they cannot pick up a test URL.
+const envName = process.argv[2]
+const envFiles = envName ? ['.env', '.env.local', `.env.${envName}`] : ['.env', '.env.local']
 const outputPath = path.join(rootDir, 'src', 'utils', 'config.local.js')
 
 function parseEnvFile(filePath, target) {
@@ -66,3 +69,4 @@ const fileText = [
 
 fs.writeFileSync(outputPath, fileText, 'utf8')
 console.log(`Wrote ${path.relative(rootDir, outputPath)}`)
+console.log(`API_BASE_URL = ${normalizedApiBaseUrl}${envName ? `  (overlay: .env.${envName})` : '  (production)'}`)
