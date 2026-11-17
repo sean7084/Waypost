@@ -2,6 +2,7 @@
 URL configuration for accounts app.
 Handles authentication, user management, and profile-related URLs.
 """
+from django.conf import settings
 from django.urls import path
 from django.contrib.auth.views import LogoutView
 from . import views
@@ -12,7 +13,6 @@ urlpatterns = [
     # Authentication URLs
     path('login/', views.LoginView.as_view(), name='login'),
     path('logout/', views.CustomLogoutView.as_view(), name='logout'),
-    path('dev-login/', views.dev_login, name='dev_login'),  # For testing only
     
     # 2FA Setup URLs
     path('2fa/setup/', views.TwoFactorSetupView.as_view(), name='2fa_setup'),
@@ -43,3 +43,11 @@ urlpatterns = [
     path('sessions/', views.SessionListView.as_view(), name='session_list'),
     path('sessions/<int:pk>/terminate/', views.SessionTerminateView.as_view(), name='session_terminate'),
 ]
+
+# A passwordless login as `admin` must not exist in a production URLconf at all.
+# The view refuses when DEBUG is off too, but a route that is never registered
+# cannot be found by something guessing paths.
+if settings.DEBUG:
+    urlpatterns += [
+        path('dev-login/', views.dev_login, name='dev_login'),
+    ]

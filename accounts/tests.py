@@ -340,6 +340,7 @@ class UserEditViewTests(TestCase):
 		self.assertEqual(captured['messages'][0].to, ['recipient@example.com'])
 
 	@override_settings(
+		DEBUG=True,
 		EMAIL_BACKEND='accounts.email_backends.DatabaseSMTPEmailBackend',
 		DEFAULT_FROM_EMAIL='',
 		TEST_OUTBOUND_EMAIL_OVERRIDE='sean.liu@istore-tech.com',

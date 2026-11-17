@@ -114,11 +114,16 @@ see [`MINIPROGRAM_SPEC.md`](MINIPROGRAM_SPEC.md).
 | `accounts/users/<uuid>/edit/` | `UserEditView` | Edit user, roles, scope | `can_manage_users` |
 | `accounts/users/<uuid>/reset-password/` | `UserResetPasswordView` | Force password reset | `can_manage_users` |
 | `accounts/users/<uuid>/toggle-status/` | `UserToggleStatusView` | Activate / deactivate | `can_manage_users` |
-| `accounts/dev-login/` | `dev_login` | Development login shortcut | see note |
+| `accounts/dev-login/` | `dev_login` | Development login shortcut — **DEBUG only** | see note |
 
-> ⚠️ **`accounts/dev-login/`** is a convenience entry point. Confirm it is unreachable when
-> `DJANGO_DEBUG=False` before any production deploy (tracked under the security review in
-> [`SECURITY.md`](SECURITY.md)).
+> 🔒 **`accounts/dev-login/`** logs the caller in as `admin` with no password and no OTP.
+> It is now **enforced, not checklist-gated**: the route is appended to `accounts/urls.py`
+> only when `settings.DEBUG` is true, and the view itself raises `Http404` when it is not,
+> so a stale URLconf or a direct call cannot mint an admin session either.
+> `accounts/tests_security_guards.py` asserts both halves (route absent when `DEBUG=False`,
+> present when `DEBUG=True`, view refuses regardless). Before this change the route was
+> registered unconditionally and this note asked the operator to "confirm it is unreachable"
+> before each deploy — see [`SECURITY.md`](SECURITY.md).
 
 **Side effects:** login writes `LoginAttempt` (success + failure reason + IP + user agent) and
 `UserSession`; mailbox sync upserts `ReceivedEmailMessage` (idempotent on
