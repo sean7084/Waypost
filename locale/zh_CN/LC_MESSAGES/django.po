@@ -7830,3 +7830,241 @@ msgstr "Sharepoint Excel 文件"
 
 msgid "Upload an .xlsx file exported from Sharepoint."
 msgstr "上传从 Sharepoint 导出的 .xlsx 文件。"
+
+# Quotation Excel Import
+msgid "Import from Excel"
+msgstr "从Excel导入"
+
+msgid "Import Quotations from Excel"
+msgstr "从Excel导入报价单"
+
+msgid "Upload quotations issued outside the system, review every line, then confirm."
+msgstr "上传系统外开具的报价单，逐行核对后再确认。"
+
+msgid "Upload files"
+msgstr "上传文件"
+
+msgid "Applied to every file in this batch; you can change it per file in the preview."
+msgstr "应用于本批次的每个文件；可在预览中按文件单独修改。"
+
+msgid "Quotation Excel files"
+msgstr "报价单Excel文件"
+
+msgid "Only .xlsx files are supported. Legacy .xls must be re-saved as .xlsx."
+msgstr "仅支持 .xlsx 文件，旧版 .xls 请另存为 .xlsx。"
+
+msgid "Upload & Preview"
+msgstr "上传并预览"
+
+msgid "Expected layout"
+msgstr "期望的表格布局"
+
+msgid "The first visible sheet containing a quotation header row is read. Other sheets are ignored."
+msgstr "只读取第一个含报价单表头行的可见工作表，其余工作表忽略。"
+
+msgid "Required columns"
+msgstr "必需列"
+
+msgid "Also read when present"
+msgstr "存在时也会读取"
+
+msgid "Customer, attention and telephone from the To/Attn/Tel labels"
+msgstr "To/Attn/Tel 标签对应的客户、联系人与电话"
+
+msgid "Quote date and validity date, the VAT totals and the Remark line"
+msgstr "报价日期与有效期、税金合计以及 Remark 备注行"
+
+msgid "Limits: 10 files per batch, 10MB per file, 15MB per batch, 200 lines per file."
+msgstr "限制：每批最多10个文件，单文件10MB，整批15MB，单文件200行。"
+
+msgid "Import was not confirmed."
+msgstr "导入未确认。"
+
+msgid "External ref"
+msgstr "外部编号"
+
+msgid "Excluded from import"
+msgstr "排除此文件"
+
+msgid "Matched by code"
+msgstr "按代码匹配"
+
+msgid "Matched by name"
+msgstr "按名称匹配"
+
+msgid "Customer not matched — select a company manually."
+msgstr "未匹配到客户——请手动选择公司。"
+
+msgid "Source totals"
+msgstr "源文件合计"
+
+msgid "Computed totals"
+msgstr "重算合计"
+
+msgid "Totals do not match the source file."
+msgstr "合计与源文件不一致。"
+
+msgid "Mapping"
+msgstr "映射"
+
+msgid "Select"
+msgstr "请选择"
+
+msgid "Create new catalog entry"
+msgstr "新建目录条目"
+
+msgid "Skip this line"
+msgstr "跳过此行"
+
+msgid "Browse catalog…"
+msgstr "浏览目录…"
+
+msgid "New catalog entry"
+msgstr "新目录条目"
+
+msgid "Brand name"
+msgstr "品牌名称"
+
+msgid "Model name"
+msgstr "型号名称"
+
+msgid "Service name"
+msgstr "服务名称"
+
+msgid "Service group"
+msgstr "服务分组"
+
+msgid "Select a customer for every file before confirming."
+msgstr "确认前请为每个文件选择客户。"
+
+msgid "Every line must be mapped, created, or skipped before confirming."
+msgstr "确认前每行必须映射、新建或跳过。"
+
+msgid "No importable files in this batch."
+msgstr "本批次没有可导入的文件。"
+
+msgid "No matching catalog items"
+msgstr "没有匹配的目录条目"
+
+msgid "Duplicate of %(name)s — skipped."
+msgstr "与 %(name)s 完全相同——已跳过。"
+
+msgid "Select at least one .xlsx file."
+msgstr "请至少选择一个 .xlsx 文件。"
+
+msgid "Too many files. Maximum is %(count)s per batch."
+msgstr "文件过多，每批最多 %(count)s 个。"
+
+msgid "%(name)s: only .xlsx files are supported. Legacy .xls must be re-saved as .xlsx."
+msgstr "%(name)s：仅支持 .xlsx 文件，旧版 .xls 请另存为 .xlsx。"
+
+msgid "%(name)s: only .xlsx files are supported."
+msgstr "%(name)s：仅支持 .xlsx 文件。"
+
+msgid "%(name)s: the file is empty."
+msgstr "%(name)s：文件为空。"
+
+msgid "%(name)s: file too large. Maximum size is 10MB per file."
+msgstr "%(name)s：文件过大，单文件最大 10MB。"
+
+msgid "Batch too large. Maximum total size is 15MB."
+msgstr "整批过大，总大小最大 15MB。"
+
+msgid "Missing required column: %(column)s."
+msgstr "缺少必需列：%(column)s。"
+
+msgid "No quotation header row found (expected 产品描述 and 不含税单价 columns)."
+msgstr "未找到报价单表头行（应包含 产品描述 与 不含税单价 列）。"
+
+msgid "Tax rate %(rate)s%% differs from VAT label %(label)s%%."
+msgstr "税率 %(rate)s%% 与 VAT 标签 %(label)s%% 不一致。"
+
+msgid "Tax rate taken from VAT label (no incl-tax price)."
+msgstr "税率取自 VAT 标签（无含税单价）。"
+
+msgid "Tax rate defaulted to 13%%."
+msgstr "税率默认取 13%%。"
+
+msgid "Not a valid .xlsx workbook."
+msgstr "不是有效的 .xlsx 工作簿。"
+
+msgid "Unrecognized row %(row)s skipped."
+msgstr "第 %(row)s 行无法识别，已跳过。"
+
+msgid "Too many lines in this file. Maximum is %(count)s."
+msgstr "该文件行数过多，最多 %(count)s 行。"
+
+msgid "Invalid quantity on row %(row)s."
+msgstr "第 %(row)s 行数量无效。"
+
+msgid "Invalid price on row %(row)s."
+msgstr "第 %(row)s 行单价无效。"
+
+msgid "No quotation lines were found below the header row."
+msgstr "表头行下方未找到报价明细。"
+
+msgid "Multiple customer codes found (%(codes)s); using the first."
+msgstr "发现多个客户代码（%(codes)s），使用第一个。"
+
+msgid "No valid date found; using fallback."
+msgstr "未找到有效日期，使用默认值。"
+
+msgid "This file appears to have been imported before."
+msgstr "该文件似乎已导入过。"
+
+msgid "No brand in the source file."
+msgstr "源文件中该行没有品牌。"
+
+msgid "The validity date is already in the past."
+msgstr "有效期已过期。"
+
+msgid "Too many lines in this batch. Maximum is %(count)s."
+msgstr "本批次行数过多，最多 %(count)s 行。"
+
+msgid "Unit is required to create a catalog entry."
+msgstr "新建目录条目需要单位。"
+
+msgid "Brand name and model name are required to create a hardware entry."
+msgstr "新建货品条目需要品牌名称与型号名称。"
+
+msgid "This model already has a current price — map the line to it instead."
+msgstr "该型号已有当前价——请改为映射到它。"
+
+msgid "Service name is required to create a service entry."
+msgstr "新建服务条目需要服务名称。"
+
+msgid "This service already has a current price — map the line to it instead."
+msgstr "该服务已有当前价——请改为映射到它。"
+
+msgid "Import preview expired. Please upload the files again."
+msgstr "导入预览已过期，请重新上传文件。"
+
+msgid "%(name)s: select a customer for every file before confirming."
+msgstr "%(name)s：确认前请选择客户。"
+
+msgid "%(name)s: invalid import status."
+msgstr "%(name)s：导入状态无效。"
+
+msgid "%(file)s row %(row)s"
+msgstr "%(file)s 第 %(row)s 行"
+
+msgid "%(where)s: the selected catalog item is no longer available."
+msgstr "%(where)s：所选目录条目已不可用。"
+
+msgid "%(where)s: every line must be mapped, created, or skipped before confirming."
+msgstr "%(where)s：确认前每行必须映射、新建或跳过。"
+
+msgid "All lines in %(name)s are skipped — nothing to import."
+msgstr "%(name)s 的所有行都被跳过——没有可导入的内容。"
+
+msgid "Created %(count)s quotations: %(numbers)s."
+msgstr "已创建 %(count)s 张报价单：%(numbers)s。"
+
+msgid "Quotation Import Result"
+msgstr "报价单导入结果"
+
+msgid "Rollback blocked: imported catalog entries are referenced by other records."
+msgstr "回滚被阻止：导入创建的目录条目已被其他记录引用。"
+
+msgid "Import status"
+msgstr "导入状态"

@@ -6,13 +6,17 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, ProtectedError
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
+from django.utils.translation import gettext as _
 from decimal import Decimal, InvalidOperation
 import datetime
+import json
 
 from companies.models import Company, CompanyUser
 from deliveries.services import (
@@ -23,8 +27,21 @@ from deliveries.services import (
     sync_service_delivery_items,
 )
 from products.models import ProductPrice
+from utils.import_rollback import get_latest_rollback_run, rollback_run
+from .import_xlsx import (
+    IMPORT_MODULE,
+    IMPORT_PREVIEW_SESSION_KEY,
+    IMPORT_STATUS_CHOICES,
+    IMPORT_TYPE,
+    build_preview_payload,
+    catalog_prices,
+    commit_import,
+    serialize_catalog,
+    validate_confirm_payload,
+    validate_upload_files,
+)
 from .models import Quotation, QuotationItem, QuotationAttachment
-from .forms import QuotationForm, QuotationItemForm
+from .forms import QuotationForm, QuotationItemForm, QuotationExcelImportForm
 from .services import render_quotation_pdf_html
 from .template_registry import (
     DEFAULT_QUOTATION_TEMPLATE,
@@ -943,3 +960,129 @@ def convert_to_purchase(request, pk):
         messages.info(request, f'Purchase order {purchase_order.po_number} already exists. You can continue receiving stock.')
 
     return redirect('purchases:receive', pk=purchase_order.pk)
+
+
+def _can_manage_orders(request):
+    return request.user.can_manage_orders()
+
+
+def _import_preview_context(payload):
+    return {
+        'preview_mode': True,
+        'preview': payload,
+        'customers': Company.objects.filter(status=Company.CompanyStatus.ACTIVE).order_by('name'),
+        'catalog_json': serialize_catalog(catalog_prices()),
+        'import_status_choices': [
+            (value, label)
+            for value, label in Quotation.QuotationStatus.choices
+            if value in IMPORT_STATUS_CHOICES
+        ],
+    }
+
+
+@login_required
+def quotation_import_view(request):
+    """Upload -> preview/map -> confirm, for externally issued quotation workbooks."""
+    if not _can_manage_orders(request):
+        messages.error(request, _('You do not have access to Order Management.'))
+        return redirect('dashboard:dashboard')
+
+    back_url = reverse_lazy('quotations:list')
+    latest_run = get_latest_rollback_run(request.user, IMPORT_MODULE, IMPORT_TYPE)
+    context = {
+        'back_url': back_url,
+        'rollback_url': reverse_lazy('quotations:import_rollback') if latest_run else None,
+    }
+
+    if request.method == 'POST' and request.POST.get('confirm_import') == '1':
+        payload = request.session.get(IMPORT_PREVIEW_SESSION_KEY)
+        if not payload:
+            messages.error(request, _('Import preview expired. Please upload the files again.'))
+            return redirect('quotations:import')
+        try:
+            submitted = json.loads(request.POST.get('mappings_payload') or '{}')
+        except (TypeError, ValueError):
+            submitted = {}
+        decisions, errors = validate_confirm_payload(payload, submitted)
+        if not errors:
+            try:
+                result = commit_import(request.user, payload, decisions)
+            except Exception as exc:
+                errors = [str(exc)]
+        if errors:
+            context.update(_import_preview_context(payload))
+            context['form'] = QuotationExcelImportForm(initial={'status': payload['default_status']})
+            context['confirm_errors'] = errors
+            return render(request, 'quotations/import.html', context)
+
+        request.session.pop(IMPORT_PREVIEW_SESSION_KEY, None)
+        request.session.modified = True
+        messages.success(request, _('Created %(count)s quotations: %(numbers)s.') % {
+            'count': result['created'],
+            'numbers': ', '.join(q.quotation_number for q in result['quotations']),
+        })
+        return render(request, 'common/import_result.html', {
+            'title': _('Quotation Import Result'),
+            'back_url': back_url,
+            'total_rows': result['total_rows'],
+            'processed_rows': result['processed_rows'],
+            'created': result['created'],
+            'updated': 0,
+            'skipped': result['skipped'],
+            'errors': [],
+            'issues': result['issues'],
+            'rollback_url': (
+                reverse_lazy('quotations:import_rollback') if result['run'].can_rollback else None
+            ),
+        })
+
+    if request.method == 'POST':
+        files = request.FILES.getlist('files')
+        form = QuotationExcelImportForm(request.POST)
+        upload_errors = validate_upload_files(files)
+        if upload_errors or not form.is_valid():
+            context['form'] = form
+            context['upload_errors'] = upload_errors
+            return render(request, 'quotations/import.html', context)
+        payload = build_preview_payload(files, form.cleaned_data['status'])
+        request.session[IMPORT_PREVIEW_SESSION_KEY] = payload
+        request.session.modified = True
+        context.update(_import_preview_context(payload))
+        context['form'] = form
+        return render(request, 'quotations/import.html', context)
+
+    context['form'] = QuotationExcelImportForm()
+    return render(request, 'quotations/import.html', context)
+
+
+@login_required
+@require_POST
+def quotation_import_rollback_view(request):
+    if not _can_manage_orders(request):
+        messages.error(request, _('You do not have access to Order Management.'))
+        return redirect('dashboard:dashboard')
+
+    run = get_latest_rollback_run(request.user, IMPORT_MODULE, IMPORT_TYPE)
+    if run is None:
+        messages.warning(request, _('No rollback-eligible import run was found.'))
+        return redirect('quotations:import')
+
+    try:
+        outcome = rollback_run(run)
+    except ProtectedError:
+        messages.error(request, _('Rollback blocked: imported catalog entries are referenced by other records.'))
+        return redirect('quotations:import')
+
+    if outcome['errors']:
+        messages.warning(
+            request,
+            _('Rollback completed with warnings: %(count)s issue(s).') % {'count': len(outcome['errors'])}
+        )
+    messages.success(
+        request,
+        _('Rollback completed. Deleted %(deleted)s created records and restored %(restored)s updated records.') % {
+            'deleted': outcome['deleted'],
+            'restored': outcome['restored'],
+        }
+    )
+    return redirect('quotations:import')
