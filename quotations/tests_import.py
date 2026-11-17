@@ -6,6 +6,8 @@ scratch sheets that must be ignored.
 """
 import io
 import json
+import os
+import tempfile
 from datetime import date, datetime, time
 from decimal import Decimal
 
@@ -777,6 +779,20 @@ class ImportViewTests(ImportFixtureMixin, TestCase):
         self.assertIn('/login/', response['Location'])
 
     def test_chinese_translation_is_applied(self):
-        with translation.override('zh-cn'):
-            response = self.client.get(reverse('quotations:list'))
-            self.assertContains(response, '从Excel导入')
+        # CI does not compile the gitignored .mo catalogs, so build one into a
+        # temporary locale tree instead of relying on a local compile step.
+        import polib
+        from django.conf import settings
+        from django.test import override_settings
+
+        with tempfile.TemporaryDirectory() as tmp:
+            messages_dir = os.path.join(tmp, 'zh_CN', 'LC_MESSAGES')
+            os.makedirs(messages_dir)
+            catalog = polib.pofile(os.path.join(
+                settings.BASE_DIR, 'locale', 'zh_CN', 'LC_MESSAGES', 'django.po'
+            ))
+            catalog.save_as_mofile(os.path.join(messages_dir, 'django.mo'))
+            with override_settings(LOCALE_PATHS=[tmp]):
+                with translation.override('zh-cn'):
+                    response = self.client.get(reverse('quotations:list'))
+                    self.assertContains(response, '从Excel导入')
