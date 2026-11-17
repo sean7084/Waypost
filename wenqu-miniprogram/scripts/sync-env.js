@@ -48,7 +48,7 @@ for (const envFile of envFiles) {
 }
 
 if (!hasEnvFile) {
-  console.error('No .env or .env.local file found in helpdesk_frontend.')
+  console.error('No .env or .env.local file found in frontend.')
   process.exit(1)
 }
 
