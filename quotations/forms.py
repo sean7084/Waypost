@@ -3,6 +3,7 @@ Forms for Quotations app.
 """
 from django import forms
 from django.core.validators import MinValueValidator
+from django.utils.translation import gettext_lazy as _
 from decimal import Decimal
 import datetime
 
@@ -105,3 +106,18 @@ class QuotationAttachmentForm(forms.ModelForm):
             'file': forms.FileInput(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+
+
+class QuotationExcelImportForm(forms.Form):
+    """Status choice for the Excel import. Files arrive via request.FILES.getlist()."""
+
+    status = forms.ChoiceField(
+        label=_('Import status'),
+        initial=Quotation.QuotationStatus.DRAFT,
+        choices=[
+            (value, label)
+            for value, label in Quotation.QuotationStatus.choices
+            if value in (Quotation.QuotationStatus.DRAFT, Quotation.QuotationStatus.SENT)
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )

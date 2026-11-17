@@ -218,6 +218,8 @@ All gated by `can_manage_orders()` (app-level mixin).
 |---|---|---|
 | `quotations/list` | `QuotationListView` | List + filter |
 | `quotations/create/` | `QuotationCreateView` | Draft a quotation (manual or from an RFQ email) |
+| `quotations/import/` | `quotation_import_view` | Upload external quotation .xlsx files (batch), preview and map every line, then confirm atomically; writes an `ImportRun` ledger |
+| `quotations/import/rollback/` | `quotation_import_rollback_view` | POST-only; reverse-deletes the latest quotation import run incl. catalog entries it created |
 | `quotations/<pk>/` | `QuotationDetailView` | Detail with lines and totals |
 | `quotations/<pk>/edit/` | `QuotationUpdateView` | Edit lines; recalculates tax and totals |
 | `quotations/<pk>/duplicate/` | `duplicate_quotation` | Clone into a new draft |
