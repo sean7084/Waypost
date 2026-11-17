@@ -685,6 +685,11 @@ class UserSettingsForm(forms.ModelForm):
     """
     Form for user settings including language preference.
     """
+    timezone = forms.ChoiceField(
+        choices=[(tz, tz.replace('_', ' ')) for tz in COMMON_TIMEZONES],
+        label=_('Timezone'),
+    )
+
     class Meta:
         model = User
         fields = ['language_preference', 'timezone']
@@ -692,15 +697,22 @@ class UserSettingsForm(forms.ModelForm):
             'language_preference': forms.Select(attrs={
                 'class': 'form-control'
             }),
-            'timezone': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'UTC',
-            }),
         }
         labels = {
             'language_preference': _('Language Preference'),
-            'timezone': _('Timezone'),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # A zone saved before this dropdown existed must stay selectable, or
+        # saving any other preference would silently rewrite it to the first choice.
+        current_tz = getattr(self.instance, 'timezone', '') or ''
+        if current_tz and current_tz not in dict(self.fields['timezone'].choices):
+            self.fields['timezone'].choices = (
+                [(current_tz, current_tz.replace('_', ' '))]
+                + list(self.fields['timezone'].choices)
+            )
+        apply_bootstrap_widget_classes(self)
 
 
 class SystemSMTPSettingsForm(forms.ModelForm):
