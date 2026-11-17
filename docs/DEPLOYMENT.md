@@ -950,10 +950,19 @@ performed:** no RDS instance exists.
 
 ### Monitoring
 
-- ✅ Logs aggregated (ELK stack, CloudWatch, etc.)
-- ✅ Application performance monitoring (New Relic, Sentry)
-- ✅ Uptime monitoring (Pingdom, UptimeRobot)
-- ✅ Alerting configured (email/slack notifications)
+> 🔴 **None of the four items below is implemented.** They are a wishlist that was written with
+> check marks; do not read them as coverage. What actually exists is `/healthz/` (DB + cache),
+> container healthchecks, and three host cron probes that write **local log files only** — no
+> error tracking, no CloudMonitor alarm rules, no uptime probe from outside the host, and **no
+> notification channel of any kind**. See [`OPERATIONS_RUNBOOK.md`](OPERATIONS_RUNBOOK.md) §4
+> for the verified list and §2 for where each signal actually lands.
+
+- ⬜ Logs aggregated (ELK stack, CloudWatch, etc.) — **not implemented**; `logs/waypost.log` is
+  inside the container's writable layer and is lost on rebuild
+- ⬜ Application performance monitoring (New Relic, Sentry) — **not implemented**; no `sentry_sdk`
+- ⬜ Uptime monitoring (Pingdom, UptimeRobot) — **not implemented**
+- ⬜ Alerting configured (email/slack notifications) — **not implemented**; a failed deploy is
+  visible only in the Actions tab and `deploy.log`
 
 ### Maintenance
 

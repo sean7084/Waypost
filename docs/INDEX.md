@@ -253,14 +253,16 @@ All documentation should:
 | `docs/DATABASE_SCHEMA.md` — ER diagrams, table reference, unique keys | Sept 15, 2026 | #18 |
 | `docs/WEB_ROUTES.md` — HTML route → view → purpose → capability | Sept 15, 2026 | #19 |
 | `docs/TESTING.md` — strategy, conventions, coverage baseline + ratchet | Sept 15, 2026 | #16 |
+| `docs/OPERATIONS_RUNBOOK.md` — triage, signal locations, troubleshooting matrix, what monitoring actually exists | Oct 22, 2026 | #22 |
+| ADRs 0013–0020 — PK schemes, 2FA, mail paths, i18n, production stack, settings guards, API auth, PDF paths | Oct 22, 2026 | #20 |
 
 ### Remaining gaps
 
 | Gap | Priority | Est. effort | Issue |
 |---|---|---|---|
 | **Write the missing tests** — per module, not per app: `quotations/views.py` (11.1% of 584 stmts), `deliveries/views.py` (14.5%), `assets/views.py` (15.5% of 1,054), `accounts/mailbox_sync.py` (19.0%), `companies/views.py` (20.9%), then `utils/import_rollback.py` (40.8%). Overall coverage is **59.3%** as measured 2026-10-22, and the `fail_under` floor has been raised to 57 — so the remaining risk is concentrated in these modules, not in the headline | High | 20+ hours | #71 (strategy + tooling done in #16; test-writing is the open epic) |
-| ADRs 0012–0018 for undocumented architectural decisions | High | 4 hours | #20 |
-| `docs/OPERATIONS_RUNBOOK.md` — troubleshooting, incident response, monitoring | Medium | 4 hours | #22 |
+| **ADR bodies 0007–0010** — listed as Accepted in the TOC but never committed (multi-role RBAC, HTML-to-PDF, warehouse slots, contact vs user). 0013–0020 are delivered; 0020 restates 0008's scope meanwhile | Medium | 2 hours | #20 |
+| **Correct the documents the new ADRs contradict** — `ARCHITECTURE.md` (nginx serves `/static/`, 4 workers, "no LibreOffice", `language_preference` drives i18n), `DEPLOYMENT.md` (worker count, PG14+/Redis6+), `API_GUIDE.md:146,336`, `DATABASE_MIGRATION.md:154`, `WEB_ROUTES.md:289`, `WORKFLOW_GUIDE.md:300` | High | 2 hours | #20 |
 | WeChat MP registration, HTTPS/ICP domain, legal-domain whitelist | Medium | external | #53 |
 | Video tutorials for key workflows | Low | 20 hours | untracked |
 
