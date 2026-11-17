@@ -18,6 +18,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.utils import timezone
 
+from accounts.email_backends import test_outbound_override
 from accounts.mailbox_sync import cache_dispatch_outbox_message
 from accounts.models import UserMailboxSettings
 from quotations.services import render_quotation_pdf_html
@@ -392,7 +393,7 @@ def _get_effective_dispatch_recipients(dispatch):
     intended_cc = _parse_recipients(dispatch.cc)
     intended_bcc = _parse_recipients(dispatch.bcc)
 
-    override = (getattr(settings, 'TEST_OUTBOUND_EMAIL_OVERRIDE', '') or '').strip()
+    override = test_outbound_override()
     if not override:
         return {
             'header_to': intended_to,

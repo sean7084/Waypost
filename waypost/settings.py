@@ -226,7 +226,7 @@ MINIMAX_RFQ_MODEL = RFQ_LLM_MODEL
 MINIMAX_RFQ_TIMEOUT_SECONDS = RFQ_LLM_TIMEOUT_SECONDS
 MINIMAX_RFQ_MAX_TOKENS = RFQ_LLM_MAX_TOKENS
 
-TEST_OUTBOUND_EMAIL_OVERRIDE = os.environ.get('TEST_OUTBOUND_EMAIL_OVERRIDE', 'sean.liu@istore-tech.com').strip()
+TEST_OUTBOUND_EMAIL_OVERRIDE = os.environ.get('TEST_OUTBOUND_EMAIL_OVERRIDE', '').strip()
 
 # ---------------------------------------------------------------------------
 # Branding. Three distinct names - do NOT collapse them into one.

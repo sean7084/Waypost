@@ -18,7 +18,7 @@ from django.views.generic import (
     CreateView, UpdateView, DeleteView, View
 )
 from django.urls import reverse_lazy, reverse
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import Http404, JsonResponse, HttpResponseRedirect
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import activate
@@ -1031,7 +1031,13 @@ class CustomLogoutView(DjangoLogoutView):
 
 
 def dev_login(request):
-    """Development login view - remove in production!"""
+    """Development-only passwordless login. The route is not registered unless DEBUG.
+
+    Refusing here as well means a stale URLconf, an included router or a direct
+    call cannot turn this into an unauthenticated admin session in production.
+    """
+    if not settings.DEBUG:
+        raise Http404('dev-login is only available when DEBUG is enabled')
     from django.contrib.auth import login
     try:
         user = User.objects.get(username='admin')

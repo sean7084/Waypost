@@ -187,7 +187,7 @@ Access the application at: http://127.0.0.1:8000/
 | `DJANGO_SETTINGS_MODULE` | Django settings module | `waypost.settings` |
 | `SECRET_KEY` | Django secret key | (dev key in settings) |
 | `DEBUG` | Debug mode | `True` |
-| `TEST_OUTBOUND_EMAIL_OVERRIDE` | Override all outbound email recipients during test runs | `sean.liu@istore-tech.com` |
+| `TEST_OUTBOUND_EMAIL_OVERRIDE` | Redirect every outbound recipient to one address; **only honoured when `DEBUG=True`** | empty |
 | `minimax_token_plan_key` | Minimax API token used for RFQ classification and draft generation | empty |
 | `MINIMAX_RFQ_API_URL` | Minimax messages endpoint for RFQ workflows | `https://api.minimaxi.com/anthropic/v1/messages` |
 | `MINIMAX_RFQ_MODEL` | Minimax model name used for RFQ workflows | `MiniMax-M2.7-highspeed` |

@@ -7,6 +7,19 @@ from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.db.utils import OperationalError, ProgrammingError
 
 
+def test_outbound_override():
+    """The address that replaces every recipient, or '' when there is none.
+
+    Debug-only on purpose. This setting used to default to a real personal
+    address and was honoured regardless of DEBUG, so a production deploy whose
+    ``.env`` omitted the key redirected every customer email to one inbox. Both
+    outbound paths read it through here so they cannot drift apart again.
+    """
+    if not settings.DEBUG:
+        return ''
+    return (getattr(settings, 'TEST_OUTBOUND_EMAIL_OVERRIDE', '') or '').strip()
+
+
 class DatabaseSMTPEmailBackend(BaseEmailBackend):
     """Resolve SMTP connection settings from the database at send time."""
 
@@ -77,7 +90,7 @@ class DatabaseSMTPEmailBackend(BaseEmailBackend):
         if config.from_display_name:
             default_from_email = formataddr((config.from_display_name, config.from_email))
 
-        override_recipient = (getattr(settings, 'TEST_OUTBOUND_EMAIL_OVERRIDE', '') or '').strip()
+        override_recipient = test_outbound_override()
 
         for email_message in email_messages:
             if not email_message.from_email:

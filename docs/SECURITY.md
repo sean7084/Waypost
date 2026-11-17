@@ -102,7 +102,7 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 ### Other protections
 - **UUID primary keys** for users, assets, and companies prevent enumerable/guessable IDs.
-- **Outbound-email safety:** `TEST_OUTBOUND_EMAIL_OVERRIDE` redirects all outbound email to a single address in non-production, preventing accidental delivery to real customers. Leave it **empty in production**.
+- **Outbound-email safety:** `TEST_OUTBOUND_EMAIL_OVERRIDE` redirects all outbound email to a single address, and is now **honoured only when `DEBUG` is true** (`accounts/email_backends.test_outbound_override`, read by both the system backend and the per-user dispatch path). Its default is **empty**, not a personal address: it used to default to one and be honoured in production, so a deploy whose `.env` omitted the key silently redirected every customer email to a single inbox. Covered by `accounts/tests_security_guards.py`.
 - **Uploads:** `MAX_UPLOAD_SIZE = 5 MB`; media is served by Nginx in production (see `DEPLOYMENT.md`).
 
 ---
@@ -167,7 +167,8 @@ Before going live, confirm:
 - [ ] `DJANGO_ALLOWED_HOSTS` restricted to real domains
 - [ ] PostgreSQL configured (`DATABASE_*`); Redis configured (`DJANGO_REDIS_CACHE_URL`)
 - [ ] HTTPS enabled at Nginx; consider adding the §7 Django HTTPS settings
-- [ ] `TEST_OUTBOUND_EMAIL_OVERRIDE` is **empty**
+- [ ] `TEST_OUTBOUND_EMAIL_OVERRIDE` is **empty** (belt-and-braces: it is ignored unless `DEBUG=True`)
+- [ ] `DJANGO_DEBUG=False` — this is what removes `accounts/dev-login/` from the URLconf entirely
 - [ ] `template_files/` provisioned (document generation depends on it)
 - [ ] 2FA enforced for privileged accounts (`force_2fa_setup`)
 - [ ] Backups configured **and a restore tested** (see backlog `BACKUP_RESTORE.md`)
