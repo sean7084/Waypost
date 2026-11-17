@@ -31,17 +31,17 @@ Include: vulnerability type, impact assessment, reproduction steps, and a minima
 |---------|--------|-------|
 | Password hashing (PBKDF2) | ✅ Django default | `AUTH_PASSWORD_VALIDATORS`, `settings.py` |
 | Password complexity validators | ✅ 4 validators | `settings.py` |
-| Two-factor authentication (TOTP) | ✅ `django-otp` | `accounts` (2FA fields, `OTPMiddleware`) |
+| Two-factor authentication (TOTP) | ⚠️ **opt-in login gate**, not an enforced session; the API path bypasses it | `accounts` (2FA fields); ADR-0014 |
 | Role-based access control | ✅ 5 additive roles | `accounts/models.py` |
 | Row-level data scoping | ✅ per role | `get_accessible_assets()` and view querysets |
 | CSRF protection | ✅ `CsrfViewMiddleware` | `settings.py` |
 | Session timeout (24h) | ✅ | `SESSION_COOKIE_AGE = 86400` |
 | Credential encryption at rest | ✅ Fernet | `accounts/crypto.py` |
 | Env-driven secrets + fail-fast guards | ✅ | `settings.py` |
-| Non-enumerable primary keys (UUID) | ✅ users/assets/companies | models |
+| Non-enumerable primary keys (UUID) | ⚠️ **users/assets/inspections/reports only** — `companies`, locations and contacts use enumerable integers | models; ADR-0013 |
 | Security headers (XSS/nosniff/frame) | ✅ | `settings.py` |
 | HTTPS redirect / HSTS / secure cookies | ⚠️ **Not configured** | see §7 |
-| API token authentication | ⚠️ **Not implemented** (session only) | see §8 |
+| API token authentication | ✅ **SimpleJWT for the mini program**, session for the web | `settings.py:378-403`; ADR-0019 |
 | Dependency vulnerability scanning | ⚠️ **Not configured** | see §9 |
 
 ---
@@ -49,14 +49,33 @@ Include: vulnerability type, impact assessment, reproduction steps, and a minima
 ## 3. Authentication
 
 - **User model:** custom `accounts.User` (extends `AbstractUser`) with a **UUID** primary key.
-- **Mechanism:** Django **session authentication**. There is no JWT/bearer-token endpoint (see §8).
+- **Mechanism:** **dual-scheme.** Django **session authentication** for the web UI and browsable
+  API, **SimpleJWT bearer tokens** for the WeChat mini program (`wx.request` has no cookie jar,
+  so a session cannot survive between calls). Access tokens live 2h, refresh tokens 14d;
+  `ROTATE_REFRESH_TOKENS=False`. See §8 and ADR-0019 — the earlier "no JWT/bearer-token
+  endpoint" claim here was wrong.
 - **Passwords:** hashed with Django's default (PBKDF2-SHA256). Four validators enforce minimum length and reject common/numeric/similar passwords.
 - **Forced rotation:** `User.must_change_password` forces a password change at next login.
 - **Sessions:** `SESSION_COOKIE_AGE = 86400` (24 hours) and `SESSION_EXPIRE_AT_BROWSER_CLOSE = True`.
 
 ### Two-Factor Authentication (2FA)
-- Provided by **`django-otp`** with the TOTP and static-device plugins; `OTPMiddleware` is enabled.
-- `User.two_factor_enabled` tracks enrollment; `User.force_2fa_setup` forces enrollment at next login; `User.backup_tokens` stores static recovery codes.
+
+> ⚠️ **2FA is an opt-in login gate, not an enforced session state.** `django-otp` supplies the
+> TOTP and static **device models only**; the gate is hand-rolled in `LoginView.form_valid`.
+> Verification calls `django.contrib.auth.login`, never `django_otp.login()`, so no
+> OTP-verified state is attached to the session. `OTPMiddleware` is enabled but inert —
+> `is_verified()` is called nowhere and `otp_required` is imported and unused. Full record and
+> the list of what would make it real: **ADR-0014**.
+
+- `User.two_factor_enabled` tracks enrollment; `User.force_2fa_setup` forces enrollment at next
+  login; `User.backup_tokens` stores static recovery codes. **Both flags default `False`**, and
+  `force_2fa_setup` appears in no form and no admin fieldset — it is settable only by a raw ORM
+  write, so "2FA enforced for privileged accounts" cannot currently be achieved through the UI.
+- `disable_2fa` is self-service (`@login_required` + POST) with **no re-authentication**, and
+  deletes all devices.
+- **The mini-program JWT path does not check 2FA at all**, including for a superadmin.
+- Two enrolment paths exist (`TwoFactorSetupView` via django-otp, `setup_2fa_simple` via
+  `pyotp` + a session secret); the latter bypasses django-otp's throttling and drift handling.
 - Issuer name: `OTP_TOTP_ISSUER = 'Waypost'`.
 
 ---
@@ -139,13 +158,17 @@ These are omitted from the defaults because they would break local HTTP developm
 
 ## 8. API Security
 
-- The REST API (`/api/v1/`, DRF) uses **`SessionAuthentication`** and requires **`IsAuthenticated`** on all endpoints.
-- Querysets are **role-scoped** (superadmin sees all; IT admins/viewers see only their scope).
-- Company creation is restricted to superadmins; the `users` endpoint is read-only.
+- The REST API (`/api/v1/`, DRF) accepts **SimpleJWT bearer tokens and `SessionAuthentication`**, and requires **`IsAuthenticated`** by default (`settings.py:378-392`).
+- The mini program authenticates with `wx.login` → `POST /api/v1/auth/wechat/login/` (or `/bind/` on first launch) and then sends `Authorization: Bearer` on every call, including `wx.uploadFile`. Access 2h, refresh 14d.
+- Querysets are **role-scoped** (superadmin sees all; IT admins/viewers see only their scope). Inspections add object-level `CanAccessInspection`.
+- Company creation is restricted to superadmins and raises DRF `PermissionDenied` (**403**, not the builtin `PermissionError` → 500); the `users` endpoint is read-only.
+- Session-auth writes require a **CSRF token**; JWT requests are CSRF-exempt by DRF design. There is no `csrf_exempt` in `api/`.
 
-⚠️ **Limitations:**
-- **No token/JWT authentication** — machine-to-machine clients must establish a Django session. A token scheme (DRF `TokenAuthentication` or SimpleJWT) is future work.
-- Session-auth writes require a **CSRF token**.
+⚠️ **Open limitations (ADR-0019 records them):**
+- **`WeChatLookupView` is unauthenticated** and returns username/phone matches — a user-enumeration oracle that needs a rate limit or proof of ownership.
+- **`ROTATE_REFRESH_TOKENS=False`**: a stolen 14-day refresh token stays valid for its whole life; `JWT_SIGNING_KEY` falls back to `SECRET_KEY`.
+- **2FA is not checked on the JWT path**, even for a superadmin (ADR-0014).
+- `lookup`, `bind`, `login` and `auth/token/refresh/` are deliberately unauthenticated.
 
 ---
 
