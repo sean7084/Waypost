@@ -801,20 +801,23 @@ def handle_regenerate(user, *, session_id: str, message_id: Any = None) -> Dict[
     previous_reply_text = extract_message_text(latest)
     _check_regenerate_message_id(message_id, latest)
 
-    latest.delete()
-    reply_text, meta, profile_updates = generate_reply_and_update_profile(
-        user=user, new_message=previous, session_id=session_id, regenerate=True,
-    )
-    if previous_reply_text and reply_text.strip() == previous_reply_text:
+    # Atomic so a provider failure rolls the delete back: the helpdesk only
+    # commits the old reply's removal together with the new one (main.py:2982).
+    with transaction.atomic():
+        latest.delete()
         reply_text, meta, profile_updates = generate_reply_and_update_profile(
             user=user, new_message=previous, session_id=session_id, regenerate=True,
         )
+        if previous_reply_text and reply_text.strip() == previous_reply_text:
+            reply_text, meta, profile_updates = generate_reply_and_update_profile(
+                user=user, new_message=previous, session_id=session_id, regenerate=True,
+            )
 
-    meta = dict(meta)
-    meta['regenerated'] = True
-    reply_text = moderate_assistant_reply(user, reply_text, meta)
-    persist_assistant_message(user, session_id=session_id, reply_text=reply_text, meta=meta)
-    apply_profile_updates(user, profile_updates)
+        meta = dict(meta)
+        meta['regenerated'] = True
+        reply_text = moderate_assistant_reply(user, reply_text, meta)
+        persist_assistant_message(user, session_id=session_id, reply_text=reply_text, meta=meta)
+        apply_profile_updates(user, profile_updates)
     return {'reply': reply_text, 'session_id': session_id, 'meta': meta}
 
 

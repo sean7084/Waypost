@@ -407,14 +407,20 @@ def _resolve_public_api_base_url() -> str:
 
 def _prepare_public_asr_audio_source(file_path: str):
     """(candidate_path, cleanup_path, share_id, public_url) for Volcengine ASR."""
+    # Resolve the public base first: a misconfiguration must raise before any
+    # share is registered or temp file converted, so nothing leaks on failure.
+    base_url = _resolve_public_api_base_url()
     prepared_path = file_path
     cleanup_path = ''
     if os.path.splitext(file_path)[1].strip().lower() not in _VOLCENGINE_ASR_EXTENSIONS:
         prepared_path = convert_to_mp3(file_path)
         cleanup_path = prepared_path
-    share_id = registries.register_provider_audio_share(prepared_path)
-    public_url = f'{_resolve_public_api_base_url()}/api/provider/audio/{share_id}'
-    return prepared_path, cleanup_path, share_id, public_url
+    try:
+        share_id = registries.register_provider_audio_share(prepared_path)
+    except Exception:
+        delete_file_if_exists(cleanup_path)
+        raise
+    return prepared_path, cleanup_path, share_id, f'{base_url}/api/provider/audio/{share_id}'
 
 
 class WenquTranscribeView(WenquAPIView):
@@ -447,9 +453,9 @@ class WenquTranscribeView(WenquAPIView):
         needs_public = primary_model.startswith('volcengine/') or fallback_model.startswith('volcengine/')
         candidate_path, cleanup_path, share_id, public_url = temp_path, '', '', None
         try:
-            if needs_public:
-                candidate_path, cleanup_path, share_id, public_url = _prepare_public_asr_audio_source(temp_path)
             try:
+                if needs_public:
+                    candidate_path, cleanup_path, share_id, public_url = _prepare_public_asr_audio_source(temp_path)
                 result = transcribe_audio_with_fallback(
                     primary_model=primary_model, fallback_model=fallback_model,
                     file_path=candidate_path, language=language, public_file_url=public_url,
