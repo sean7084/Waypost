@@ -26,6 +26,10 @@ This directory contains architectural decision records for the Waypost.
 | [0018](#adr-0018-environment-driven-settings-with-fail-fast-guards--and-the-two-defaults-that-are-not-guarded) | Environment-Driven Settings with Fail-Fast Guards | Accepted (gap open) | 2026-10-22 |
 | [0019](#adr-0019-api-authentication--simplejwt-for-the-mini-program-session-for-the-web) | API Authentication — SimpleJWT for the Mini Program, Session for the Web | Accepted | 2026-10-22 |
 | [0020](#adr-0020-three-pdf-paths--and-what-adr-0008-actually-decided) | Three PDF Paths — and What ADR-0008 Actually Decided | Accepted (restates 0008) | 2026-10-22 |
+| [0021](#adr-0021-helpdesk--wenqu-merge-one-user-table-profile-marked-customers-and-the-tv-claim) | Helpdesk → Wenqu Merge: One User Table, Profile-Marked Customers, tv Claim | Accepted | 2026-11-19 |
+| [0022](#adr-0022-embeddings-as-jsonfield-with-a-query-time-vector-cast--ivfflat-as-named-debt) | Embeddings as JSONField with a Query-Time vector Cast — ivfflat as Named Debt | Accepted (debt open) | 2026-11-19 |
+| [0023](#adr-0023-synchronous-sse-on-wsgi-gthread--asgi-rejected) | Synchronous SSE on WSGI gthread — ASGI Rejected | Accepted | 2026-11-19 |
+| [0024](#adr-0024-private-media-on-a-dedicated-storage-outside-the-public-media-alias) | Private Media on a Dedicated Storage Outside the Public /media/ Alias | Accepted | 2026-11-19 |
 
 > ⚠️ **0007–0010 are table-of-contents entries with no decision text.** They were listed as
 > Accepted but no body was ever committed (verified with `git log -S` back to `7406d6d`), so
@@ -1190,6 +1194,241 @@ per-app quotation converter was **deleted** for having no callers and leaking fi
 
 ---
 
+## ADR-0021: Helpdesk → Wenqu Merge: One User Table, Profile-Marked Customers, and the tv Claim
+
+**Status**: Accepted
+**Date**: 2026-11-19
+**Authors**: Sean Liu
+
+### Context
+
+The standalone FastAPI "Helpdesk" (SQLAlchemy + PG17, its own `users` table with
+`role='admin'|'user'`, bcrypt passwords, WeChat openid columns and per-user `can_*`
+permission bits) is merged into Waypost and rebranded **问渠 (Wenqu)**. Waypost already
+has a custom `accounts.User` (UUID pk, AbstractUser) with an administrator-role system
+and a staff WeChat mini program whose openids live in `accounts.WeChatIdentity` keyed
+by appid. Two identity systems had to become one without granting customers staff
+surface, and the helpdesk's JWT revocation mechanism (`token_version`, alembic 0007)
+had to survive the move.
+
+### Decision
+
+**Merge, not coexist.** The helpdesk schema is ported to Django models (`wenqu/models.py`),
+its services rewritten onto the ORM (`wenqu/services/`), its endpoints served under
+`/api/v1/wenqu/` by this application, and its admin UI rebuilt as staff pages under
+`/wenqu/`. The legacy stack becomes a co-tenant in retirement (`OPERATIONS_RUNBOOK.md` §7);
+production data moves through `wenqu/management/commands/import_helpdesk.py` — natural-key
+idempotent upserts, `--dry-run` rollback, per-table source-vs-imported reconciliation,
+embeddings parsed from pgvector text and never recomputed, `password_reset_codes` skipped.
+The public hostname moves `ams.istore-tech.cn` → `waypost.istore-tech.cn` (one nginx site,
+one cert with both SANs; `DEPLOYMENT.md` §2.15).
+
+**One user table, no customer role.** A Wenqu customer is an `accounts.User` with
+`username = external_id` (`wx_<openid[:12]>`), an unusable password, a
+`WeChatIdentity(appid=settings.WECHAT_WENQU_APPID, openid)` row, and a `WenquProfile`.
+**The presence of the profile row is the customer marker** — `api.wenqu_authentication.WenquCustomerPermission`
+gates on it and the staff user list excludes anyone who has one. No `role='customer'`
+enum value, no new flag on `accounts.User`, no change to the administrator-role system:
+staff administration stays on existing Waypost accounts (`User.can_manage_wenqu()` =
+superadmin / IT administrator). Legacy helpdesk admin/role users are imported **as
+customers** with their `can_upload/can_chat/can_manage_customers/can_manage_users` bits
+preserved on the profile; `is_staff`/`is_superuser` are never set by the import.
+**unionid never auto-merges accounts** — it is not even a legacy column; imported
+identities carry an empty one and the first `wx.login` fills it in
+(`wenqu/services/auth.py`).
+
+**The tv claim travels.** Every customer access token carries `tv = profile.token_version`
+(`wenqu/services/auth.py::_tokens_for_profile`); `WenquJWTAuthentication` rejects a token
+whose `tv` no longer matches the column, so bumping `token_version` (admin page or reset
+flow) ends every older session. Staff tokens carry no `tv` and are exempt; customer
+tokens without the claim pass through (backward compatibility). The import preserves
+legacy `token_version` verbatim, so a pre-merge bump keeps its effect.
+
+### Consequences
+
+- One login principal, one staff directory, one 2FA/role system; customers can never
+  reach staff surface because the profile marker and the appid-scoped identity are
+  both checked (`WenquAuthConflict` when an openid is bound to a non-customer).
+- The import is re-runnable during the migration window: customers who tried the new
+  client before the merge are matched by openid and keep their account; history attaches
+  to it. Re-running overwrites profile fields with legacy values — the window freezes
+  the legacy app first (`DEPLOYMENT.md` §2.15 Phase 3).
+- Legacy PC passwords (bcrypt) are **not** imported; customer auth is WeChat-only, and
+  the reset flow is email codes (`PASSWORD_RESET_EMAIL_ENABLED` + SMTP relay).
+- Two WeChat mini programs (staff inspection, wenqu customer) share one backend but
+  never one appid scope; their CI keys and MP whitelists are separate
+  (`DEPLOYMENT.md` §2.14 env gap).
+
+### References
+
+- `wenqu/models.py` (WenquProfile docstring), `wenqu/services/auth.py`, `api/wenqu_authentication.py`
+- `wenqu/management/commands/import_helpdesk.py`; `accounts/models.py` (User, WeChatIdentity)
+- `docs/DEPLOYMENT.md` §2.14–§2.15; `docs/OPERATIONS_RUNBOOK.md` §7
+- helpdesk `backend/app/models.py`, alembic 0007 (token_version + password_reset_codes)
+
+---
+
+## ADR-0022: Embeddings as JSONField with a Query-Time vector Cast — ivfflat as Named Debt
+
+**Status**: Accepted (performance debt open)
+**Date**: 2026-11-19
+**Authors**: Sean Liu
+
+### Context
+
+The helpdesk stored 1536-dim embeddings in native pgvector `vector(1536)` columns with
+ivfflat cosine indexes (alembic 0003/0005 fixed the opclass trap: an ivfflat index only
+serves its own operator family, so the default `vector_l2_ops` made every `<=>` retrieval
+a sequential scan). Waypost develops on SQLite and runs PostgreSQL in production; a
+native `vector` column would break the dev backend and every `manage.py test` run.
+
+### Decision
+
+**Embeddings are `JSONField` (jsonb) lists** on `KBChunk.embedding` and
+`TriagePlaybook.embedding`. `wenqu/migrations/0002_pgvector` only creates the extension
+(`CREATE EXTENSION IF NOT EXISTS vector`, no-op on SQLite). Retrieval casts at query
+time: `(c.embedding::text)::vector <=> CAST(%s AS vector)` with the query vector bound
+as pgvector text `'[0.1,0.2,...]'` (`wenqu/services/kb/vector_store.py`) — a Python list
+would bind as `numeric[]` and break the operator. The production image is
+`pgvector/pgvector:pg16` (postgres:16 + extension; Debian-based, not alpine, for collation
+stability — `docker-compose.yml`).
+
+**ivfflat is deferred, explicitly.** An ivfflat index requires a real `vector` column;
+indexing a jsonb cast is not possible without a schema change. The KB is small enough
+that a sequential cosine scan is acceptable today. This is recorded debt, not an
+oversight: when retrieval latency shows up, the fix is a generated/stored `vector`
+column + `vector_cosine_ops` ivfflat (lists ≈ rows/1000), keeping the JSONField as the
+portable source of truth.
+
+**The import never recomputes.** `import_helpdesk` parses the legacy pgvector text
+`'[...]'` into a JSON list (`parse_embedding`), so migrated chunks keep byte-equivalent
+vectors with no provider keys and no embedding spend.
+
+### Consequences
+
+- One codebase, two backends: SQLite dev/test needs no extension; PG prod gets the
+  cosine operator. Tests assert the JSON round-trip (`wenqu/tests.py`).
+- Every retrieval is a seq scan + cast until the debt is paid; fine at current KB size,
+  named here so it is a decision rather than a surprise.
+- The opclass trap from helpdesk alembic 0003/0005 cannot recur silently: there is no
+  index to mis-configure yet, and the future index must use `vector_cosine_ops`.
+
+### References
+
+- `wenqu/models.py` (module docstring), `wenqu/migrations/0002_pgvector.py`
+- `wenqu/services/kb/vector_store.py`; `docker-compose.yml` (db image)
+- `wenqu/management/commands/import_helpdesk.py::parse_embedding`
+- helpdesk alembic 0003/0005 (opclass fixes), `backend/app/models.py` index notes
+
+---
+
+## ADR-0023: Synchronous SSE on WSGI gthread — ASGI Rejected
+
+**Status**: Accepted
+**Date**: 2026-11-19
+**Authors**: Sean Liu
+
+### Context
+
+Wenqu chat replies, regeneration and TTS playback stream as Server-Sent Events
+(`wenqu/services/sse.py`): a synchronous generator yields `event: …\ndata: {...}\n\n`
+frames for the whole model turn (tens of seconds). The production stack is Gunicorn
+WSGI sync workers behind a shared nginx (ADR-0017). Each open stream holds a worker
+thread for its duration, so a handful of concurrent customers could starve the rest
+of the API at the old `--threads 2`.
+
+### Decision
+
+**Stay WSGI; expand the thread pool.** `docker/Dockerfile` runs
+`gunicorn waypost.wsgi:application --workers 3 --threads 8 --timeout 300` — 24 gthreads,
+tunable per host via `GUNICORN_CMD_ARGS` without a rebuild. The streams are plain
+synchronous generators returned as `StreamingHttpResponse`; no async views, no
+channels, no second server. nginx carries three prefix locations
+(`/api/v1/wenqu/chat/stream`, `/chat/regenerate/stream`, `/speak/stream`) with
+`proxy_buffering off`, `proxy_cache off` and `proxy_read_timeout 300s` matching
+Gunicorn (`docker/nginx/waypost.conf`, PR4), each repeating the full
+`proxy_set_header` block because nginx does not inherit location-level headers into
+siblings — dropping `X-Forwarded-Proto` there would 403 every POST.
+
+**ASGI was considered and rejected:** it would mean a second application entrypoint
+(`waypost/asgi.py` exists but is unused), an async rewrite of the service layer that
+is deliberately synchronous (ORM calls, provider HTTP, ffmpeg subprocesses), a different
+worker class and deploy surface, and new failure modes on a host that shares its nginx
+with another application — all to solve a concurrency problem that 24 threads already
+solve at this customer count. Revisit when concurrent streams routinely approach the
+thread pool, not before.
+
+### Consequences
+
+- One deploy path, one worker model, the existing rollback story unchanged.
+- Thread exhaustion is the capacity ceiling: ~24 simultaneous streams across 3 workers;
+  beyond that, new requests queue. The IP throttle on `/speak/stream`
+  (`WENQU_SPEAK_STREAM_IP_*`) is blast-radius protection, not the real gate — per-customer
+  `can_chat` is.
+- A slow model turn can hold a thread up to 300s; the matched nginx/Gunicorn timeouts
+  mean a cut stream is a deliberate timeout, not a proxy mismatch.
+
+### References
+
+- `docker/Dockerfile` (CMD comment), `docker/nginx/waypost.conf` (SSE locations)
+- `wenqu/services/sse.py`, `api/wenqu_views.py`; `waypost/settings.py` (WENQU_SPEAK_STREAM_*)
+- ADR-0017 (production stack), ADR-0019 (API authentication)
+
+---
+
+## ADR-0024: Private Media on a Dedicated Storage Outside the Public /media/ Alias
+
+**Status**: Accepted
+**Date**: 2026-11-19
+**Authors**: Sean Liu
+
+### Context
+
+nginx serves `MEDIA_ROOT` world-readable through `location /media/ { alias … }`
+(`docker/nginx/waypost.conf`), and the default storage backend may become Aliyun OSS
+(`waypost/storage.py`, ADR in `OSS_STORAGE.md`). Wenqu customer uploads (voice messages,
+photos), generated TTS audio and KB page attachments are **customer-private**: they must
+only leave through authenticated Django views, never a static alias or a public bucket
+URL. The helpdesk wrote them straight to an `uploads/` disk directory.
+
+### Decision
+
+**A dedicated `FileSystemStorage` rooted at `WENQU_PRIVATE_MEDIA_ROOT`**, exposed as a
+callable (`wenqu/services/storage.py::private_storage`) so `FileField` resolves it lazily
+and tests can override the root. Compose bind-mounts `${WAYPOST_DATA_DIR}/private` →
+`/app/private_media` — deliberately outside `MEDIA_ROOT` and outside the default
+(possibly OSS) backend. Downloads go through `FileResponse` + `storage.open` behind
+customer auth (`api/wenqu_views.py` protected-download view); the URL convention
+(`wenqu/uploads/<file_id>__<name>`, `wenqu/tts/…`, `wenqu/kb_assets/…`,
+`wenqu/triage_assets/…`) is owned by `wenqu/services/utils/file_store.py`.
+
+**KB source documents are the exception that proves the boundary:** they are
+operator-managed files under `WENQU_KB_SOURCES_DIR`, read with plain `open()` and never
+touching the storage API — they are not media (`wenqu/services/kb/paths.py`).
+
+The repo-hygiene gate (`tests/test_repo_hygiene.py::MediaStorageApiTests`) forbids
+`.path`, `MEDIA_ROOT` directory writes and `Path(MEDIA_ROOT)` in application code, so
+the private/public boundary cannot be crossed by a stray idiom that works on a dev box.
+
+### Consequences
+
+- No nginx location, no www-data ACL, no bucket policy is needed for private files;
+  the only route out is an authenticated view, and the import writes through the same
+  `storage.save` path as live uploads.
+- Private media is **not** covered by the public-media OSS cutover or its lifecycle
+  rules; it lives on the bind mount and is backed up with the host data, a separate
+  retention decision.
+- Two storage roots to provision and remember (`private/`, `kb_sources/`); compose
+  already mounts both, and `DEPLOYMENT.md` §2.14 lists them.
+
+### References
+
+- `wenqu/services/storage.py`, `wenqu/services/utils/file_store.py`, `wenqu/models.py` (UploadFile)
+- `docker-compose.yml` (private + kb_sources mounts), `docker/nginx/waypost.conf` (/media/ alias)
+- `tests/test_repo_hygiene.py` (MediaStorageApiTests); `docs/OSS_STORAGE.md`
+
+---
+
 ## ADR Template
 
 When creating new ADRs, follow this template:
@@ -1218,4 +1457,4 @@ Links to related files, migrations, discussions
 
 ---
 
-*Last Updated: October 5, 2026*
+*Last Updated: November 19, 2026*
