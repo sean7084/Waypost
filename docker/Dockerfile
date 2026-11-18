@@ -97,6 +97,9 @@ RUN apt-get update \
         tzdata \
         ca-certificates \
         curl \
+        ffmpeg \
+        tesseract-ocr \
+        tesseract-ocr-chi-sim \
     && (apt-get install -y --no-install-recommends libreoffice-calc-nogui \
         || apt-get install -y --no-install-recommends libreoffice-calc) \
     && rm -rf /var/lib/apt/lists/*
