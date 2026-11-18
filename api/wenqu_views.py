@@ -30,7 +30,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from wenqu.models import Message
-from wenqu.services import chat
+from wenqu.services import chat, sse
 from wenqu.services.chat import (
     ChatError,
     ChatInputBlocked,
@@ -224,3 +224,58 @@ class WenquChatRegenerateView(WenquAPIView):
         except ChatError as exc:
             return chat_error_response(exc)
         return Response(result)
+
+
+# --- streaming chat (SSE) -------------------------------------------------------
+
+
+class WenquChatStreamView(WenquAPIView):
+    """POST /chat/stream -> text/event-stream (main.py:3084).
+
+    Lifecycle: can_chat -> ensure session -> input moderation (a violation is a
+    plain JSON 400, never an SSE frame) -> persist user message -> identification
+    or triage branch (start/final/done, no deltas) -> prepare_reply_generation ->
+    start{session_id,meta} -> delta{text}* -> output moderation (replaces final
+    only) -> persist assistant -> final{reply,session_id,meta} -> done{session_id}.
+    The generator itself lives in wenqu.services.sse (sync WSGI, disconnect-safe).
+    """
+
+    permission_classes = [CanChat]
+
+    def post(self, request):
+        payload = self.validated_payload(WenquMessageInSerializer)
+        try:
+            turn = chat.prepare_stream_turn(request.user, payload)
+        except ChatError as exc:
+            return chat_error_response(exc)
+
+        if turn.fixed_result is not None:
+            return sse.sse_response(sse.fixed_reply_stream(
+                session_id=turn.session_id, result=turn.fixed_result,
+                start_meta=turn.fixed_start_meta or {},
+            ))
+        return sse.sse_response(sse.chat_event_stream(
+            user=request.user, session_id=turn.session_id, preparation=turn.preparation,
+            start_meta=chat.stream_start_meta(turn.preparation),
+            regenerate=False, temperature=0.2,
+        ))
+
+
+class WenquChatRegenerateStreamView(WenquAPIView):
+    """POST /chat/regenerate/stream -> SSE at temperature 0.45 (main.py:3022)."""
+
+    permission_classes = [CanChat]
+
+    def post(self, request):
+        payload = self.validated_payload(WenquRegenerateInSerializer)
+        try:
+            preparation = chat.prepare_regenerate_stream(
+                request.user, session_id=payload['session_id'], message_id=payload.get('message_id'),
+            )
+        except ChatError as exc:
+            return chat_error_response(exc)
+        return sse.sse_response(sse.chat_event_stream(
+            user=request.user, session_id=payload['session_id'], preparation=preparation,
+            start_meta=chat.stream_start_meta(preparation, regenerated=True),
+            regenerate=True, temperature=0.45, final_meta_overrides={'regenerated': True},
+        ))

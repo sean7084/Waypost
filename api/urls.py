@@ -17,8 +17,9 @@ from .wenqu_auth_views import (
     WenquGetPhoneView, WenquUpdateUserView, WenquWxLoginView,
 )
 from .wenqu_views import (
-    WenquChatbotView, WenquChatRegenerateView, WenquChatSessionDetailView,
-    WenquChatSessionListView, WenquChatView,
+    WenquChatbotView, WenquChatRegenerateStreamView, WenquChatRegenerateView,
+    WenquChatSessionDetailView, WenquChatSessionListView, WenquChatStreamView,
+    WenquChatView,
 )
 from .inspection_views import StoreInspectionViewSet
 
@@ -59,6 +60,8 @@ urlpatterns = [
     path('wenqu/chat/sessions/<str:session_id>', WenquChatSessionDetailView.as_view(), name='wenqu-chat-session-detail'),
     path('wenqu/chat', WenquChatView.as_view(), name='wenqu-chat'),
     path('wenqu/chat/regenerate', WenquChatRegenerateView.as_view(), name='wenqu-chat-regenerate'),
+    path('wenqu/chat/stream', WenquChatStreamView.as_view(), name='wenqu-chat-stream'),
+    path('wenqu/chat/regenerate/stream', WenquChatRegenerateStreamView.as_view(), name='wenqu-chat-regenerate-stream'),
 
     path('', include(router.urls)),
 ]
