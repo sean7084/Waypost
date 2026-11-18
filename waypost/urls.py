@@ -82,6 +82,9 @@ urlpatterns += i18n_patterns(
     # Invoices
     path('invoices/', include('invoices.urls')),
 
+    # Wenqu (问渠) helpdesk staff administration
+    path('wenqu/', include('wenqu.urls')),
+
     # Mobile interface
     path('m/', include('mobile.urls', namespace='mobile')),
 
