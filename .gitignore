@@ -11,6 +11,7 @@ media/
 .claude/
 .mcp.json
 *.code-workspace
+tmp/
 
 # Python bytecode/cache
 __pycache__/
