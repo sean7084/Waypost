@@ -8068,3 +8068,467 @@ msgstr "回滚被阻止：导入创建的目录条目已被其他记录引用。
 
 msgid "Import status"
 msgstr "导入状态"
+# Wenqu staff admin (PR5)
+
+msgid "%(success)s uploaded, %(failure)s failed."
+msgstr "已上传 %(success)s 个，失败 %(failure)s 个。"
+
+msgid "Add Customer"
+msgstr "新增客户"
+
+msgid "Add Customer User"
+msgstr "新增客户用户"
+
+msgid "All %(count)s documents failed."
+msgstr "全部 %(count)s 个文档上传失败。"
+
+msgid "All %(count)s documents uploaded."
+msgstr "全部 %(count)s 个文档上传成功。"
+
+msgid "Are you sure you want to delete the customer \"%(name)s\"?"
+msgstr "确定要删除客户「%(name)s」吗？"
+
+msgid "Are you sure you want to delete the customer user \"%(name)s\"?"
+msgstr "确定要删除客户用户「%(name)s」吗？"
+
+msgid "Back to Customers"
+msgstr "返回客户列表"
+
+msgid "Bump token version (force sign-out)"
+msgstr "提升令牌版本（强制下线）"
+
+msgid "Can chat"
+msgstr "可聊天"
+
+msgid "Can manage customers"
+msgstr "可管理客户"
+
+msgid "Can manage users"
+msgstr "可管理用户"
+
+msgid "Can upload"
+msgstr "可上传"
+
+msgid "Chat"
+msgstr "聊天"
+
+msgid "Chat session not found"
+msgstr "未找到该聊天会话"
+
+msgid "Chat session not found."
+msgstr "未找到该聊天会话。"
+
+msgid "Chatbot"
+msgstr "聊天机器人"
+
+msgid "Chunk"
+msgstr "分块"
+
+msgid "Chunks"
+msgstr "分块数"
+
+msgid "Companies whose staff use the Wenqu helpdesk"
+msgstr "使用问渠客服助手的客户公司"
+
+msgid "Console Details"
+msgstr "控制台信息"
+
+msgid "Could not delete the document."
+msgstr "无法删除该文档。"
+
+msgid "Could not load documents."
+msgstr "无法加载文档列表。"
+
+msgid "Could not load the preview."
+msgstr "无法加载预览。"
+
+msgid "Could not replace the document."
+msgstr "无法替换该文档。"
+
+msgid "Create Customer"
+msgstr "创建客户"
+
+msgid "Current Documents"
+msgstr "当前文档"
+
+msgid "Customer %(name)s deleted."
+msgstr "客户 %(name)s 已删除。"
+
+msgid "Customer Name"
+msgstr "客户名称"
+
+msgid "Customer Users"
+msgstr "客户用户"
+
+msgid "Customer accounts sign in through WeChat; permissions gate the customer API."
+msgstr "客户账号通过微信登录；权限位控制客户 API 的访问。"
+
+msgid "Customer accounts, permission bits and token versions"
+msgstr "客户账号、权限位与令牌版本"
+
+msgid "Customer created."
+msgstr "客户已创建。"
+
+msgid "Customer updated."
+msgstr "客户已更新。"
+
+msgid "Customer user %(name)s created."
+msgstr "客户用户 %(name)s 已创建。"
+
+msgid "Customer user %(name)s deleted."
+msgstr "客户用户 %(name)s 已删除。"
+
+msgid "Customer users, knowledge-base documents and playbooks scoped to this company become global (unassigned); chat history is kept."
+msgstr "归属于该公司的客户用户、知识库文档与排障剧本将变为全局（未分配）；聊天记录会保留。"
+
+msgid "Customers"
+msgstr "客户"
+
+msgid "Customers pagination"
+msgstr "客户分页"
+
+msgid "Delete Customer"
+msgstr "删除客户"
+
+msgid "Delete Customer User"
+msgstr "删除客户用户"
+
+msgid "Delete this document and its indexed chunks?"
+msgstr "删除该文档及其已索引的分块？"
+
+msgid "Delete this session and its messages?"
+msgstr "删除该会话及其消息？"
+
+msgid "Deleted %(name)s."
+msgstr "已删除 %(name)s。"
+
+msgid "Document"
+msgstr "文档"
+
+msgid "Document Preview"
+msgstr "文档预览"
+
+msgid "Document list refreshed."
+msgstr "文档列表已刷新。"
+
+msgid "Document not found."
+msgstr "未找到该文档。"
+
+msgid "Edit Customer"
+msgstr "编辑客户"
+
+msgid "Edit Customer User"
+msgstr "编辑客户用户"
+
+msgid "Enter customer name"
+msgstr "请输入客户名称"
+
+msgid "Error:"
+msgstr "错误："
+
+msgid "Extracted chunk text - what retrieval actually searches against."
+msgstr "提取出的分块文本——检索实际搜索的内容。"
+
+msgid "Files are ingested into the retrieval index immediately."
+msgstr "文件会立即写入检索索引。"
+
+msgid "Global"
+msgstr "全局"
+
+msgid "Global (shared across customers)"
+msgstr "全局（所有客户共享）"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Indexed"
+msgstr "索引时间"
+
+msgid "Invalid JSON payload."
+msgstr "无效的 JSON 请求体。"
+
+msgid "Invalidate all existing sign-ins for this user?"
+msgstr "使该用户当前所有登录失效？"
+
+msgid "KB Documents"
+msgstr "知识库文档"
+
+msgid "Keep both documents"
+msgstr "保留两个文档"
+
+msgid "Knowledge Base"
+msgstr "知识库"
+
+msgid "Knowledge base attachment"
+msgstr "知识库附件"
+
+msgid "Last reply metadata"
+msgstr "最近回复元数据"
+
+msgid "Leave empty to clear the custom title."
+msgstr "留空将清除自定义标题。"
+
+msgid "Manage Customers"
+msgstr "管理客户"
+
+msgid "Manage Wenqu customer companies"
+msgstr "管理问渠客户公司"
+
+msgid "Mobile"
+msgstr "手机号"
+
+msgid "New Session"
+msgstr "新建会话"
+
+msgid "Nickname"
+msgstr "昵称"
+
+msgid "No Customer Users Found"
+msgstr "未找到客户用户"
+
+msgid "No Customers Found"
+msgstr "未找到客户"
+
+msgid "No Wenqu customer accounts exist yet."
+msgstr "还没有问渠客户账号。"
+
+msgid "No Wenqu customers have been created yet."
+msgstr "还没有创建问渠客户。"
+
+msgid "No customer (global)"
+msgstr "无客户（全局）"
+
+msgid "No customer users match your search criteria."
+msgstr "没有符合搜索条件的客户用户。"
+
+msgid "No customers match your search criteria."
+msgstr "没有符合搜索条件的客户。"
+
+msgid "No documents in this scope yet."
+msgstr "该范围内还没有文档。"
+
+msgid "No metadata yet."
+msgstr "暂无元数据。"
+
+msgid "No sessions yet."
+msgstr "暂无会话。"
+
+msgid "No text"
+msgstr "无文本"
+
+msgid "Open"
+msgstr "打开"
+
+msgid "Optional context shown to the identification flow."
+msgstr "可选备注，会展示给客户识别流程。"
+
+msgid "Optional notes about this customer"
+msgstr "关于该客户的可选备注"
+
+msgid "Overwrite the same-name document"
+msgstr "覆盖同名文档"
+
+msgid "Password (optional)"
+msgstr "密码（可选）"
+
+msgid "Please choose a replacement document."
+msgstr "请选择用于替换的文档。"
+
+msgid "Please choose at least one document."
+msgstr "请至少选择一个文档。"
+
+msgid "Receiving streamed response..."
+msgstr "正在接收流式回复……"
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "Regenerate"
+msgstr "重新生成"
+
+msgid "Regenerating..."
+msgstr "正在重新生成……"
+
+msgid "Relevant screenshots"
+msgstr "相关截图"
+
+msgid "Rename"
+msgstr "重命名"
+
+msgid "Rename Session"
+msgstr "重命名会话"
+
+msgid "Replace"
+msgstr "替换"
+
+msgid "Replaced %(name)s."
+msgstr "已替换 %(name)s。"
+
+msgid "Replacing the selected document..."
+msgstr "正在替换所选文档……"
+
+msgid "Reply received."
+msgstr "已收到回复。"
+
+msgid "Reply regenerated."
+msgstr "回复已重新生成。"
+
+msgid "Request failed."
+msgstr "请求失败。"
+
+msgid "Scoped to the customer selected above."
+msgstr "按上方所选客户筛选。"
+
+msgid "Search Customers"
+msgstr "搜索客户"
+
+msgid "Search by external ID..."
+msgstr "按外部 ID 搜索……"
+
+msgid "Search by name..."
+msgstr "按名称搜索……"
+
+msgid "Select a document to preview its chunks."
+msgstr "选择一个文档以预览其分块。"
+
+msgid "Send"
+msgstr "发送"
+
+msgid "Sending..."
+msgstr "正在发送……"
+
+msgid "Session ID"
+msgstr "会话 ID"
+
+msgid "Session action failed."
+msgstr "会话操作失败。"
+
+msgid "Session deleted."
+msgstr "会话已删除。"
+
+msgid "Session renamed."
+msgstr "会话已重命名。"
+
+msgid "Session title"
+msgstr "会话标题"
+
+msgid "Session title cleared."
+msgstr "会话标题已清除。"
+
+msgid "Sessions"
+msgstr "会话"
+
+msgid "Signed in as"
+msgstr "当前登录"
+
+msgid "Source documents"
+msgstr "源文档"
+
+msgid "Sources:"
+msgstr "来源："
+
+msgid "Stable client-facing id; WeChat customers use wx_<openid>."
+msgstr "稳定的客户端标识；微信客户使用 wx_<openid>。"
+
+msgid "Staff console - test the assistant against the global knowledge base"
+msgstr "员工控制台——基于全局知识库测试助手"
+
+msgid "Supported formats: PDF, DOCX, DOC, TXT."
+msgstr "支持格式：PDF、DOCX、DOC、TXT。"
+
+msgid "The account, its chat history and uploads are permanently removed."
+msgstr "该账号及其聊天记录、上传文件将被永久删除。"
+
+msgid "The client-facing identity key cannot be changed."
+msgstr "客户端身份标识不可修改。"
+
+msgid "This document has no indexed chunks."
+msgstr "该文档没有已索引的分块。"
+
+msgid "This external ID is already in use."
+msgstr "该外部 ID 已被使用。"
+
+msgid "This username is already taken."
+msgstr "该用户名已被占用。"
+
+msgid "Title is too long (maximum 255 characters)."
+msgstr "标题过长（最多 255 个字符）。"
+
+msgid "Token Version"
+msgstr "令牌版本"
+
+msgid "Token version bumped for %(name)s; all existing sign-ins are now invalid."
+msgstr "已提升 %(name)s 的令牌版本；其现有登录全部失效。"
+
+msgid "Type a message and press Enter..."
+msgstr "输入消息后按回车发送……"
+
+msgid "Unknown"
+msgstr "未知"
+
+msgid "Unsupported file type. Use PDF, DOCX, DOC or TXT."
+msgstr "不支持的文件类型。请使用 PDF、DOCX、DOC 或 TXT。"
+
+msgid "Unsupported file type: %(name)s. Use PDF, DOCX, DOC or TXT."
+msgstr "不支持的文件类型：%(name)s。请使用 PDF、DOCX、DOC 或 TXT。"
+
+msgid "Upload Documents"
+msgstr "上传文档"
+
+msgid "Upload failed."
+msgstr "上传失败。"
+
+msgid "Upload rejected."
+msgstr "上传被拒绝。"
+
+msgid "Upload source documents, inspect extracted chunks, replace or remove them"
+msgstr "上传源文档、查看提取的分块、替换或删除文档"
+
+msgid "Uploaded %(name)s."
+msgstr "已上传 %(name)s。"
+
+msgid "Uploading documents..."
+msgstr "正在上传文档……"
+
+msgid "Username / External ID"
+msgstr "用户名 / 外部 ID"
+
+msgid "Username is required."
+msgstr "用户名不能为空。"
+
+msgid "Wenqu"
+msgstr "问渠"
+
+msgid "Wenqu Chatbot"
+msgstr "问渠聊天机器人"
+
+msgid "Wenqu Customer Users"
+msgstr "问渠客户用户"
+
+msgid "Wenqu Customers"
+msgstr "问渠客户"
+
+msgid "Wenqu Knowledge Base"
+msgstr "问渠知识库"
+
+msgid "Wenqu profile updated."
+msgstr "问渠客户资料已更新。"
+
+msgid "Wenqu staff console - every question answered, living water from the source. What would you like to test today?"
+msgstr "问渠管理台——有问必答，源头活水。今天想测试点什么？"
+
+msgid "When a document has the same name"
+msgstr "当文档同名时"
+
+msgid "You do not have access to Wenqu administration."
+msgstr "您没有问渠管理权限。"
+
+msgid "chunks"
+msgstr "分块"
+
+msgid "documents"
+msgstr "个文档"
+
+msgid "session_id is required."
+msgstr "必须提供 session_id。"
+
