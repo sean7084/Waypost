@@ -2,15 +2,16 @@
 """Generate design-token stylesheets from the single source of truth.
 
 `static/design/tokens.json` is the only place token values are defined. This
-script renders it into two generated files that must never be hand-edited:
+script renders it into three generated files that must never be hand-edited:
 
-    static/css/tokens.css           backend (`:root { --wp-*: ... }`)
-    miniprogram/styles/tokens.wxss  WeChat mini program (`page { --wp-*: ... }`)
+    static/css/tokens.css               backend (`:root { --wp-*: ... }`)
+    miniprogram/styles/tokens.wxss      inspection mini program (`page { ... }`)
+    wenqu-miniprogram/styles/tokens.wxss  问渠 mini program (`page { ... }`)
 
-Because both files come from the same JSON, the web app and the mini program are
-guaranteed to share an identical palette, type scale, spacing rhythm, radii,
+Because all three come from the same JSON, the web app and both mini programs
+are guaranteed to share an identical palette, type scale, spacing rhythm, radii,
 shadows and motion. This is what structurally enforces design parity between the
-two surfaces (see docs/DESIGN_SYSTEM.md and ADR-0012).
+surfaces (see docs/DESIGN_SYSTEM.md and ADR-0012).
 
 Usage:
     python scripts/build_design_tokens.py            # write the generated files
@@ -32,6 +33,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 TOKENS_JSON = BASE_DIR / "static" / "design" / "tokens.json"
 TOKENS_CSS = BASE_DIR / "static" / "css" / "tokens.css"
 TOKENS_WXSS = BASE_DIR / "miniprogram" / "styles" / "tokens.wxss"
+WENQU_TOKENS_WXSS = BASE_DIR / "wenqu-miniprogram" / "styles" / "tokens.wxss"
 
 # `meta` carries documentation about the token file, not token values.
 NON_TOKEN_KEYS = {"meta"}
@@ -105,6 +107,7 @@ def _outputs(tokens: dict) -> dict[Path, str]:
     return {
         TOKENS_CSS: render_css(tokens),
         TOKENS_WXSS: render_wxss(tokens),
+        WENQU_TOKENS_WXSS: render_wxss(tokens),
     }
 
 
