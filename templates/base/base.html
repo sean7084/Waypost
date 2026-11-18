@@ -213,6 +213,27 @@
                         </li>
                         {% endif %}
 
+                        <!-- Wenqu Helpdesk Administration -->
+                        {% if user.can_manage_wenqu %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-water"></i> {% trans "Wenqu" %}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'wenqu:file_upload' %}">
+                                    <i class="fas fa-book"></i> {% trans "Knowledge Base" %}
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'wenqu:customer_list' %}">
+                                    <i class="fas fa-building"></i> {% trans "Customers" %}
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'wenqu:user_list' %}">
+                                    <i class="fas fa-users"></i> {% trans "Customer Users" %}
+                                </a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
                         <!-- System Administration -->
                         {% if user.is_superuser or user.can_manage_users %}
                         <li class="nav-item dropdown">
