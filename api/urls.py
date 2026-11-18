@@ -16,6 +16,10 @@ from .views_auth import (
 from .wenqu_auth_views import (
     WenquGetPhoneView, WenquUpdateUserView, WenquWxLoginView,
 )
+from .wenqu_views import (
+    WenquChatbotView, WenquChatRegenerateView, WenquChatSessionDetailView,
+    WenquChatSessionListView, WenquChatView,
+)
 from .inspection_views import StoreInspectionViewSet
 
 # Create router and register viewsets
@@ -45,6 +49,16 @@ urlpatterns = [
     path('wenqu/auth/wx_login', WenquWxLoginView.as_view(), name='wenqu-wx-login'),
     path('wenqu/auth/update_wx_user', WenquUpdateUserView.as_view(), name='wenqu-update-wx-user'),
     path('wenqu/auth/get-phone', WenquGetPhoneView.as_view(), name='wenqu-get-phone'),
+
+    # Wenqu customer chat surface (PR4). Paths mirror the helpdesk contract
+    # under the /api/v1/wenqu/ namespace; the protected-upload download also
+    # answers at the canonical /api/uploads/<path> (waypost/urls.py) because
+    # that is what wenqu.services.utils.file_store URLs point at.
+    path('wenqu/chatbot', WenquChatbotView.as_view(), name='wenqu-chatbot'),
+    path('wenqu/chat/sessions', WenquChatSessionListView.as_view(), name='wenqu-chat-sessions'),
+    path('wenqu/chat/sessions/<str:session_id>', WenquChatSessionDetailView.as_view(), name='wenqu-chat-session-detail'),
+    path('wenqu/chat', WenquChatView.as_view(), name='wenqu-chat'),
+    path('wenqu/chat/regenerate', WenquChatRegenerateView.as_view(), name='wenqu-chat-regenerate'),
 
     path('', include(router.urls)),
 ]
