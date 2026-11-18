@@ -274,11 +274,11 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 
 | Version | Date | Focus |
 |---------|------|-------|
+| v0.3.0 | November 2026 | Quotation Excel import with per-line review and rollback, RFQ LLM spend metering/cap, gated OSS media backend, deploy checkpoint + runner-drift hardening, debug-only security guards |
 | v0.2.0 | October 2026 | Store-inspection module + WeChat mini program, Waypost rebrand, token-driven UI with full zh-cn coverage, containerised production deployment |
 | v0.1.7 | May 2026 | Separate ServiceItem catalog + direct dispatch + hardware-only asset cleanup |
-| v0.1.6 | April 2026 | RFQ mailbox automation + quotation hardening + service items + workflow dashboard stock view |
 
-### Current Status (v0.2.0)
+### Current Status (v0.3.0)
 
 #### Fully Operational Features
 
@@ -305,6 +305,12 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 - **Enhanced Mobile Features** - Barcode scanning with Html5-QRCode
 - **REST API** - Full API endpoints at /api/v1/ with documentation at /docs/
 - **Quotation & Invoice Management System** - End-to-end quotation -> purchase -> delivery -> invoice -> dispatch workflow
+- **Quotation Excel Import** - Externally issued quotation workbooks import in batches: upload -> per-file/per-line preview -> explicit catalog mapping (existing item / create new / skip) -> one atomic confirm -> result page with ledger-based rollback. Unmatched lines and customers block confirmation until a human decides; per-line tax rates and float-noisy money cells are handled from the real HengJi template
+- **RFQ LLM Spend Guards** - Every language-model call is metered (`accounts.LlmCallRecord`), checked against a monthly budget before the request is built, and visible via `manage.py rfq_llm_usage`; provider config renamed to `RFQ_LLM_*` (legacy `MINIMAX_*` names read for one more release)
+- **Object-storage-ready Media** - Media backend is storage-neutral with derived thumbnails and ephemeral generated documents; an Aliyun OSS backend ships gated on all four `OSS_*` keys, so production stays on local disk until an operator runs the `docs/OSS_STORAGE.md` cutover
+- **Debug-only Security Guards** - The `dev-login/` admin route is registered only under `DEBUG` and the view refuses regardless of routing; `TEST_OUTBOUND_EMAIL_OVERRIDE` defaults to empty and is honoured only in debug, so a missing `.env` line can no longer redirect customer mail
+- **New-user zh-cn Defaults** - Both user forms preselect Simplified Chinese + Asia/Shanghai and offer the same curated IANA timezone dropdown, preserving any legacy zone
+- **Hardened Deploy Checkpoint** - `DB_CHECKPOINT_MODE=auto|compose|external|none` makes the pre-deploy restore point explicit (RDS-ready), a runner-drift gate refuses to deploy a stale host script, and `deploy.log` records which checkpoint each release took
 - **RFQ Mailbox Automation** - Inbox messages can be classified, reprocessed, linked to quotations, and surfaced as pending review work
 - **Authorized RFQ Sender Controls** - Company contacts can be flagged as approved sources for automatic quotation drafting
 - **Quotation Review & PDF Flow** - Quotations now store attention email, source RFQ linkage, review-required drafts, and create-download PDF behavior
@@ -348,7 +354,7 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 - **Product Price Lifecycle Tracking** - Unified prices enforce exactly one catalog target (`model` or `service_item`), preserve inactive history, and keep current rows unique per catalog item
 - **Stable Product Model Selection** - Product add/edit uses a native filtered selector to avoid browser-specific issues with custom dropdown widgets
 - **Mailbox Module** - Order-management users can configure IMAP/POP3 receive plus SMTP send settings, browse inbox/outbox views, and sync messages from settings-driven windows
-- **Automatic Mail Sync** - Mailboxes can auto-sync every 5 minutes during local `runserver`, with in-process locking to avoid SQLite contention
+- **Automatic Mail Sync** - Mailboxes can auto-sync every 5 minutes: a `runserver` thread in dev, and `manage.py sync_mailboxes` under a systemd timer (`docker/systemd/waypost-mailbox-sync.{service,timer}`) with a cross-process Redis lock in production
 - **Settings Consolidation** - Account settings now include mailbox controls and 2FA management actions in one place
 - **Workflow Hardening** - Quotation contact fallbacks, mailbox sync locking, admin edit validation, and translated admin-role display issues were fixed
 
@@ -371,6 +377,29 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 - `products.ProductPrice` - Unified price list for hardware models and service items
 - `assets.AssetActivityLog` / `assets.AssetFieldChange` - Field-level asset change tracking (replaces the retired `audit` app)
 - `inspections.*` - Store inspections: batches, stores, devices, Wi-Fi weak points, sign-off logs
+
+### v0.3.0 Migration Notes
+
+**Read this before deploying.** v0.3.0 adds 3 migration files across 2 apps:
+
+- `accounts/0024_llmcallrecord` — creates the RFQ metering table. Additive only; the
+  reverse drops an empty table, so this one is **not** a one-way door.
+- `inspections/0006_remove_photo_zip` — drops the retired `StoreInspection.photo_zip`
+  column. **One-way door:** reversing restores the column but not the deleted archives.
+- `inspections/0007_remove_storeinspection_inspections_locatio_f449d8_idx_and_more` —
+  adds `uniq_store_inspection_location_date_slot` on `(location, inspection_date, slot)`.
+  **Reversible in schema, irreversible in data**, and it **cannot apply while a duplicate
+  triple exists** — the container entrypoint migrates on start, so a leftover duplicate
+  means the app never comes up. Run the dry run against production first:
+  `python manage.py merge_duplicate_inspections` (no `--apply`), then decide on any
+  reported group before tagging (`docs/RELEASE_PROCEDURE.md` §6.1, §9.2b).
+
+Rollback for the data is therefore Tier 3 — restore the pre-deploy `pg_dump` — not
+`migrate <app> zero`. `ci-deploy.sh` takes that checkpoint automatically before the
+release, and the runner-drift gate refuses to deploy if the host's `docker/bin/*.sh`
+differs from the tag (re-dispatch with `reinstall_runner=true` to install them).
+
+The full list is in `CHANGELOG.md` → “Release Notes v0.3.0” → Migration Files Added.
 
 ### v0.2.0 Migration Notes
 
@@ -476,6 +505,7 @@ A complete business workflow for managing quotations, purchase orders, deliverie
 - Scope delivered in v0.1.6: mailbox RFQ classification/reprocessing with authorized-sender gating, separate `ServiceItem` catalog pricing, service-aware quotation and delivery handling, workflow-dashboard stock consolidation, and repo-local `.env` runtime loading.
 - Scope delivered in v0.1.7: dedicated service catalog adoption, direct-dispatch fulfillment for stock-covered quotations, service-aware delivery lines, and hardware-only cleanup across asset-facing pages.
 - Scope delivered in v0.2.0: store-inspection module (`inspections` app) and an offline-first WeChat mini program, the Waypost rebrand, a token-driven design system with complete zh-cn coverage, containerised ECS deployment with tag-promoted CI/CD, and Fernet encryption of mailbox/SMTP credentials.
+- Scope delivered in v0.3.0: quotation Excel import with per-line review and ledger rollback, RFQ LLM spend metering/cap/scheduling, a gated OSS media backend with derived thumbnails, RDS-aware deploy checkpointing plus a runner-drift gate, debug-only dev-login and mail-override guards, new-user zh-cn/Asia/Shanghai defaults, ADRs 0013–0020 and an operations runbook.
 - Core workflow stages: quotation (draft/sent/confirmed) -> direct dispatch or purchase conversion and receipt -> delivery dispatch and signed completion -> invoice batch import/recalculation/document generation -> email dispatch tracking.
 - Key data extensions: `products.ProductPrice`, `customers.CustomerProfile`, `quotations.Quotation*`, `purchases.PurchaseOrder*`, `deliveries.DeliveryOrder*`, `invoices.WeeklyOrderBatch`, `invoices.InvoiceInfo*`, `invoices.EmailDispatch`, `invoices.WorkflowStatusAudit`.
 - Key automation paths: quotation HTML-PDF generation, delivery HTML-PDF generation, invoice information template generation with PDF fallback, bulk weekly Sharepoint import, mailbox inbox/outbox sync, RFQ classification/draft quotation generation, and SMTP dispatch caching.
