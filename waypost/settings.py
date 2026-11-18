@@ -553,6 +553,15 @@ WENQU_PRIVATE_MEDIA_ROOT = os.environ.get('WENQU_PRIVATE_MEDIA_ROOT') or str(BAS
 WENQU_KB_SOURCES_DIR = os.environ.get('WENQU_KB_SOURCES_DIR') or str(BASE_DIR / 'kb_sources')
 WENQU_TRIAGE_ENABLED = _env_bool('WENQU_TRIAGE_ENABLED', True)
 
+# Legacy helpdesk data import (PR7, wenqu/management/commands/import_helpdesk.py).
+# Both empty in development; the command refuses to run without a DSN. The DSN
+# points at the standalone helpdesk's PostgreSQL 17 (pgvector/pgvector:pg17);
+# the uploads dir is the legacy blob root (prod:
+# /home/sean/helpdesk-rootless-data-v3/uploads). Set them only for the migration
+# window - the command opens the source read-only. See docs/DEPLOYMENT.md.
+WENQU_LEGACY_DSN = os.environ.get('WENQU_LEGACY_DSN', '').strip()
+WENQU_LEGACY_UPLOADS_DIR = os.environ.get('WENQU_LEGACY_UPLOADS_DIR', '').strip()
+
 # Wenqu cache registries (PR4): TTS stream playback + Volcengine ASR audio shares
 # live in django.core.cache (Redis prod / locmem dev) with the helpdesk's 15-minute
 # TTL. The speak/stream IP throttle is blast-radius protection only (XFF is
