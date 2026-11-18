@@ -86,7 +86,7 @@ def customer_id(user) -> Optional[int]:
     return getattr(_profile(user), 'customer_id', None)
 
 
-def _openid(user) -> Optional[str]:
+def customer_openid(user) -> Optional[str]:
     identity = (
         WeChatIdentity.objects.filter(user=user, appid=settings.WECHAT_WENQU_APPID)
         .values_list('openid', flat=True)
@@ -97,7 +97,7 @@ def _openid(user) -> Optional[str]:
 
 def external_user_id(user) -> str:
     profile = _profile(user)
-    return profile.external_id or (_openid(user) or '')
+    return profile.external_id or (customer_openid(user) or '')
 
 
 # --- greeting / sessions ----------------------------------------------------
@@ -242,7 +242,7 @@ def _upload_relative_path(upload: UploadFile) -> str:
     return name
 
 
-def _upload_public_url(upload: Optional[UploadFile]) -> str:
+def upload_public_url(upload: Optional[UploadFile]) -> str:
     if upload is None:
         return ''
     relative = _upload_relative_path(upload)
@@ -274,7 +274,7 @@ def _frontend_audio_content(payload: Any, upload_lookup: Dict[str, UploadFile]) 
     content = payload if isinstance(payload, dict) else {}
     audio_file_id = str(content.get('audio_file_id') or content.get('file_id') or '').strip()
     upload = upload_lookup.get(audio_file_id)
-    audio_url = _upload_public_url(upload)
+    audio_url = upload_public_url(upload)
 
     result: Dict[str, Any] = {'playable': bool(audio_url)}
     if audio_url:
@@ -289,7 +289,7 @@ def _frontend_audio_content(payload: Any, upload_lookup: Dict[str, UploadFile]) 
 
 
 def _frontend_image_message(*, message_id: str, role: str, upload: Optional[UploadFile]) -> Optional[Dict[str, Any]]:
-    image_url = _upload_public_url(upload)
+    image_url = upload_public_url(upload)
     if not image_url:
         return None
     return {
@@ -611,7 +611,7 @@ def moderate_user_input(user, text: str) -> None:
     """Reject violating user text before it is stored or handed to the model."""
     if not text.strip():
         return
-    suggest = moderation.check_text(text, _openid(user))
+    suggest = moderation.check_text(text, customer_openid(user))
     if moderation.should_block(suggest):
         logger.warning('Blocked user input from user %s (verdict=%s)', user.id, suggest.value)
         raise ChatInputBlocked(_('您的消息包含不适宜内容，已停止处理，请修改后重试'))
@@ -621,7 +621,7 @@ def moderate_assistant_reply(user, reply_text: str, meta: Dict[str, Any]) -> str
     """Swap a violating model reply for the substitute text before it is stored."""
     if not reply_text.strip():
         return reply_text
-    suggest = moderation.check_text(reply_text, _openid(user))
+    suggest = moderation.check_text(reply_text, customer_openid(user))
     if moderation.should_block(suggest):
         logger.warning('Replaced assistant reply for user %s (verdict=%s)', user.id, suggest.value)
         meta['content_moderation'] = 'replaced'

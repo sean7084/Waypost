@@ -10,12 +10,15 @@ identity model:
   password, a ``WenquProfile`` and the ``WeChatIdentity`` row, all atomically.
 * every minted access token carries ``tv = profile.token_version``; bumping the
   column invalidates older tokens (enforced by api.wenqu_authentication).
+* get_phone_number completes the PR2 get-phone stub: wenqu appid access_token
+  (wechat_token cache) + WeChat getuserphonenumber -> WenquProfile.mobile.
 
 The view layer (api.wenqu_auth_views) translates the domain exceptions below
 into HTTP status codes; this module never imports DRF responses.
 """
 import logging
 
+import requests
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -24,8 +27,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.models import User, WeChatIdentity
 from accounts.wechat import code2session
 from wenqu.models import WenquProfile
+from wenqu.services.utils import wechat_token
 
 logger = logging.getLogger(__name__)
+
+GET_PHONE_URL = 'https://api.weixin.qq.com/wxa/business/getuserphonenumber'
+_PHONE_TIMEOUT_SECONDS = 10.0
 
 
 class WenquAuthConflict(Exception):
@@ -38,6 +45,14 @@ class WenquAccountDisabled(Exception):
 
 class WenquOpenIDMismatch(Exception):
     """update_wx_user was given an openid that is not this customer's (HTTP 403)."""
+
+
+class WenquPhoneUnavailable(Exception):
+    """The wenqu appid access_token could not be obtained (HTTP 500)."""
+
+
+class WenquPhoneError(Exception):
+    """WeChat refused the getuserphonenumber exchange (HTTP 400)."""
 
 
 def _tokens_for_profile(profile):
@@ -168,3 +183,39 @@ def update_wx_user(user, payload):
     if updated:
         profile.save(update_fields=updated + ['updated_at'])
     return _login_response(profile, 'ok')
+
+
+def get_phone_number(user, code):
+    """Exchange a getPhoneNumber code for the customer's mobile (main.py:3193).
+
+    Uses the *wenqu* appid access_token from the shared wechat_token cache
+    (cgi-bin/token is quota-limited), calls WeChat getuserphonenumber, and
+    persists the result on WenquProfile.mobile. Returns the phone string;
+    raises WenquPhoneUnavailable (token/config) or WenquPhoneError (WeChat
+    refused the code) for the view to translate.
+    """
+    try:
+        access_token = wechat_token.get_access_token()
+    except wechat_token.WeChatTokenUnavailable as exc:
+        raise WenquPhoneUnavailable(str(exc)) from exc
+    if not access_token:
+        raise WenquPhoneUnavailable(_('微信配置缺失'))
+
+    response = requests.post(
+        GET_PHONE_URL, params={'access_token': access_token}, json={'code': code},
+        timeout=_PHONE_TIMEOUT_SECONDS,
+    )
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise WenquPhoneError(_('获取手机号失败')) from exc
+
+    phone = (payload.get('phone_info') or {}).get('phoneNumber')
+    if not phone:
+        logger.warning('getuserphonenumber refused code (errcode=%s)', payload.get('errcode'))
+        raise WenquPhoneError(_('获取手机号失败'))
+
+    profile = user.wenqu_profile
+    profile.mobile = phone
+    profile.save(update_fields=['mobile', 'updated_at'])
+    return phone

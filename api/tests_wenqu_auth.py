@@ -128,11 +128,36 @@ class WenquAuthEndpointTests(TestCase):
         res = self.client.post(_UPDATE_URL, {'userInfo': {'nickName': 'N'}}, format='json')
         self.assertEqual(res.status_code, 401)
 
-    def test_get_phone_stub(self):
+    def test_get_phone_success(self):
+        user, profile = _make_customer()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_access_token(user)}')
+        with mock.patch('api.wenqu_auth_views.get_phone_number', return_value='13800138000') as phone_mock:
+            res = self.client.post(_GET_PHONE_URL, {'code': 'phone-code'}, format='json')
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertEqual(res.data, {'status': 'success', 'phone': '13800138000'})
+        phone_mock.assert_called_once_with(user, 'phone-code')
+
+    def test_get_phone_missing_code(self):
         user, _profile = _make_customer()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_access_token(user)}')
-        res = self.client.post(_GET_PHONE_URL, {'code': 'phone-code'}, format='json')
-        self.assertEqual(res.status_code, 501)
+        res = self.client.post(_GET_PHONE_URL, {}, format='json')
+        self.assertEqual(res.status_code, 400)
+
+    def test_get_phone_wechat_refused(self):
+        from wenqu.services.auth import WenquPhoneError
+        user, _profile = _make_customer()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_access_token(user)}')
+        with mock.patch('api.wenqu_auth_views.get_phone_number', side_effect=WenquPhoneError('获取手机号失败')):
+            res = self.client.post(_GET_PHONE_URL, {'code': 'bad'}, format='json')
+        self.assertEqual(res.status_code, 400)
+
+    def test_get_phone_token_unavailable(self):
+        from wenqu.services.auth import WenquPhoneUnavailable
+        user, _profile = _make_customer()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_access_token(user)}')
+        with mock.patch('api.wenqu_auth_views.get_phone_number', side_effect=WenquPhoneUnavailable('微信配置缺失')):
+            res = self.client.post(_GET_PHONE_URL, {'code': 'phone-code'}, format='json')
+        self.assertEqual(res.status_code, 500)
 
     def test_get_phone_unauthenticated(self):
         res = self.client.post(_GET_PHONE_URL, {'code': 'phone-code'}, format='json')

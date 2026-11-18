@@ -1,14 +1,12 @@
 """REST endpoints for Wenqu (问渠) customer WeChat authentication.
 
-Mounted under /api/v1/wenqu/auth/ (see api.urls). Only the auth surface ships in
-PR2; chat / upload / KB / triage business endpoints arrive in PR4.
+Mounted under /api/v1/wenqu/auth/ (see api.urls).
 
 * wx_login       - unauthenticated; exchanges a wx.login code for a customer
                    session, auto-registering on first use.
 * update_wx_user - customer-authenticated; refreshes nickname/avatar/mobile.
-* get-phone      - customer-authenticated stub; the WeChat getuserphonenumber
-                   exchange (needs the wenqu appid access_token manager) is
-                   completed in PR4.
+* get-phone      - customer-authenticated; exchanges a getPhoneNumber code via
+                   the wenqu appid access_token (completed in PR4).
 """
 from django.utils.translation import gettext_lazy as _
 from rest_framework.permissions import AllowAny
@@ -20,6 +18,9 @@ from wenqu.services.auth import (
     WenquAccountDisabled,
     WenquAuthConflict,
     WenquOpenIDMismatch,
+    WenquPhoneError,
+    WenquPhoneUnavailable,
+    get_phone_number,
     update_wx_user,
     wx_login,
 )
@@ -53,6 +54,7 @@ class WenquUpdateUserView(APIView):
 
     authentication_classes = [WenquJWTAuthentication]
     permission_classes = [WenquCustomerPermission]
+    pagination_class = None
 
     def post(self, request):
         try:
@@ -63,20 +65,24 @@ class WenquUpdateUserView(APIView):
 
 
 class WenquGetPhoneView(APIView):
-    """POST {code} -> {status, phone}. STUB: completed in PR4.
+    """POST {code} -> {status: 'success', phone} (helpdesk main.py:3193).
 
-    The real flow calls WeChat ``wxa/business/getuserphonenumber`` with an
-    access_token minted from the *wenqu* appid (cgi-bin/token, quota-limited and
-    therefore cached). That token manager is part of the services port (PR3) and
-    the endpoint is wired up in PR4; until then this returns 501 so the client
-    can degrade gracefully rather than hit a 404.
+    The exchange runs on the *wenqu* appid access_token (wechat_token cache,
+    cgi-bin/token is quota-limited) and persists the number on the profile.
     """
 
     authentication_classes = [WenquJWTAuthentication]
     permission_classes = [WenquCustomerPermission]
+    pagination_class = None
 
     def post(self, request):
-        return Response(
-            {'error': _('Phone number retrieval is not implemented yet (PR4).')},
-            status=501,
-        )
+        code = request.data.get('code')
+        if not code:
+            return Response({'detail': _('获取手机号失败')}, status=400)
+        try:
+            phone = get_phone_number(request.user, code)
+        except WenquPhoneUnavailable as exc:
+            return Response({'detail': str(exc)}, status=500)
+        except WenquPhoneError as exc:
+            return Response({'detail': str(exc)}, status=400)
+        return Response({'status': 'success', 'phone': phone}, status=200)

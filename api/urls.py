@@ -19,7 +19,9 @@ from .wenqu_auth_views import (
 from .wenqu_views import (
     WenquChatbotView, WenquChatRegenerateStreamView, WenquChatRegenerateView,
     WenquChatSessionDetailView, WenquChatSessionListView, WenquChatStreamView,
-    WenquChatView,
+    WenquChatView, WenquFileUploadView, WenquSpeakStreamDownloadView,
+    WenquSpeakStreamView, WenquSpeakView, WenquTranscribeView,
+    WenquUploadDownloadView,
 )
 from .inspection_views import StoreInspectionViewSet
 
@@ -62,6 +64,14 @@ urlpatterns = [
     path('wenqu/chat/regenerate', WenquChatRegenerateView.as_view(), name='wenqu-chat-regenerate'),
     path('wenqu/chat/stream', WenquChatStreamView.as_view(), name='wenqu-chat-stream'),
     path('wenqu/chat/regenerate/stream', WenquChatRegenerateStreamView.as_view(), name='wenqu-chat-regenerate-stream'),
+    path('wenqu/files/upload', WenquFileUploadView.as_view(), name='wenqu-file-upload'),
+    path('wenqu/transcribe', WenquTranscribeView.as_view(), name='wenqu-transcribe'),
+    path('wenqu/speak', WenquSpeakView.as_view(), name='wenqu-speak'),
+    path('wenqu/speak/stream', WenquSpeakStreamView.as_view(), name='wenqu-speak-stream'),
+    path('wenqu/speak/stream/<str:stream_id>', WenquSpeakStreamDownloadView.as_view(), name='wenqu-speak-stream-download'),
+    # Namespaced alias of the canonical /api/uploads/<path> download (waypost/urls.py);
+    # both serve the same protected blobs.
+    path('wenqu/uploads/<path:relative_path>', WenquUploadDownloadView.as_view(), name='wenqu-upload-download'),
 
     path('', include(router.urls)),
 ]

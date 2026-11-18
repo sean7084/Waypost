@@ -553,6 +553,14 @@ WENQU_PRIVATE_MEDIA_ROOT = os.environ.get('WENQU_PRIVATE_MEDIA_ROOT') or str(BAS
 WENQU_KB_SOURCES_DIR = os.environ.get('WENQU_KB_SOURCES_DIR') or str(BASE_DIR / 'kb_sources')
 WENQU_TRIAGE_ENABLED = _env_bool('WENQU_TRIAGE_ENABLED', True)
 
+# Wenqu cache registries (PR4): TTS stream playback + Volcengine ASR audio shares
+# live in django.core.cache (Redis prod / locmem dev) with the helpdesk's 15-minute
+# TTL. The speak/stream IP throttle is blast-radius protection only (XFF is
+# spoofable); per-customer can_chat/can_upload flags are the real gate.
+WENQU_REGISTRY_TTL_SECONDS = int(os.environ.get('WENQU_REGISTRY_TTL_SECONDS', '900'))
+WENQU_SPEAK_STREAM_IP_WINDOW_SECONDS = int(os.environ.get('WENQU_SPEAK_STREAM_IP_WINDOW_SECONDS', '900'))
+WENQU_SPEAK_STREAM_IP_MAX_HITS = int(os.environ.get('WENQU_SPEAK_STREAM_IP_MAX_HITS', '30'))
+
 # ---------------------------------------------------------------------------
 # Wenqu LLM providers, content moderation and password-reset email (PR3).
 #

@@ -11,7 +11,9 @@ only fires when the claim is present.
 ``WenquCustomerPermission`` gates on the *presence* of a wenqu_profile, which is
 what distinguishes an external customer from a staff user. The finer-grained
 ``CanChat`` / ``CanUpload`` subclasses additionally honour the profile flags;
-business views (PR4) pick the one they need.
+business views (PR4) pick the one they need. ``WenquQueryTokenAuthentication``
+adds ``?access_token=`` support for media playback routes (WeChat audio APIs
+cannot set headers) while keeping the same tv enforcement.
 """
 from django.utils.translation import gettext_lazy as _
 from rest_framework.permissions import BasePermission
@@ -35,6 +37,26 @@ class WenquJWTAuthentication(JWTAuthentication):
                     code='token_version_mismatch',
                 )
         return user, validated_token
+
+
+class WenquQueryTokenAuthentication(WenquJWTAuthentication):
+    """Bearer auth for media routes that cannot set an Authorization header.
+
+    WeChat's audio playback APIs accept a URL only, so the client appends
+    ``?access_token=<jwt>`` (helpdesk app/auth.py:126 does the same). Synthesizing
+    the bearer header from the query parameter reuses the parent's entire
+    validation path - signature, expiry, user lookup AND the customer ``tv``
+    check - so a query token is exactly as revocable as a header token. A real
+    Authorization header always wins when both are present.
+    """
+
+    def get_header(self, request):
+        header = super().get_header(request)
+        if header is None:
+            token = str(request.query_params.get('access_token') or '').strip()
+            if token:
+                return f'Bearer {token}'.encode('utf-8')
+        return header
 
 
 class WenquCustomerPermission(BasePermission):
