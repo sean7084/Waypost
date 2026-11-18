@@ -23,6 +23,7 @@ norecursedirs = [
     "node_modules",
     "static",
     "template_files",
+    "wenqu-miniprogram",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
@@ -49,6 +50,7 @@ omit = [
     "waypost/asgi.py",
     "waypost/wsgi.py",
     "*/apps.py",
+    "wenqu-miniprogram/*",
 ]
 
 [tool.coverage.report]
@@ -105,6 +107,7 @@ extend-exclude = [
     "migrations",
     "miniprogram",
     "template_files",
+    "wenqu-miniprogram",
 ]
 
 [tool.ruff.lint]
