@@ -1,0 +1,81 @@
+<view class="composer-shell">
+  <view wx:if="{{voiceMode}}" class="record-window">
+    <view class="record-overlay">
+      <view class="record-overlay-bg" style="opacity:{{recordBackdropOpacity}}"></view>
+
+      <view class="record-action record-cancel" hover-class="record-action-hover" bindtap="cancelVoiceRecord">
+        <text class="record-action-icon">×</text>
+      </view>
+
+      <view class="record-center">
+        <view class="meter-track">
+          <view
+            wx:for="{{meterBars}}"
+            wx:for-item="bar"
+            wx:key="id"
+            class="meter-bar"
+            style="height:{{bar.height}};opacity:{{bar.opacity}};transform:{{bar.transform}}"
+          ></view>
+        </view>
+        <view class="record-meta">
+          <text class="record-label">{{recording ? '正在聆听' : '准备发送'}}</text>
+          <text class="record-time">{{recordingDurationLabel}}</text>
+        </view>
+      </view>
+
+      <view
+        class="record-action record-send {{!recording || sending ? 'record-action-disabled' : ''}}"
+        hover-class="record-action-hover"
+        bindtap="finishVoiceRecord"
+      >
+        <text class="record-action-icon">↑</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="composer-window">
+    <view class="input-window">
+      <textarea
+        class="text-input"
+        value="{{text}}"
+        confirm-type="send"
+        auto-height
+        maxlength="-1"
+        show-confirm-bar="{{false}}"
+        placeholder="请输入信息"
+        placeholder-class="text-placeholder"
+        bindinput="handleInput"
+        bindconfirm="emitText"
+      ></textarea>
+    </view>
+
+    <view class="entry-button media-entry" hover-class="entry-button-hover" bindtap="openMore">
+      <view class="icon-plus">
+        <view class="icon-plus-horizontal"></view>
+        <view class="icon-plus-vertical"></view>
+      </view>
+    </view>
+
+    <view wx:if="{{!hasTextDraft}}" class="entry-button voice-entry" hover-class="entry-button-hover" bindtap="toggleVoiceMode">
+      <view class="icon-voice">
+        <view class="icon-voice-bar icon-voice-bar-a"></view>
+        <view class="icon-voice-bar icon-voice-bar-b"></view>
+        <view class="icon-voice-bar icon-voice-bar-c"></view>
+        <view class="icon-voice-bar icon-voice-bar-d"></view>
+      </view>
+    </view>
+
+    <view
+      wx:if="{{hasTextDraft}}"
+      class="send-button {{hasTextDraft && !sending ? 'send-button-active' : 'send-button-disabled'}}"
+      hover-class="send-button-hover"
+      bindtap="emitText"
+    >
+      <view class="icon-send">
+        <view class="icon-send-stem"></view>
+        <view class="icon-send-head icon-send-head-left"></view>
+        <view class="icon-send-head icon-send-head-right"></view>
+      </view>
+    </view>
+  </view>
+</view>

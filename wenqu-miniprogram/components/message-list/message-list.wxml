@@ -1,0 +1,118 @@
+<scroll-view class="list-scroll" scroll-y scroll-into-view="{{scrollIntoView}}" lower-threshold="50">
+  <view class="list">
+    <view
+      wx:for="{{messages}}"
+      wx:key="id"
+      id="m_{{index}}"
+      class="row {{item.role === 'user' ? 'right' : 'left'}}"
+    >
+      <view class="stack">
+        <view class="bubble {{item.role === 'user' ? 'bubble-user' : 'bubble-assistant'}}">
+          <block wx:if="{{item.type === 'text'}}">
+            <text class="text">{{item.content}}</text>
+            <view wx:if="{{item.role === 'assistant' && item.content}}" class="ai-generated-row">
+              <text class="ai-generated-tag">AI生成</text>
+            </view>
+          </block>
+
+          <block wx:elif="{{item.type === 'image'}}">
+            <image
+              class="img"
+              src="{{item.content.filePath}}"
+              mode="aspectFill"
+              data-url="{{item.content.filePath}}"
+              bindtap="handlePreviewImage"
+            />
+          </block>
+
+          <block wx:elif="{{item.type === 'audio'}}">
+            <view
+              wx:if="{{item.content.filePath && item.content.playable !== false && !brokenAudioMap[item.id]}}"
+              class="audio"
+              hover-class="audio-hover"
+              data-id="{{item.id}}"
+              data-src="{{item.content.filePath}}"
+              bindtap="handleAudioTap"
+            >
+              <view class="audio-glyph {{playingAudioId === item.id ? 'audio-glyph-playing' : ''}}">
+                <view class="audio-glyph-bar"></view>
+                <view class="audio-glyph-bar audio-glyph-bar-tall"></view>
+                <view class="audio-glyph-bar"></view>
+              </view>
+              <text class="audio-label">{{playingAudioId === item.id ? '停止播放' : '播放语音'}}</text>
+              <text wx:if="{{item.content.duration > 0}}" class="audio-duration">{{item.content.duration}}s</text>
+            </view>
+            <text wx:elif="{{item.content.transcription || item.content.transcript}}" class="text">
+              {{item.content.transcription || item.content.transcript}}
+            </text>
+            <text wx:else class="text text-muted">
+              {{item.content.duration > 0 ? '语音消息 (' + item.content.duration + 's)' : '语音消息'}}
+            </text>
+          </block>
+
+          <block wx:elif="{{item.type === 'form'}}">
+            <text class="text">{{item.content.category}}: {{item.content.detail}}</text>
+          </block>
+        </view>
+
+        <view wx:if="{{item.role === 'assistant' && item.attachments.length}}" class="triage-attachments">
+          <view wx:for="{{item.attachments}}" wx:for-item="att" wx:key="url" class="triage-attachment">
+            <image
+              class="triage-attachment-img"
+              src="{{att.url}}"
+              mode="widthFix"
+              data-url="{{att.url}}"
+              bindtap="handlePreviewImage"
+            />
+            <text wx:if="{{att.caption}}" class="triage-attachment-caption">{{att.caption}}</text>
+          </view>
+        </view>
+
+        <view
+          wx:if="{{showLatestActions && item.role === 'assistant' && item.quickReplies.length && item.id === latestAssistantId}}"
+          class="quick-replies"
+        >
+          <view
+            wx:for="{{item.quickReplies}}"
+            wx:for-item="qr"
+            wx:key="value"
+            class="quick-reply-chip"
+            hover-class="quick-reply-chip-hover"
+            data-label="{{qr.label_zh}}"
+            data-value="{{qr.value}}"
+            bindtap="handleQuickReply"
+          >
+            <text class="quick-reply-text">{{qr.label_zh}}</text>
+          </view>
+        </view>
+
+        <view
+          wx:if="{{showLatestActions && item.role === 'assistant' && item.type === 'text' && item.content && item.id === latestAssistantId}}"
+          class="assistant-actions"
+        >
+          <view
+            class="action-chip {{assistantActionState.loadingMessageId === item.id ? 'action-chip-loading' : (assistantActionState.activeMessageId === item.id ? 'action-chip-playing' : '')}}"
+            data-action="speak"
+            data-id="{{item.id}}"
+            bindtap="handleAssistantAction"
+          >
+            <image class="action-icon" src="/static/icons/message-action-speak.svg" mode="aspectFit" />
+            <view
+              wx:if="{{assistantActionState.loadingMessageId === item.id || assistantActionState.activeMessageId === item.id}}"
+              class="action-status-dot {{assistantActionState.loadingMessageId === item.id ? 'action-status-dot-loading' : 'action-status-dot-playing'}}"
+            ></view>
+          </view>
+          <view class="action-chip" data-action="like" data-id="{{item.id}}" bindtap="handleAssistantAction">
+            <image class="action-icon" src="/static/icons/message-action-like.svg" mode="aspectFit" />
+          </view>
+          <view class="action-chip" data-action="dislike" data-id="{{item.id}}" bindtap="handleAssistantAction">
+            <image class="action-icon" src="/static/icons/message-action-dislike.svg" mode="aspectFit" />
+          </view>
+          <view class="action-chip" data-action="regenerate" data-id="{{item.id}}" bindtap="handleAssistantAction">
+            <image class="action-icon" src="/static/icons/message-action-regenerate.svg" mode="aspectFit" />
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</scroll-view>

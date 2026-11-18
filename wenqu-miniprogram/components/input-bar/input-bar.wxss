@@ -1,0 +1,258 @@
+.composer-shell {
+  width: 100%;
+}
+
+.composer-window,
+.record-window {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.composer-window {
+  position: relative;
+  gap: var(--wp-space-2);
+  min-height: 54rpx;
+  padding: var(--wp-space-3);
+  overflow: hidden;
+  border-radius: var(--wp-radius-xl);
+  background: var(--wp-color-neutral-800);
+  box-shadow: var(--wp-shadow-2);
+}
+
+.record-window {
+  position: relative;
+  padding: 0;
+}
+
+.record-overlay {
+  position: relative;
+  width: 100%;
+  min-height: 108rpx;
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-3);
+  box-sizing: border-box;
+  padding: var(--wp-space-3);
+  overflow: hidden;
+  border-radius: var(--wp-radius-pill);
+  background: var(--wp-color-neutral-800);
+  box-shadow: var(--wp-shadow-2);
+}
+
+.record-overlay-bg {
+  position: absolute;
+  left: 50%;
+  top: var(--wp-space-2);
+  bottom: var(--wp-space-2);
+  width: 58%;
+  transform: translateX(-50%);
+  border-radius: var(--wp-radius-pill);
+  background: var(--wp-color-primary);
+}
+
+/* --- text entry ---------------------------------------------------------- */
+.input-window {
+  position: relative;
+  z-index: var(--wp-z-raised);
+  flex: 1;
+  min-width: 0;
+}
+
+.text-input {
+  width: 100%;
+  min-height: 48rpx;
+  max-height: 240rpx;
+  font-size: var(--wp-font-size-base);
+  line-height: var(--wp-font-line-base);
+  color: var(--wp-color-text-inverse);
+}
+
+.text-placeholder {
+  color: var(--wp-color-neutral-400);
+}
+
+/* --- round entry / send buttons ------------------------------------------ */
+.entry-button,
+.record-action,
+.send-button {
+  position: relative;
+  z-index: var(--wp-z-raised);
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--wp-radius-circle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.entry-button {
+  background: var(--wp-color-neutral-700);
+}
+
+.entry-button-hover {
+  background: var(--wp-color-neutral-500);
+}
+
+.icon-plus {
+  position: relative;
+  width: 28rpx;
+  height: 28rpx;
+}
+
+.icon-plus-horizontal,
+.icon-plus-vertical {
+  position: absolute;
+  background: var(--wp-color-text-inverse);
+  border-radius: var(--wp-radius-pill);
+}
+
+.icon-plus-horizontal {
+  left: 0;
+  top: 12rpx;
+  width: 28rpx;
+  height: 4rpx;
+}
+
+.icon-plus-vertical {
+  left: 12rpx;
+  top: 0;
+  width: 4rpx;
+  height: 28rpx;
+}
+
+.icon-voice {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  height: 30rpx;
+}
+
+.icon-voice-bar {
+  width: 4rpx;
+  border-radius: var(--wp-radius-pill);
+  background: var(--wp-color-text-inverse);
+}
+
+.icon-voice-bar-a { height: 12rpx; }
+.icon-voice-bar-b { height: 24rpx; }
+.icon-voice-bar-c { height: 30rpx; }
+.icon-voice-bar-d { height: 18rpx; }
+
+.send-button-active {
+  background: var(--wp-color-primary);
+}
+
+.send-button-hover {
+  background: var(--wp-color-primary-hover);
+}
+
+/* Disabled is a neutral fill at full opacity, never an opacity dim. */
+.send-button-disabled {
+  background: var(--wp-color-neutral-500);
+}
+
+.icon-send {
+  position: relative;
+  width: 28rpx;
+  height: 28rpx;
+}
+
+.icon-send-stem {
+  position: absolute;
+  left: 12rpx;
+  top: 4rpx;
+  width: 4rpx;
+  height: 24rpx;
+  border-radius: var(--wp-radius-pill);
+  background: var(--wp-color-text-inverse);
+}
+
+.icon-send-head {
+  position: absolute;
+  top: 4rpx;
+  width: 4rpx;
+  height: 14rpx;
+  border-radius: var(--wp-radius-pill);
+  background: var(--wp-color-text-inverse);
+}
+
+.icon-send-head-left {
+  left: 7rpx;
+  transform: rotate(45deg);
+}
+
+.icon-send-head-right {
+  left: 17rpx;
+  transform: rotate(-45deg);
+}
+
+/* --- record window ------------------------------------------------------- */
+.record-action {
+  background: var(--wp-color-neutral-700);
+}
+
+.record-action-hover {
+  background: var(--wp-color-neutral-500);
+}
+
+.record-action-disabled {
+  background: var(--wp-color-neutral-500);
+}
+
+.record-cancel {
+  background: var(--wp-color-danger);
+}
+
+.record-send {
+  background: var(--wp-color-primary);
+}
+
+.record-action-icon {
+  color: var(--wp-color-text-inverse);
+  font-size: var(--wp-font-size-xl);
+  line-height: 1;
+}
+
+.record-center {
+  position: relative;
+  z-index: var(--wp-z-raised);
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wp-space-1);
+}
+
+.meter-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  height: 76rpx;
+}
+
+.meter-bar {
+  width: 6rpx;
+  border-radius: var(--wp-radius-pill);
+  background: var(--wp-color-text-inverse);
+}
+
+.record-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--wp-space-2);
+}
+
+.record-label {
+  font-size: var(--wp-font-size-xs);
+  color: var(--wp-color-text-inverse);
+}
+
+.record-time {
+  font-size: var(--wp-font-size-xs);
+  color: var(--wp-color-neutral-300);
+  font-family: var(--wp-font-family-mono);
+}
