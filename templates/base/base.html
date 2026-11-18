@@ -220,6 +220,9 @@
                                 <i class="fas fa-water"></i> {% trans "Wenqu" %}
                             </a>
                             <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'wenqu:chatbot' %}">
+                                    <i class="fas fa-comments"></i> {% trans "Chatbot" %}
+                                </a></li>
                                 <li><a class="dropdown-item" href="{% url 'wenqu:file_upload' %}">
                                     <i class="fas fa-book"></i> {% trans "Knowledge Base" %}
                                 </a></li>

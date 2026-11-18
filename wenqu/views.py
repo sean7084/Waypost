@@ -25,6 +25,7 @@ No FieldFile path resolution or MEDIA_ROOT access anywhere (repo-hygiene gate).
 """
 from __future__ import annotations
 
+import json
 import logging
 import mimetypes
 import os
@@ -44,7 +45,12 @@ from django.views.generic import (
 )
 
 from wenqu.forms import CustomerForm, KBUploadForm, WenquProfileForm, WenquUserCreateForm
-from wenqu.models import Customer, WenquProfile
+from wenqu.models import Customer, Message, WenquProfile
+from wenqu.services import admin_chat, sse
+from wenqu.services.chat import (
+    ChatError, ChatInputBlocked, ChatSessionNotFound, RegenerateConflict, RegenerateUnavailable,
+    resolve_user_chat_session, stream_start_meta,
+)
 from wenqu.services.kb import ingest
 from wenqu.services.kb.paths import ensure_sources_root, resolve_stored_path
 from wenqu.services.utils.file_store import delete_file_if_exists, kb_document_display_name
@@ -424,3 +430,154 @@ class WenquKBDocumentDeleteView(WenquAdminMixin, View):
             'message': str(_('Deleted %(name)s.') % {'name': display_name}),
             'documents': ingest.list_customer_documents(customer_id=customer_id),
         })
+
+
+# --- chatbot (staff PC console) ------------------------------------------------
+#
+# Session-authenticated admin views, NOT the customer API: those endpoints pin
+# WenquJWTAuthentication + WenquCustomerPermission (a WenquProfile and a live tv
+# claim), which staff accounts do not have. The console therefore calls the
+# shared services directly through wenqu.services.admin_chat (no identification
+# branch, global KB scoping) and streams with the same wenqu.services.sse sync
+# generators the customer SSE endpoints use. CSRF stays on: the page JS sends
+# the X-CSRFToken header with every POST.
+
+
+def _chat_error_response(exc: ChatError) -> JsonResponse:
+    """Same status mapping as api.wenqu_views.chat_error_response, JSON shape."""
+    if isinstance(exc, ChatInputBlocked):
+        return JsonResponse({'detail': str(exc)}, status=400)
+    if isinstance(exc, ChatSessionNotFound):
+        return JsonResponse({'detail': str(exc)}, status=404)
+    if isinstance(exc, RegenerateConflict):
+        return JsonResponse({'detail': str(exc)}, status=409)
+    if isinstance(exc, RegenerateUnavailable):
+        return JsonResponse({'detail': str(exc)}, status=422)
+    raise exc
+
+
+def _json_payload(request) -> Optional[dict]:
+    try:
+        payload = json.loads(request.body or b'{}')
+    except (ValueError, UnicodeDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+class WenquChatbotView(WenquAdminMixin, TemplateView):
+    """The PC chat console: session sidebar + history + composer."""
+
+    template_name = 'wenqu/chatbot.html'
+
+    def get(self, request, *args, **kwargs):
+        force_new = str(request.GET.get('force_new') or '').strip().lower() in {'1', 'true', 'yes', 'on'}
+        requested = str(request.GET.get('session_id') or '').strip() or None
+        try:
+            state = admin_chat.load_admin_chat_state(request.user, session_id=requested, force_new=force_new)
+        except ChatSessionNotFound:
+            messages.error(request, _('Chat session not found.'))
+            return redirect('wenqu:chatbot')
+        context = self.get_context_data(**kwargs)
+        context.update({
+            'session_id': state['session_id'],
+            'greeting': state['greeting'],
+            'chat_history': state['page_history'],
+            'latest_assistant_meta': state['latest_assistant_meta'],
+            'session_summaries': state['session_summaries'],
+            'staff_display': request.user.get_full_name_display(),
+        })
+        return self.render_to_response(context)
+
+
+class WenquChatStreamView(WenquAdminMixin, View):
+    """POST JSON {session_id?, type, content} -> text/event-stream.
+
+    Lifecycle mirrors the customer stream endpoint: moderation failure is a
+    plain JSON 400 *before* the stream starts; triage turns deliver
+    start/final/done with no deltas; RAG turns stream start -> delta* -> final
+    -> done through wenqu.services.sse.chat_event_stream.
+    """
+
+    def post(self, request):
+        payload = _json_payload(request)
+        if payload is None:
+            return JsonResponse({'detail': str(_('Invalid JSON payload.'))}, status=400)
+        payload.setdefault('type', 'text')
+        try:
+            turn = admin_chat.prepare_admin_stream_turn(request.user, payload)
+        except ChatError as exc:
+            return _chat_error_response(exc)
+
+        if turn.fixed_result is not None:
+            return sse.sse_response(sse.fixed_reply_stream(
+                session_id=turn.session_id, result=turn.fixed_result,
+                start_meta=turn.fixed_start_meta or {},
+            ))
+        return sse.sse_response(sse.chat_event_stream(
+            user=request.user, session_id=turn.session_id, preparation=turn.preparation,
+            start_meta=stream_start_meta(turn.preparation),
+            regenerate=False, temperature=0.2,
+        ))
+
+
+class WenquChatRegenerateStreamView(WenquAdminMixin, View):
+    """POST JSON {session_id, message_id?} -> SSE at temperature 0.45."""
+
+    def post(self, request):
+        payload = _json_payload(request)
+        if payload is None or not str(payload.get('session_id') or '').strip():
+            return JsonResponse({'detail': str(_('session_id is required.'))}, status=400)
+        try:
+            preparation = admin_chat.prepare_admin_regenerate_stream(
+                request.user, session_id=payload['session_id'], message_id=payload.get('message_id'),
+            )
+        except ChatError as exc:
+            return _chat_error_response(exc)
+        return sse.sse_response(sse.chat_event_stream(
+            user=request.user, session_id=payload['session_id'], preparation=preparation,
+            start_meta=stream_start_meta(preparation, regenerated=True),
+            regenerate=True, temperature=0.45, final_meta_overrides={'regenerated': True},
+        ))
+
+
+class WenquChatSessionRenameView(WenquAdminMixin, View):
+    """POST JSON {title}: rename (or clear) a console session's custom title."""
+
+    def post(self, request, session_id):
+        session = resolve_user_chat_session(request.user, session_id)
+        if session is None:
+            return JsonResponse({'detail': str(_('Chat session not found.'))}, status=404)
+        payload = _json_payload(request)
+        if payload is None:
+            return JsonResponse({'detail': str(_('Invalid JSON payload.'))}, status=400)
+        title = ' '.join(str(payload.get('title') or '').split())
+        if len(title) > 255:
+            return JsonResponse({'detail': str(_('Title is too long (maximum 255 characters).'))}, status=400)
+        session.title = title or None
+        session.save(update_fields=['title', 'updated_at'])
+        message = _('Session renamed.') if session.title else _('Session title cleared.')
+        return JsonResponse({'message': str(message), 'session_id': session.session_id, 'title': session.title or ''})
+
+
+class WenquChatSessionDeleteView(WenquAdminMixin, View):
+    """POST JSON {current_session_id?}: delete a session and its messages."""
+
+    def post(self, request, session_id):
+        session = resolve_user_chat_session(request.user, session_id)
+        if session is None:
+            return JsonResponse({'detail': str(_('Chat session not found.'))}, status=404)
+        payload = _json_payload(request) or {}
+        current = str(payload.get('current_session_id') or request.GET.get('current_session_id') or '').strip()
+        deleted_id = str(session.session_id)
+        Message.objects.filter(user=request.user, session_id=deleted_id).delete()
+        session.delete()
+        current_deleted = bool(current) and current == deleted_id
+        result = {
+            'message': str(_('Session deleted.')),
+            'deleted_session_id': deleted_id,
+            'current_session_deleted': current_deleted,
+        }
+        if current_deleted:
+            state = admin_chat.load_admin_chat_state(request.user)
+            result['current_session_id'] = state['session_id']
+        return JsonResponse(result)

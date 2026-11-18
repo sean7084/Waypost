@@ -12,6 +12,16 @@ from wenqu import views
 app_name = 'wenqu'
 
 urlpatterns = [
+    # Console root lands on the chatbot (helpdesk /admin/ parity)
+    path('', views.WenquAdminRootView.as_view(), name='root'),
+
+    # Chatbot (staff PC console, session-authenticated SSE)
+    path('chatbot/', views.WenquChatbotView.as_view(), name='chatbot'),
+    path('chatbot/stream/', views.WenquChatStreamView.as_view(), name='chat_stream'),
+    path('chatbot/regenerate/stream/', views.WenquChatRegenerateStreamView.as_view(), name='chat_regenerate_stream'),
+    path('chatbot/sessions/<str:session_id>/rename/', views.WenquChatSessionRenameView.as_view(), name='chat_session_rename'),
+    path('chatbot/sessions/<str:session_id>/delete/', views.WenquChatSessionDeleteView.as_view(), name='chat_session_delete'),
+
     # Customers (company CRUD)
     path('customers/', views.WenquCustomerListView.as_view(), name='customer_list'),
     path('customers/create/', views.WenquCustomerCreateView.as_view(), name='customer_create'),
