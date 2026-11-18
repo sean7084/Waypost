@@ -1,0 +1,9 @@
+"""App configuration for the wenqu app."""
+from django.apps import AppConfig
+from django.utils.translation import gettext_lazy as _
+
+
+class WenquConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'wenqu'
+    verbose_name = _('Wenqu Helpdesk')

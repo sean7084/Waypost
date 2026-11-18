@@ -568,6 +568,10 @@ class User(AbstractUser):
         """Web-UI write access: create batches, import schedules, configure exports."""
         return self.is_superadmin() or self.is_it_administrator()
 
+    def can_manage_wenqu(self):
+        """Check if user can administer Wenqu customers, knowledge base and playbooks."""
+        return self.is_superadmin() or self.is_it_administrator()
+
     def get_assigned_inspections(self):
         """Return store inspections this user is responsible for onsite."""
         from inspections.models import StoreInspection

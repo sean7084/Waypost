@@ -43,14 +43,16 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # Wenqu customers (anyone with a wenqu_profile) are external helpdesk
+        # users, not staff: keep them out of the employee directory.
         if user.is_superadmin():
-            return User.objects.all()
+            return User.objects.filter(wenqu_profile__isnull=True)
         # IT administrators can only see users in their company
         elif user.is_it_administrator():
             return User.objects.filter(
                 Q(company=user.managed_company) |
                 Q(managed_company=user.managed_company)
-            ).distinct()
+            ).filter(wenqu_profile__isnull=True).distinct()
         # Viewers can only see themselves
         return User.objects.filter(id=user.id)
 

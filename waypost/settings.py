@@ -185,6 +185,22 @@ if not DEBUG and (not WECHAT_MINI_APPID or not WECHAT_MINI_APPSECRET):
         'DJANGO_DEBUG is False.'
     )
 
+# Wenqu (问渠) customer helpdesk mini program. A *separate* WeChat mini program
+# from the staff inspection client above, so it has its own AppID/AppSecret and
+# its own WeChatIdentity appid scope. Customers auto-register on first wx.login;
+# AppSecret is server-side only and MUST be set in production.
+WECHAT_WENQU_APPID = os.environ.get('WECHAT_WENQU_APPID', '').strip()
+WECHAT_WENQU_APPSECRET = os.environ.get('WECHAT_WENQU_APPSECRET', '').strip()
+
+# Same fail-fast shape as the staff mini program: without creds jscode2session
+# cannot work and customer login would silently fail.
+if not DEBUG and (not WECHAT_WENQU_APPID or not WECHAT_WENQU_APPSECRET):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        'WECHAT_WENQU_APPID and WECHAT_WENQU_APPSECRET must be set when '
+        'DJANGO_DEBUG is False.'
+    )
+
 # ---------------------------------------------------------------------------
 # RFQ LLM. Names are provider-neutral because the provider is configuration,
 # not identity: switching vendor must not rename settings, rewrite `.env`, and
@@ -288,6 +304,7 @@ INSTALLED_APPS = [
     'purchases',  # Purchase and stock management
     'deliveries',  # Delivery order management
     'invoices',  # Weekly sharepoint processing and invoice staging
+    'wenqu',  # Wenqu (问渠) customer AI helpdesk mini-program backend
 ]
 
 MIDDLEWARE = [
@@ -519,6 +536,22 @@ MEDIA_URL = (
     else '/media/'
 )
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# ---------------------------------------------------------------------------
+# Wenqu private storage and knowledge base.
+#
+# WENQU_PRIVATE_MEDIA_ROOT is deliberately NOT under MEDIA_ROOT: nginx serves
+# /media/ publicly, while Wenqu customer uploads / TTS audio / KB attachments
+# must only be reachable through authenticated Django views. wenqu.services.
+# storage.private_storage() pins a FileSystemStorage here (see that module).
+# In production this is a bind mount under ${WAYPOST_DATA_DIR}/private.
+#
+# WENQU_KB_SOURCES_DIR holds the source documents that KBDocument paths are relative to.
+# WENQU_TRIAGE_ENABLED gates the guided-triage engine (PR3/PR4).
+# ---------------------------------------------------------------------------
+WENQU_PRIVATE_MEDIA_ROOT = os.environ.get('WENQU_PRIVATE_MEDIA_ROOT') or str(BASE_DIR / 'private_media')
+WENQU_KB_SOURCES_DIR = os.environ.get('WENQU_KB_SOURCES_DIR') or str(BASE_DIR / 'kb_sources')
+WENQU_TRIAGE_ENABLED = _env_bool('WENQU_TRIAGE_ENABLED', True)
 
 # Cache backend.
 # Production: Redis via django-redis when DJANGO_REDIS_CACHE_URL is set

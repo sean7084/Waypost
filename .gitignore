@@ -7,6 +7,9 @@ template_files
 .vscode
 logs/
 media/
+# Wenqu private uploads / TTS / KB attachments and KB source documents (dev defaults).
+private_media/
+kb_sources/
 *.mo
 .claude/
 .mcp.json

@@ -21,7 +21,9 @@ set -euo pipefail
 # `libpq-dev` appears only in the `deps` stage of docker/Dockerfile - so the
 # checkpoint uses a throwaway container of the same image the compose `db` service
 # already pulls. It stays in the local image store after the volume is retired.
-PG_DUMP_IMAGE="${PG_DUMP_IMAGE:-postgres:16}"
+# pgvector/pgvector:pg16 is postgres:16 + the vector extension (Wenqu); it ships
+# the same pg_dump, so the dump/restore behaviour is unchanged.
+PG_DUMP_IMAGE="${PG_DUMP_IMAGE:-pgvector/pgvector:pg16}"
 
 # Network of this compose project (`name: waypost` in docker-compose.yml), so the
 # throwaway container reaches the database by service name or by VPC hostname.

@@ -13,6 +13,9 @@ from .views import (
 from .views_auth import (
     WeChatBindView, WeChatLoginView, WeChatLookupView, WeChatProfileCompleteView,
 )
+from .wenqu_auth_views import (
+    WenquGetPhoneView, WenquUpdateUserView, WenquWxLoginView,
+)
 from .inspection_views import StoreInspectionViewSet
 
 # Create router and register viewsets
@@ -36,6 +39,12 @@ urlpatterns = [
     path('auth/wechat/login/', WeChatLoginView.as_view(), name='wechat-login'),
     path('auth/wechat/profile/', WeChatProfileCompleteView.as_view(), name='wechat-profile'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+
+    # Wenqu (问渠) customer helpdesk authentication. Business endpoints (chat,
+    # upload, KB, triage) are added in PR4.
+    path('wenqu/auth/wx_login', WenquWxLoginView.as_view(), name='wenqu-wx-login'),
+    path('wenqu/auth/update_wx_user', WenquUpdateUserView.as_view(), name='wenqu-update-wx-user'),
+    path('wenqu/auth/get-phone', WenquGetPhoneView.as_view(), name='wenqu-get-phone'),
 
     path('', include(router.urls)),
 ]
