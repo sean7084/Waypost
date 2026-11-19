@@ -1,9 +1,0 @@
-{
-  "navigationBarTitleText": "问渠",
-  "navigationStyle": "custom",
-  "enablePullDownRefresh": false,
-  "usingComponents": {
-    "message-list": "/components/message-list/message-list",
-    "input-bar": "/components/input-bar/input-bar"
-  }
-}
