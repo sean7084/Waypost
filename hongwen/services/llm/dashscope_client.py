@@ -52,10 +52,21 @@ def _headers() -> Dict[str, str]:
     }
 
 
+def _force_utf8(response, *args, **kwargs):
+    # These APIs return UTF-8 but often omit charset (text/event-stream, text/plain).
+    # requests defaults such responses to ISO-8859-1, which double-encodes Chinese:
+    # UTF-8 bytes read as Latin-1, then re-encoded to UTF-8 (你 e4bda0 -> c3a4c2bdc2a0).
+    # Force UTF-8 on every response so iter_lines(decode_unicode=True), .text and
+    # .json() all decode correctly. (httpx defaulted to UTF-8; requests does not.)
+    response.encoding = 'utf-8'
+    return response
+
+
 def _get_session() -> requests.Session:
     global _session
     if _session is None:
         _session = requests.Session()
+        _session.hooks['response'].append(_force_utf8)
     return _session
 
 
