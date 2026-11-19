@@ -5,7 +5,7 @@
 //
 // Starts/reuses the harness Django server (:8001, Volcengine embed override),
 // seeds triage playbooks, then runs each item over its own automator connection
-// (one connection at a time). Writes REPORT.md + screenshots and attempts a
+// (one connection at a time). Writes RESULTS.md + screenshots and attempts a
 // preview QR for the real-device MANUAL items. Exit code 1 if any item FAILs.
 const fs = require('fs');
 const path = require('path');
@@ -28,7 +28,7 @@ const ITEMS = [
 ];
 
 const MINI_DIR = path.resolve(__dirname, '..', '..');
-const REPORT = path.join(__dirname, 'REPORT.md');
+const REPORT = path.join(__dirname, 'RESULTS.md');
 
 function log(msg) {
   console.log(msg);
