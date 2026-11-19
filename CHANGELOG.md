@@ -1,5 +1,33 @@
 # Waypost - Changelog
 
+## Release Notes v0.4.1
+
+**Version:** 0.4.1
+**Release Date:** November 20, 2026
+**Focus:** Fix Hongwen chat Chinese mojibake (provider response UTF-8 decoding)
+
+---
+
+### Highlights
+
+1. **Hongwen streamed replies no longer show garbled Chinese.** The httpx→requests
+   port left provider responses decoding as ISO-8859-1 when the LLM API omits charset
+   (`text/event-stream`), double-encoding every Chinese character (你 `e4bda0` →
+   `c3a4c2bdc2a0`). A session response hook now forces `encoding='utf-8'` on all
+   DashScope/Volcengine responses (`iter_lines(decode_unicode=True)`, `.text`, `.json`).
+   Client-side decoding was already correct; no mini-program change required.
+
+### Migration Files Added
+
+None.
+
+### Validation
+
+- `hongwen.tests_services_utf8` 4 passed (reproduces the Latin-1 mojibake, asserts the fix); ruff clean.
+- Prod SSE bytes verified single-encoded UTF-8 after deploy.
+
+---
+
 ## Release Notes v0.4.0
 
 **Version:** 0.4.0
