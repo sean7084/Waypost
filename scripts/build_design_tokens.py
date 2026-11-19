@@ -6,7 +6,7 @@ script renders it into three generated files that must never be hand-edited:
 
     static/css/tokens.css               backend (`:root { --wp-*: ... }`)
     miniprogram/styles/tokens.wxss      inspection mini program (`page { ... }`)
-    wenqu-miniprogram/styles/tokens.wxss  问渠 mini program (`page { ... }`)
+    hongwen-miniprogram/styles/tokens.wxss  泓问 mini program (`page { ... }`)
 
 Because all three come from the same JSON, the web app and both mini programs
 are guaranteed to share an identical palette, type scale, spacing rhythm, radii,
@@ -33,7 +33,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 TOKENS_JSON = BASE_DIR / "static" / "design" / "tokens.json"
 TOKENS_CSS = BASE_DIR / "static" / "css" / "tokens.css"
 TOKENS_WXSS = BASE_DIR / "miniprogram" / "styles" / "tokens.wxss"
-WENQU_TOKENS_WXSS = BASE_DIR / "wenqu-miniprogram" / "styles" / "tokens.wxss"
+HONGWEN_TOKENS_WXSS = BASE_DIR / "hongwen-miniprogram" / "styles" / "tokens.wxss"
 
 # `meta` carries documentation about the token file, not token values.
 NON_TOKEN_KEYS = {"meta"}
@@ -107,7 +107,7 @@ def _outputs(tokens: dict) -> dict[Path, str]:
     return {
         TOKENS_CSS: render_css(tokens),
         TOKENS_WXSS: render_wxss(tokens),
-        WENQU_TOKENS_WXSS: render_wxss(tokens),
+        HONGWEN_TOKENS_WXSS: render_wxss(tokens),
     }
 
 

@@ -21,7 +21,7 @@ set -euo pipefail
 # `libpq-dev` appears only in the `deps` stage of docker/Dockerfile - so the
 # checkpoint uses a throwaway container of the same image the compose `db` service
 # already pulls. It stays in the local image store after the volume is retired.
-# pgvector/pgvector:pg16 is postgres:16 + the vector extension (Wenqu); it ships
+# pgvector/pgvector:pg16 is postgres:16 + the vector extension (Hongwen); it ships
 # the same pg_dump, so the dump/restore behaviour is unchanged.
 PG_DUMP_IMAGE="${PG_DUMP_IMAGE:-pgvector/pgvector:pg16}"
 

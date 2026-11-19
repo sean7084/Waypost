@@ -2,17 +2,17 @@ db.sqlite3
 prompt.md
 notes.md
 notes 1.md
-# Operator-provisioned templates stay out of git, EXCEPT the wenqu prompt packs:
+# Operator-provisioned templates stay out of git, EXCEPT the hongwen prompt packs:
 # those are application runtime assets the LLM services load (PR3), so they must
 # be version-controlled. The wildcard (not the bare dir) lets the negation below
-# re-include the wenqu subtree - git cannot re-include under an excluded parent.
+# re-include the hongwen subtree - git cannot re-include under an excluded parent.
 template_files/*
-!template_files/wenqu/
+!template_files/hongwen/
 .playwright-mcp
 .vscode
 logs/
 media/
-# Wenqu private uploads / TTS / KB attachments and KB source documents (dev defaults).
+# Hongwen private uploads / TTS / KB attachments and KB source documents (dev defaults).
 private_media/
 kb_sources/
 *.mo

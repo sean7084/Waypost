@@ -32,8 +32,8 @@ def code2session(js_code, timeout=10, appid=None, secret=None):
     API error (e.g. 40029 invalid code, 40163 code been used).
 
     ``appid``/``secret`` default to the staff inspection mini program
-    (settings.WECHAT_MINI_APPID/SECRET). The Wenqu customer mini program passes
-    its own credentials (settings.WECHAT_WENQU_APPID/SECRET) so the two clients
+    (settings.WECHAT_MINI_APPID/SECRET). The Hongwen customer mini program passes
+    its own credentials (settings.WECHAT_HONGWEN_APPID/SECRET) so the two clients
     never share an openid scope.
     """
     if appid is None:

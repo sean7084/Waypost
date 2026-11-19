@@ -22,7 +22,7 @@ pillow==12.1.1
 pyotp==2.9.0
 cryptography==50.0.1  # Fernet field encryption for stored mailbox/SMTP credentials
 
-# Wenqu (问渠) helpdesk services: KB ingestion, multimodal LLM providers, OCR.
+# Hongwen (泓问) helpdesk services: KB ingestion, multimodal LLM providers, OCR.
 # PyMuPDF renders PDF pages / extracts embedded images; python-docx reads DOCX;
 # pytesseract OCRs KB screenshots (needs the tesseract-ocr system binary);
 # websockets drives the DashScope / Volcengine streaming TTS protocols (sync client).
