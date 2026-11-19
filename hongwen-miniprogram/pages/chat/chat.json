@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "泓问",
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": false,
+  "usingComponents": {
+    "message-list": "/components/message-list/message-list",
+    "input-bar": "/components/input-bar/input-bar"
+  }
+}

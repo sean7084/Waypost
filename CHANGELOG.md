@@ -1,32 +1,32 @@
 # Waypost - Changelog
 
-## Unreleased — Wenqu (问渠) brand launch and helpdesk merge
+## Unreleased — Hongwen (泓问) brand launch and helpdesk merge
 
-**Branch:** `feat/wenqu-migration` (PR1–7). **Not yet released or deployed.** The standalone
-FastAPI Helpdesk is merged into Waypost as the **Wenqu (问渠)** customer helpdesk, and the
+**Branch:** `feat/hongwen-migration` (PR1–7). **Not yet released or deployed.** The standalone
+FastAPI Helpdesk is merged into Waypost as the **Hongwen (泓问)** customer helpdesk, and the
 public hostname prepares to move `ams.istore-tech.cn` → `waypost.istore-tech.cn`.
 
 ### Highlights
 
 1. **The helpdesk product ships inside Waypost.** PR1 grafted the mini-program client history
-   into `wenqu-miniprogram/`; PR2 ported the SQLAlchemy schema to Django models
-   (`wenqu/models.py`) with the split identity — `accounts.User` + appid-scoped
-   `WeChatIdentity` + `WenquProfile` (the profile row marks a customer; no new role on the
+   into `hongwen-miniprogram/`; PR2 ported the SQLAlchemy schema to Django models
+   (`hongwen/models.py`) with the split identity — `accounts.User` + appid-scoped
+   `WeChatIdentity` + `HongwenProfile` (the profile row marks a customer; no new role on the
    user table) — and customer WeChat auth with the `tv` (token_version) revocation claim;
    PR3 rewrote the services (chat orchestrator, KB ingestion/retrieval, triage engine,
    Qwen/Volcengine providers, moderation, registries) onto the ORM; PR4 added the customer
-   API under `/api/v1/wenqu/` with synchronous SSE streams; PR5 added the staff admin pages
-   under `/wenqu/`; PR6 rewrote the client natively (no uni-app build chain).
+   API under `/api/v1/hongwen/` with synchronous SSE streams; PR5 added the staff admin pages
+   under `/hongwen/`; PR6 rewrote the client natively (no uni-app build chain).
 2. **Embeddings are JSONField lists with a query-time pgvector cast** — one codebase runs on
    SQLite (dev/test) and `pgvector/pgvector:pg16` (prod); ivfflat is named performance debt.
    **SSE stays WSGI** with `--threads 8` (ASGI rejected); nginx carries unbuffered stream
    locations. **Customer uploads/TTS/KB attachments live on a dedicated private storage**
    outside the public `/media/` alias, served only through authenticated views.
    ADR-0021…0024 record these decisions.
-3. **Production data merge command** (`wenqu/management/commands/import_helpdesk.py`):
-   psycopg2 read-only connection to the legacy PG17 (`WENQU_LEGACY_DSN`), natural-key
+3. **Production data merge command** (`hongwen/management/commands/import_helpdesk.py`):
+   psycopg2 read-only connection to the legacy PG17 (`HONGWEN_LEGACY_DSN`), natural-key
    idempotent upserts for all twelve business tables, legacy upload blobs copied through
-   `private_storage().save` (`WENQU_LEGACY_UPLOADS_DIR`), pgvector text parsed into JSON
+   `private_storage().save` (`HONGWEN_LEGACY_UPLOADS_DIR`), pgvector text parsed into JSON
    lists (**embeddings never recomputed**), naive-UTC timestamps preserved through
    `auto_now_add`, legacy admin users imported as customers with permission bits intact,
    `password_reset_codes` skipped. `--dry-run` rolls the whole transaction back (no blob
@@ -36,8 +36,8 @@ public hostname prepares to move `ams.istore-tech.cn` → `waypost.istore-tech.c
    takes the shared Helpdesk down too); the inspection client's prod base URL switches to
    waypost (needs a re-release); `DJANGO_ALLOWED_HOSTS`/`DJANGO_CSRF_TRUSTED_ORIGINS` are
    env-driven and must list both names during the transition. `docs/DEPLOYMENT.md` §2.14–§2.15
-   carry the full Wenqu env list, the **env gap** (the root `.env` still has only the legacy
-   `WECHAT_HELPDESK_*` names — `WECHAT_WENQU_APPID/APPSECRET/CI_PRIVATE_KEY` must be set, and
+   carry the full Hongwen env list, the **env gap** (the root `.env` still has only the legacy
+   `WECHAT_HELPDESK_*` names — `WECHAT_HONGWEN_APPID/APPSECRET/CI_PRIVATE_KEY` must be set, and
    the CI key file must be downloaded from the MP console), and a copy-pasteable cutover
    runbook with observation→conclusion tables (certificate SAN → nginx → frozen-window
    import → client release → retirement → rollback).
@@ -46,6 +46,15 @@ public hostname prepares to move `ams.istore-tech.cn` → `waypost.istore-tech.c
    + `docker start helpdesk_app`); 🔴 the helpdesk site owns the 80/443 `default_server`, so
    removing it must give Waypost an explicit default fallback in the same edit. The Aliyun
    ops KB (`instance/deployment.md`, `instance/operations.md`) is synced.
+6. **Brand finalized as 泓问 (Hongwen).** The customer helpdesk's originally planned
+   Chinese name collided with an existing WeChat Official Account (公众号), so the MP
+   console rejected the rename; the brand became **泓问 (Hongwen)** and the code handle was
+   unified to `hongwen` (app label, `/api/v1/hongwen/` + `/hongwen/`, `WECHAT_HONGWEN_*` /
+   `HONGWEN_*` env, `hongwen-miniprogram/`, `hongwen_profile` / `can_manage_hongwen`). Legacy
+   `helpdesk` identifiers that denote the migration source are deliberately preserved. Because
+   the app has not shipped to production, the initial migration was edited in place (no
+   `RenameModel`): default DB tables and auto-generated index names now derive from the
+   `hongwen` app label.
 
 ---
 

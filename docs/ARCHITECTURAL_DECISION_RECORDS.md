@@ -26,7 +26,7 @@ This directory contains architectural decision records for the Waypost.
 | [0018](#adr-0018-environment-driven-settings-with-fail-fast-guards--and-the-two-defaults-that-are-not-guarded) | Environment-Driven Settings with Fail-Fast Guards | Accepted (gap open) | 2026-10-22 |
 | [0019](#adr-0019-api-authentication--simplejwt-for-the-mini-program-session-for-the-web) | API Authentication — SimpleJWT for the Mini Program, Session for the Web | Accepted | 2026-10-22 |
 | [0020](#adr-0020-three-pdf-paths--and-what-adr-0008-actually-decided) | Three PDF Paths — and What ADR-0008 Actually Decided | Accepted (restates 0008) | 2026-10-22 |
-| [0021](#adr-0021-helpdesk--wenqu-merge-one-user-table-profile-marked-customers-and-the-tv-claim) | Helpdesk → Wenqu Merge: One User Table, Profile-Marked Customers, tv Claim | Accepted | 2026-11-19 |
+| [0021](#adr-0021-helpdesk--hongwen-merge-one-user-table-profile-marked-customers-and-the-tv-claim) | Helpdesk → Hongwen Merge: One User Table, Profile-Marked Customers, tv Claim | Accepted | 2026-11-19 |
 | [0022](#adr-0022-embeddings-as-jsonfield-with-a-query-time-vector-cast--ivfflat-as-named-debt) | Embeddings as JSONField with a Query-Time vector Cast — ivfflat as Named Debt | Accepted (debt open) | 2026-11-19 |
 | [0023](#adr-0023-synchronous-sse-on-wsgi-gthread--asgi-rejected) | Synchronous SSE on WSGI gthread — ASGI Rejected | Accepted | 2026-11-19 |
 | [0024](#adr-0024-private-media-on-a-dedicated-storage-outside-the-public-media-alias) | Private Media on a Dedicated Storage Outside the Public /media/ Alias | Accepted | 2026-11-19 |
@@ -1194,7 +1194,7 @@ per-app quotation converter was **deleted** for having no callers and leaking fi
 
 ---
 
-## ADR-0021: Helpdesk → Wenqu Merge: One User Table, Profile-Marked Customers, and the tv Claim
+## ADR-0021: Helpdesk → Hongwen Merge: One User Table, Profile-Marked Customers, and the tv Claim
 
 **Status**: Accepted
 **Date**: 2026-11-19
@@ -1204,7 +1204,10 @@ per-app quotation converter was **deleted** for having no callers and leaking fi
 
 The standalone FastAPI "Helpdesk" (SQLAlchemy + PG17, its own `users` table with
 `role='admin'|'user'`, bcrypt passwords, WeChat openid columns and per-user `can_*`
-permission bits) is merged into Waypost and rebranded **问渠 (Wenqu)**. Waypost already
+permission bits) is merged into Waypost and rebranded **泓问 (Hongwen)** — the brand was finalized as
+泓问 after the originally planned Chinese name collided with an existing WeChat Official
+Account (公众号) and the MP console rejected the rename, so the code handle is unified to
+`hongwen`. Waypost already
 has a custom `accounts.User` (UUID pk, AbstractUser) with an administrator-role system
 and a staff WeChat mini program whose openids live in `accounts.WeChatIdentity` keyed
 by appid. Two identity systems had to become one without granting customers staff
@@ -1213,32 +1216,32 @@ had to survive the move.
 
 ### Decision
 
-**Merge, not coexist.** The helpdesk schema is ported to Django models (`wenqu/models.py`),
-its services rewritten onto the ORM (`wenqu/services/`), its endpoints served under
-`/api/v1/wenqu/` by this application, and its admin UI rebuilt as staff pages under
-`/wenqu/`. The legacy stack becomes a co-tenant in retirement (`OPERATIONS_RUNBOOK.md` §7);
-production data moves through `wenqu/management/commands/import_helpdesk.py` — natural-key
+**Merge, not coexist.** The helpdesk schema is ported to Django models (`hongwen/models.py`),
+its services rewritten onto the ORM (`hongwen/services/`), its endpoints served under
+`/api/v1/hongwen/` by this application, and its admin UI rebuilt as staff pages under
+`/hongwen/`. The legacy stack becomes a co-tenant in retirement (`OPERATIONS_RUNBOOK.md` §7);
+production data moves through `hongwen/management/commands/import_helpdesk.py` — natural-key
 idempotent upserts, `--dry-run` rollback, per-table source-vs-imported reconciliation,
 embeddings parsed from pgvector text and never recomputed, `password_reset_codes` skipped.
 The public hostname moves `ams.istore-tech.cn` → `waypost.istore-tech.cn` (one nginx site,
 one cert with both SANs; `DEPLOYMENT.md` §2.15).
 
-**One user table, no customer role.** A Wenqu customer is an `accounts.User` with
+**One user table, no customer role.** A Hongwen customer is an `accounts.User` with
 `username = external_id` (`wx_<openid[:12]>`), an unusable password, a
-`WeChatIdentity(appid=settings.WECHAT_WENQU_APPID, openid)` row, and a `WenquProfile`.
-**The presence of the profile row is the customer marker** — `api.wenqu_authentication.WenquCustomerPermission`
+`WeChatIdentity(appid=settings.WECHAT_HONGWEN_APPID, openid)` row, and a `HongwenProfile`.
+**The presence of the profile row is the customer marker** — `api.hongwen_authentication.HongwenCustomerPermission`
 gates on it and the staff user list excludes anyone who has one. No `role='customer'`
 enum value, no new flag on `accounts.User`, no change to the administrator-role system:
-staff administration stays on existing Waypost accounts (`User.can_manage_wenqu()` =
+staff administration stays on existing Waypost accounts (`User.can_manage_hongwen()` =
 superadmin / IT administrator). Legacy helpdesk admin/role users are imported **as
 customers** with their `can_upload/can_chat/can_manage_customers/can_manage_users` bits
 preserved on the profile; `is_staff`/`is_superuser` are never set by the import.
 **unionid never auto-merges accounts** — it is not even a legacy column; imported
 identities carry an empty one and the first `wx.login` fills it in
-(`wenqu/services/auth.py`).
+(`hongwen/services/auth.py`).
 
 **The tv claim travels.** Every customer access token carries `tv = profile.token_version`
-(`wenqu/services/auth.py::_tokens_for_profile`); `WenquJWTAuthentication` rejects a token
+(`hongwen/services/auth.py::_tokens_for_profile`); `HongwenJWTAuthentication` rejects a token
 whose `tv` no longer matches the column, so bumping `token_version` (admin page or reset
 flow) ends every older session. Staff tokens carry no `tv` and are exempt; customer
 tokens without the claim pass through (backward compatibility). The import preserves
@@ -1248,21 +1251,21 @@ legacy `token_version` verbatim, so a pre-merge bump keeps its effect.
 
 - One login principal, one staff directory, one 2FA/role system; customers can never
   reach staff surface because the profile marker and the appid-scoped identity are
-  both checked (`WenquAuthConflict` when an openid is bound to a non-customer).
+  both checked (`HongwenAuthConflict` when an openid is bound to a non-customer).
 - The import is re-runnable during the migration window: customers who tried the new
   client before the merge are matched by openid and keep their account; history attaches
   to it. Re-running overwrites profile fields with legacy values — the window freezes
   the legacy app first (`DEPLOYMENT.md` §2.15 Phase 3).
 - Legacy PC passwords (bcrypt) are **not** imported; customer auth is WeChat-only, and
   the reset flow is email codes (`PASSWORD_RESET_EMAIL_ENABLED` + SMTP relay).
-- Two WeChat mini programs (staff inspection, wenqu customer) share one backend but
+- Two WeChat mini programs (staff inspection, hongwen customer) share one backend but
   never one appid scope; their CI keys and MP whitelists are separate
   (`DEPLOYMENT.md` §2.14 env gap).
 
 ### References
 
-- `wenqu/models.py` (WenquProfile docstring), `wenqu/services/auth.py`, `api/wenqu_authentication.py`
-- `wenqu/management/commands/import_helpdesk.py`; `accounts/models.py` (User, WeChatIdentity)
+- `hongwen/models.py` (HongwenProfile docstring), `hongwen/services/auth.py`, `api/hongwen_authentication.py`
+- `hongwen/management/commands/import_helpdesk.py`; `accounts/models.py` (User, WeChatIdentity)
 - `docs/DEPLOYMENT.md` §2.14–§2.15; `docs/OPERATIONS_RUNBOOK.md` §7
 - helpdesk `backend/app/models.py`, alembic 0007 (token_version + password_reset_codes)
 
@@ -1285,10 +1288,10 @@ native `vector` column would break the dev backend and every `manage.py test` ru
 ### Decision
 
 **Embeddings are `JSONField` (jsonb) lists** on `KBChunk.embedding` and
-`TriagePlaybook.embedding`. `wenqu/migrations/0002_pgvector` only creates the extension
+`TriagePlaybook.embedding`. `hongwen/migrations/0002_pgvector` only creates the extension
 (`CREATE EXTENSION IF NOT EXISTS vector`, no-op on SQLite). Retrieval casts at query
 time: `(c.embedding::text)::vector <=> CAST(%s AS vector)` with the query vector bound
-as pgvector text `'[0.1,0.2,...]'` (`wenqu/services/kb/vector_store.py`) — a Python list
+as pgvector text `'[0.1,0.2,...]'` (`hongwen/services/kb/vector_store.py`) — a Python list
 would bind as `numeric[]` and break the operator. The production image is
 `pgvector/pgvector:pg16` (postgres:16 + extension; Debian-based, not alpine, for collation
 stability — `docker-compose.yml`).
@@ -1307,7 +1310,7 @@ vectors with no provider keys and no embedding spend.
 ### Consequences
 
 - One codebase, two backends: SQLite dev/test needs no extension; PG prod gets the
-  cosine operator. Tests assert the JSON round-trip (`wenqu/tests.py`).
+  cosine operator. Tests assert the JSON round-trip (`hongwen/tests.py`).
 - Every retrieval is a seq scan + cast until the debt is paid; fine at current KB size,
   named here so it is a decision rather than a surprise.
 - The opclass trap from helpdesk alembic 0003/0005 cannot recur silently: there is no
@@ -1315,9 +1318,9 @@ vectors with no provider keys and no embedding spend.
 
 ### References
 
-- `wenqu/models.py` (module docstring), `wenqu/migrations/0002_pgvector.py`
-- `wenqu/services/kb/vector_store.py`; `docker-compose.yml` (db image)
-- `wenqu/management/commands/import_helpdesk.py::parse_embedding`
+- `hongwen/models.py` (module docstring), `hongwen/migrations/0002_pgvector.py`
+- `hongwen/services/kb/vector_store.py`; `docker-compose.yml` (db image)
+- `hongwen/management/commands/import_helpdesk.py::parse_embedding`
 - helpdesk alembic 0003/0005 (opclass fixes), `backend/app/models.py` index notes
 
 ---
@@ -1330,8 +1333,8 @@ vectors with no provider keys and no embedding spend.
 
 ### Context
 
-Wenqu chat replies, regeneration and TTS playback stream as Server-Sent Events
-(`wenqu/services/sse.py`): a synchronous generator yields `event: …\ndata: {...}\n\n`
+Hongwen chat replies, regeneration and TTS playback stream as Server-Sent Events
+(`hongwen/services/sse.py`): a synchronous generator yields `event: …\ndata: {...}\n\n`
 frames for the whole model turn (tens of seconds). The production stack is Gunicorn
 WSGI sync workers behind a shared nginx (ADR-0017). Each open stream holds a worker
 thread for its duration, so a handful of concurrent customers could starve the rest
@@ -1344,7 +1347,7 @@ of the API at the old `--threads 2`.
 tunable per host via `GUNICORN_CMD_ARGS` without a rebuild. The streams are plain
 synchronous generators returned as `StreamingHttpResponse`; no async views, no
 channels, no second server. nginx carries three prefix locations
-(`/api/v1/wenqu/chat/stream`, `/chat/regenerate/stream`, `/speak/stream`) with
+(`/api/v1/hongwen/chat/stream`, `/chat/regenerate/stream`, `/speak/stream`) with
 `proxy_buffering off`, `proxy_cache off` and `proxy_read_timeout 300s` matching
 Gunicorn (`docker/nginx/waypost.conf`, PR4), each repeating the full
 `proxy_set_header` block because nginx does not inherit location-level headers into
@@ -1363,7 +1366,7 @@ thread pool, not before.
 - One deploy path, one worker model, the existing rollback story unchanged.
 - Thread exhaustion is the capacity ceiling: ~24 simultaneous streams across 3 workers;
   beyond that, new requests queue. The IP throttle on `/speak/stream`
-  (`WENQU_SPEAK_STREAM_IP_*`) is blast-radius protection, not the real gate — per-customer
+  (`HONGWEN_SPEAK_STREAM_IP_*`) is blast-radius protection, not the real gate — per-customer
   `can_chat` is.
 - A slow model turn can hold a thread up to 300s; the matched nginx/Gunicorn timeouts
   mean a cut stream is a deliberate timeout, not a proxy mismatch.
@@ -1371,7 +1374,7 @@ thread pool, not before.
 ### References
 
 - `docker/Dockerfile` (CMD comment), `docker/nginx/waypost.conf` (SSE locations)
-- `wenqu/services/sse.py`, `api/wenqu_views.py`; `waypost/settings.py` (WENQU_SPEAK_STREAM_*)
+- `hongwen/services/sse.py`, `api/hongwen_views.py`; `waypost/settings.py` (HONGWEN_SPEAK_STREAM_*)
 - ADR-0017 (production stack), ADR-0019 (API authentication)
 
 ---
@@ -1386,25 +1389,25 @@ thread pool, not before.
 
 nginx serves `MEDIA_ROOT` world-readable through `location /media/ { alias … }`
 (`docker/nginx/waypost.conf`), and the default storage backend may become Aliyun OSS
-(`waypost/storage.py`, ADR in `OSS_STORAGE.md`). Wenqu customer uploads (voice messages,
+(`waypost/storage.py`, ADR in `OSS_STORAGE.md`). Hongwen customer uploads (voice messages,
 photos), generated TTS audio and KB page attachments are **customer-private**: they must
 only leave through authenticated Django views, never a static alias or a public bucket
 URL. The helpdesk wrote them straight to an `uploads/` disk directory.
 
 ### Decision
 
-**A dedicated `FileSystemStorage` rooted at `WENQU_PRIVATE_MEDIA_ROOT`**, exposed as a
-callable (`wenqu/services/storage.py::private_storage`) so `FileField` resolves it lazily
+**A dedicated `FileSystemStorage` rooted at `HONGWEN_PRIVATE_MEDIA_ROOT`**, exposed as a
+callable (`hongwen/services/storage.py::private_storage`) so `FileField` resolves it lazily
 and tests can override the root. Compose bind-mounts `${WAYPOST_DATA_DIR}/private` →
 `/app/private_media` — deliberately outside `MEDIA_ROOT` and outside the default
 (possibly OSS) backend. Downloads go through `FileResponse` + `storage.open` behind
-customer auth (`api/wenqu_views.py` protected-download view); the URL convention
-(`wenqu/uploads/<file_id>__<name>`, `wenqu/tts/…`, `wenqu/kb_assets/…`,
-`wenqu/triage_assets/…`) is owned by `wenqu/services/utils/file_store.py`.
+customer auth (`api/hongwen_views.py` protected-download view); the URL convention
+(`hongwen/uploads/<file_id>__<name>`, `hongwen/tts/…`, `hongwen/kb_assets/…`,
+`hongwen/triage_assets/…`) is owned by `hongwen/services/utils/file_store.py`.
 
 **KB source documents are the exception that proves the boundary:** they are
-operator-managed files under `WENQU_KB_SOURCES_DIR`, read with plain `open()` and never
-touching the storage API — they are not media (`wenqu/services/kb/paths.py`).
+operator-managed files under `HONGWEN_KB_SOURCES_DIR`, read with plain `open()` and never
+touching the storage API — they are not media (`hongwen/services/kb/paths.py`).
 
 The repo-hygiene gate (`tests/test_repo_hygiene.py::MediaStorageApiTests`) forbids
 `.path`, `MEDIA_ROOT` directory writes and `Path(MEDIA_ROOT)` in application code, so
@@ -1423,7 +1426,7 @@ the private/public boundary cannot be crossed by a stray idiom that works on a d
 
 ### References
 
-- `wenqu/services/storage.py`, `wenqu/services/utils/file_store.py`, `wenqu/models.py` (UploadFile)
+- `hongwen/services/storage.py`, `hongwen/services/utils/file_store.py`, `hongwen/models.py` (UploadFile)
 - `docker-compose.yml` (private + kb_sources mounts), `docker/nginx/waypost.conf` (/media/ alias)
 - `tests/test_repo_hygiene.py` (MediaStorageApiTests); `docs/OSS_STORAGE.md`
 

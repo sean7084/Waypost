@@ -169,10 +169,10 @@ ENTRYPOINT ["/app/docker/entrypoint.sh"]
 # can be tuned per host without rebuilding (e.g. GUNICORN_CMD_ARGS="--workers 2").
 # --timeout is 300s because xlsx->PDF conversion allows 120s per document and the
 # Nginx proxy_read_timeout is set to match.
-# --threads 8 (was 2): Wenqu chat SSE streams (PR4) hold one gthread worker thread
+# --threads 8 (was 2): Hongwen chat SSE streams (PR4) hold one gthread worker thread
 # per open connection for the whole model turn, so a handful of concurrent
 # customers must not starve the rest of the API. The sync workers stay WSGI; the
-# streams are synchronous generators (wenqu/services/sse.py).
+# streams are synchronous generators (hongwen/services/sse.py).
 CMD ["gunicorn", "waypost.wsgi:application", \
      "--bind", "0.0.0.0:8000", \
      "--workers", "3", \

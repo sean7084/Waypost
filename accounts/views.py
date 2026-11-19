@@ -601,10 +601,10 @@ class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         queryset = User.objects.all().select_related(
             'managed_company', 'company', 'division'
         ).prefetch_related('roles', 'managed_divisions', 'managed_locations').order_by('username')
-        # Wenqu customers share the accounts.User table but are not staff: anyone
-        # with a wenqu_profile is an external helpdesk customer and must never
+        # Hongwen customers share the accounts.User table but are not staff: anyone
+        # with a hongwen_profile is an external helpdesk customer and must never
         # appear in the employee directory.
-        queryset = queryset.filter(wenqu_profile__isnull=True)
+        queryset = queryset.filter(hongwen_profile__isnull=True)
         
         # Search filter
         search = self.request.GET.get('search')

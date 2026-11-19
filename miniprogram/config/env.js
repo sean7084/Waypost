@@ -17,7 +17,7 @@ const CONFIGS = {
     // Waypost production, served by the host Nginx on the shared ECS.
     //
     // PR7 domain cutover: the public hostname moves ams.istore-tech.cn ->
-    // waypost.istore-tech.cn (Wenqu merge / rebrand). Both names are served by
+    // waypost.istore-tech.cn (Hongwen merge / rebrand). Both names are served by
     // the same nginx site and certificate SANs, so the old base keeps working
     // until retirement - but a release build must use the new one, and THIS
     // CLIENT MUST BE RE-RELEASED (ci.js upload + MP review) for the switch to

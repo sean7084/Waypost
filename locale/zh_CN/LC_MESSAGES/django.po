@@ -8068,7 +8068,7 @@ msgstr "回滚被阻止：导入创建的目录条目已被其他记录引用。
 
 msgid "Import status"
 msgstr "导入状态"
-# Wenqu staff admin (PR5)
+# Hongwen staff admin (PR5)
 
 msgid "%(success)s uploaded, %(failure)s failed."
 msgstr "已上传 %(success)s 个，失败 %(failure)s 个。"
@@ -8127,8 +8127,8 @@ msgstr "分块"
 msgid "Chunks"
 msgstr "分块数"
 
-msgid "Companies whose staff use the Wenqu helpdesk"
-msgstr "使用问渠客服助手的客户公司"
+msgid "Companies whose staff use the Hongwen helpdesk"
+msgstr "使用泓问客服助手的客户公司"
 
 msgid "Console Details"
 msgstr "控制台信息"
@@ -8271,8 +8271,8 @@ msgstr "留空将清除自定义标题。"
 msgid "Manage Customers"
 msgstr "管理客户"
 
-msgid "Manage Wenqu customer companies"
-msgstr "管理问渠客户公司"
+msgid "Manage Hongwen customer companies"
+msgstr "管理泓问客户公司"
 
 msgid "Mobile"
 msgstr "手机号"
@@ -8289,11 +8289,11 @@ msgstr "未找到客户用户"
 msgid "No Customers Found"
 msgstr "未找到客户"
 
-msgid "No Wenqu customer accounts exist yet."
-msgstr "还没有问渠客户账号。"
+msgid "No Hongwen customer accounts exist yet."
+msgstr "还没有泓问客户账号。"
 
-msgid "No Wenqu customers have been created yet."
-msgstr "还没有创建问渠客户。"
+msgid "No Hongwen customers have been created yet."
+msgstr "还没有创建泓问客户。"
 
 msgid "No customer (global)"
 msgstr "无客户（全局）"
@@ -8496,32 +8496,35 @@ msgstr "用户名 / 外部 ID"
 msgid "Username is required."
 msgstr "用户名不能为空。"
 
-msgid "Wenqu"
-msgstr "问渠"
+msgid "Hongwen"
+msgstr "泓问"
 
-msgid "Wenqu Chatbot"
-msgstr "问渠聊天机器人"
+msgid "Hongwen Chatbot"
+msgstr "泓问聊天机器人"
 
-msgid "Wenqu Customer Users"
-msgstr "问渠客户用户"
+msgid "Hongwen Customer Users"
+msgstr "泓问客户用户"
 
-msgid "Wenqu Customers"
-msgstr "问渠客户"
+msgid "Hongwen Customers"
+msgstr "泓问客户"
 
-msgid "Wenqu Knowledge Base"
-msgstr "问渠知识库"
+msgid "Hongwen Helpdesk"
+msgstr "泓问帮助台"
 
-msgid "Wenqu profile updated."
-msgstr "问渠客户资料已更新。"
+msgid "Hongwen Knowledge Base"
+msgstr "泓问知识库"
 
-msgid "Wenqu staff console - every question answered, living water from the source. What would you like to test today?"
-msgstr "问渠管理台——有问必答，源头活水。今天想测试点什么？"
+msgid "Hongwen profile updated."
+msgstr "泓问客户资料已更新。"
+
+msgid "Hongwen staff console - every question answered, living water from the source. What would you like to test today?"
+msgstr "泓问管理台——有问必答，源头活水。今天想测试点什么？"
 
 msgid "When a document has the same name"
 msgstr "当文档同名时"
 
-msgid "You do not have access to Wenqu administration."
-msgstr "您没有问渠管理权限。"
+msgid "You do not have access to Hongwen administration."
+msgstr "您没有泓问管理权限。"
 
 msgid "chunks"
 msgstr "分块"

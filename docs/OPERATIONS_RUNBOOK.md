@@ -167,7 +167,7 @@ Run inside the app container: `docker exec waypost_app python manage.py <command
 | `cleanup_orphan_photo_zips` | Sweep orphaned deliverables | **Deletes files.** Has `--dry-run` |
 | `generate_photo_thumbnails --dry-run / --all` | Backfill photo derivatives | Writes objects; `--dry-run` first |
 | `import_kering_master --dry-run` | Master-data import with `ImportRun` tracking | Writes rows; dry run first |
-| `import_helpdesk --dry-run` | Legacy helpdesk → Wenqu data merge (natural-key upserts, `WENQU_LEGACY_DSN`) | **Dry run rolls back.** Real run upserts; re-runnable. Opens the legacy source read-only. Runbook: `DEPLOYMENT.md` §2.15 |
+| `import_helpdesk --dry-run` | Legacy helpdesk → Hongwen data merge (natural-key upserts, `HONGWEN_LEGACY_DSN`) | **Dry run rolls back.** Real run upserts; re-runnable. Opens the legacy source read-only. Runbook: `DEPLOYMENT.md` §2.15 |
 | `reuse_historical_photos` | Copy a prior round's photos into a new inspection | **Net-additive** unless `--prune-superseded`, which deletes the superseded round |
 | `group_unbatched_inspections` | Batch assignment | Writes rows |
 | `setup_demo_admins`, `assets create_sample_assets`, `seed_service_cities` | Demo/seed data | **Never on production** |
@@ -189,9 +189,9 @@ permanently unreadable.
 
 ---
 
-## 7. Wenqu co-tenancy and Helpdesk retirement
+## 7. Hongwen co-tenancy and Helpdesk retirement
 
-The standalone FastAPI **Helpdesk** is merged into Waypost as **Wenqu (问渠)** (PR1–7):
+The standalone FastAPI **Helpdesk** is merged into Waypost as **Hongwen (泓问)** (PR1–7):
 models, services, customer API + SSE, admin pages and a native WeChat client all ship
 inside this application. The legacy stack (`helpdesk_app` + `helpdesk_db` under sean's
 rootless daemon, nginx → `127.0.0.1:8090`) is a **co-tenant in retirement**, not a
@@ -236,7 +236,7 @@ is the operational aftermath.
    (ams keeps working until the inspection client's re-release has propagated).
 5. Data deletion (legacy volumes, `helpdesk-rootless-data-v3`, old backups) is a
    **separate, later, dated decision** — not part of retirement. The pre-merge dump
-   plus the Wenqu rows are then the only copies; verify the Wenqu side first.
+   plus the Hongwen rows are then the only copies; verify the Hongwen side first.
 
 **Rollback within the retention week:** restore/re-enable the helpdesk nginx site
 (it was never edited during the cutover), `sudo nginx -t && sudo systemctl reload

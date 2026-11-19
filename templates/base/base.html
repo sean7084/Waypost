@@ -213,24 +213,24 @@
                         </li>
                         {% endif %}
 
-                        <!-- Wenqu Helpdesk Administration -->
-                        {% if user.can_manage_wenqu %}
+                        <!-- Hongwen Helpdesk Administration -->
+                        {% if user.can_manage_hongwen %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-water"></i> {% trans "Wenqu" %}
+                                <i class="fas fa-water"></i> {% trans "Hongwen" %}
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'wenqu:chatbot' %}">
+                                <li><a class="dropdown-item" href="{% url 'hongwen:chatbot' %}">
                                     <i class="fas fa-comments"></i> {% trans "Chatbot" %}
                                 </a></li>
-                                <li><a class="dropdown-item" href="{% url 'wenqu:file_upload' %}">
+                                <li><a class="dropdown-item" href="{% url 'hongwen:file_upload' %}">
                                     <i class="fas fa-book"></i> {% trans "Knowledge Base" %}
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'wenqu:customer_list' %}">
+                                <li><a class="dropdown-item" href="{% url 'hongwen:customer_list' %}">
                                     <i class="fas fa-building"></i> {% trans "Customers" %}
                                 </a></li>
-                                <li><a class="dropdown-item" href="{% url 'wenqu:user_list' %}">
+                                <li><a class="dropdown-item" href="{% url 'hongwen:user_list' %}">
                                     <i class="fas fa-users"></i> {% trans "Customer Users" %}
                                 </a></li>
                             </ul>

@@ -1,0 +1,103 @@
+<view class="page">
+  <view class="chat-header-spacer" style="height:{{headerTopInset}}px"></view>
+  <view class="chat-header" style="height:{{headerContentHeight}}px">
+    <view class="chat-header-side">
+      <view class="menu-trigger" hover-class="menu-trigger-hover" bindtap="toggleMenu">
+        <view class="menu-trigger-line"></view>
+        <view class="menu-trigger-line menu-trigger-line-short"></view>
+        <view class="menu-trigger-line"></view>
+      </view>
+    </view>
+    <text class="chat-header-title">泓问</text>
+    <view class="chat-header-side"></view>
+  </view>
+
+  <view wx:if="{{menuOpen}}" class="sidebar-mask" bindtap="closeMenu">
+    <view class="sidebar-drawer" style="padding-top:{{menuPanelTop}}px" catchtap="noop">
+      <view class="sidebar-shell">
+        <scroll-view class="sidebar-scroll" scroll-y>
+          <view class="sidebar-section sidebar-section-primary">
+            <view class="sidebar-action" hover-class="sidebar-action-hover" bindtap="handleCreateNewSession">
+              <view class="sidebar-action-icon"><text class="sidebar-action-icon-mark">+</text></view>
+              <view class="sidebar-action-copy"><text class="sidebar-action-title">新对话</text></view>
+            </view>
+          </view>
+
+          <view class="sidebar-section">
+            <text class="sidebar-section-title">历史对话</text>
+
+            <view wx:if="{{sessionsLoading && !sessionSummaries.length}}" class="sidebar-history-state">
+              正在加载历史对话...
+            </view>
+            <view wx:elif="{{sessionsError && !sessionSummaries.length}}" class="sidebar-history-state sidebar-history-state-error">
+              {{sessionsError}}
+            </view>
+            <view wx:elif="{{!sessionSummaries.length}}" class="sidebar-history-state">暂无历史对话</view>
+            <view wx:else class="sidebar-history-list">
+              <view
+                wx:for="{{sessionSummaries}}"
+                wx:key="session_id"
+                class="session-item {{item.session_id === currentSessionId ? 'session-item-active' : ''}}"
+              >
+                <view class="session-item-main" data-session-id="{{item.session_id}}" bindtap="handleSelectSession">
+                  <view class="session-item-copy">
+                    <text class="session-item-title">{{item.title || '未命名对话'}}</text>
+                    <text wx:if="{{item.preview}}" class="session-item-preview">{{item.preview}}</text>
+                  </view>
+                  <text wx:if="{{item.timeLabel}}" class="session-item-time">{{item.timeLabel}}</text>
+                </view>
+                <view
+                  class="session-item-action {{item.session_id === sessionActionBusyId ? 'session-item-action-busy' : ''}}"
+                  data-session-id="{{item.session_id}}"
+                  catchtap="handleSessionActions"
+                >
+                  <text class="session-item-action-mark">...</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="sidebar-footer">
+          <view class="sidebar-footer-divider"></view>
+          <view class="sidebar-logout" hover-class="sidebar-logout-hover" bindtap="handleLogout">
+            <text class="sidebar-logout-label">退出登录</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="banner" wx:if="{{!hasPhone}}">
+    <button class="phone-btn" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">
+      授权小程序取得手机号码，以便我们联系你
+    </button>
+  </view>
+
+  <message-list
+    class="message-area"
+    messages="{{messages}}"
+    assistant-action-state="{{assistantActionState}}"
+    latest-assistant-id="{{latestAssistantId}}"
+    show-latest-actions="{{showLatestActions}}"
+    scroll-into-view="{{scrollIntoView}}"
+    bind:assistant-action="onAssistantAction"
+    bind:quick-reply="onSendQuickReply"
+  />
+
+  <view wx:if="{{pendingMediaPreviewPath}}" class="pending-media">
+    <image class="pending-media-thumb" src="{{pendingMediaPreviewPath}}" mode="aspectFill" />
+    <text class="pending-media-label">图片已附加，随下一条文字或语音发送</text>
+    <view class="pending-media-clear" bindtap="handleClearPendingMedia"><text>×</text></view>
+  </view>
+
+  <view class="input-wrap">
+    <input-bar
+      sending="{{sending}}"
+      bind:send-text="onSendText"
+      bind:send-audio="onSendAudio"
+      bind:send-media="onSendMedia"
+      bind:send-form="onSendForm"
+    />
+  </view>
+</view>

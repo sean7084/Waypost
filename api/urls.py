@@ -13,15 +13,15 @@ from .views import (
 from .views_auth import (
     WeChatBindView, WeChatLoginView, WeChatLookupView, WeChatProfileCompleteView,
 )
-from .wenqu_auth_views import (
-    WenquGetPhoneView, WenquUpdateUserView, WenquWxLoginView,
+from .hongwen_auth_views import (
+    HongwenGetPhoneView, HongwenUpdateUserView, HongwenWxLoginView,
 )
-from .wenqu_views import (
-    WenquChatbotView, WenquChatRegenerateStreamView, WenquChatRegenerateView,
-    WenquChatSessionDetailView, WenquChatSessionListView, WenquChatStreamView,
-    WenquChatView, WenquFileUploadView, WenquSpeakStreamDownloadView,
-    WenquSpeakStreamView, WenquSpeakView, WenquTranscribeView,
-    WenquUploadDownloadView,
+from .hongwen_views import (
+    HongwenChatbotView, HongwenChatRegenerateStreamView, HongwenChatRegenerateView,
+    HongwenChatSessionDetailView, HongwenChatSessionListView, HongwenChatStreamView,
+    HongwenChatView, HongwenFileUploadView, HongwenSpeakStreamDownloadView,
+    HongwenSpeakStreamView, HongwenSpeakView, HongwenTranscribeView,
+    HongwenUploadDownloadView,
 )
 from .inspection_views import StoreInspectionViewSet
 
@@ -47,31 +47,31 @@ urlpatterns = [
     path('auth/wechat/profile/', WeChatProfileCompleteView.as_view(), name='wechat-profile'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 
-    # Wenqu (问渠) customer helpdesk authentication. Business endpoints (chat,
+    # Hongwen (泓问) customer helpdesk authentication. Business endpoints (chat,
     # upload, KB, triage) are added in PR4.
-    path('wenqu/auth/wx_login', WenquWxLoginView.as_view(), name='wenqu-wx-login'),
-    path('wenqu/auth/update_wx_user', WenquUpdateUserView.as_view(), name='wenqu-update-wx-user'),
-    path('wenqu/auth/get-phone', WenquGetPhoneView.as_view(), name='wenqu-get-phone'),
+    path('hongwen/auth/wx_login', HongwenWxLoginView.as_view(), name='hongwen-wx-login'),
+    path('hongwen/auth/update_wx_user', HongwenUpdateUserView.as_view(), name='hongwen-update-wx-user'),
+    path('hongwen/auth/get-phone', HongwenGetPhoneView.as_view(), name='hongwen-get-phone'),
 
-    # Wenqu customer chat surface (PR4). Paths mirror the helpdesk contract
-    # under the /api/v1/wenqu/ namespace; the protected-upload download also
+    # Hongwen customer chat surface (PR4). Paths mirror the helpdesk contract
+    # under the /api/v1/hongwen/ namespace; the protected-upload download also
     # answers at the canonical /api/uploads/<path> (waypost/urls.py) because
-    # that is what wenqu.services.utils.file_store URLs point at.
-    path('wenqu/chatbot', WenquChatbotView.as_view(), name='wenqu-chatbot'),
-    path('wenqu/chat/sessions', WenquChatSessionListView.as_view(), name='wenqu-chat-sessions'),
-    path('wenqu/chat/sessions/<str:session_id>', WenquChatSessionDetailView.as_view(), name='wenqu-chat-session-detail'),
-    path('wenqu/chat', WenquChatView.as_view(), name='wenqu-chat'),
-    path('wenqu/chat/regenerate', WenquChatRegenerateView.as_view(), name='wenqu-chat-regenerate'),
-    path('wenqu/chat/stream', WenquChatStreamView.as_view(), name='wenqu-chat-stream'),
-    path('wenqu/chat/regenerate/stream', WenquChatRegenerateStreamView.as_view(), name='wenqu-chat-regenerate-stream'),
-    path('wenqu/files/upload', WenquFileUploadView.as_view(), name='wenqu-file-upload'),
-    path('wenqu/transcribe', WenquTranscribeView.as_view(), name='wenqu-transcribe'),
-    path('wenqu/speak', WenquSpeakView.as_view(), name='wenqu-speak'),
-    path('wenqu/speak/stream', WenquSpeakStreamView.as_view(), name='wenqu-speak-stream'),
-    path('wenqu/speak/stream/<str:stream_id>', WenquSpeakStreamDownloadView.as_view(), name='wenqu-speak-stream-download'),
+    # that is what hongwen.services.utils.file_store URLs point at.
+    path('hongwen/chatbot', HongwenChatbotView.as_view(), name='hongwen-chatbot'),
+    path('hongwen/chat/sessions', HongwenChatSessionListView.as_view(), name='hongwen-chat-sessions'),
+    path('hongwen/chat/sessions/<str:session_id>', HongwenChatSessionDetailView.as_view(), name='hongwen-chat-session-detail'),
+    path('hongwen/chat', HongwenChatView.as_view(), name='hongwen-chat'),
+    path('hongwen/chat/regenerate', HongwenChatRegenerateView.as_view(), name='hongwen-chat-regenerate'),
+    path('hongwen/chat/stream', HongwenChatStreamView.as_view(), name='hongwen-chat-stream'),
+    path('hongwen/chat/regenerate/stream', HongwenChatRegenerateStreamView.as_view(), name='hongwen-chat-regenerate-stream'),
+    path('hongwen/files/upload', HongwenFileUploadView.as_view(), name='hongwen-file-upload'),
+    path('hongwen/transcribe', HongwenTranscribeView.as_view(), name='hongwen-transcribe'),
+    path('hongwen/speak', HongwenSpeakView.as_view(), name='hongwen-speak'),
+    path('hongwen/speak/stream', HongwenSpeakStreamView.as_view(), name='hongwen-speak-stream'),
+    path('hongwen/speak/stream/<str:stream_id>', HongwenSpeakStreamDownloadView.as_view(), name='hongwen-speak-stream-download'),
     # Namespaced alias of the canonical /api/uploads/<path> download (waypost/urls.py);
     # both serve the same protected blobs.
-    path('wenqu/uploads/<path:relative_path>', WenquUploadDownloadView.as_view(), name='wenqu-upload-download'),
+    path('hongwen/uploads/<path:relative_path>', HongwenUploadDownloadView.as_view(), name='hongwen-upload-download'),
 
     path('', include(router.urls)),
 ]

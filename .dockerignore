@@ -14,10 +14,10 @@ private.*.key
 # --- Local database and runtime data (mounted as volumes instead) ------------
 db.sqlite3
 media/
-# Operator templates are mounted as volumes, but the wenqu prompt packs are
+# Operator templates are mounted as volumes, but the hongwen prompt packs are
 # runtime assets the LLM services load and must ship in the image (PR3).
 template_files/*
-!template_files/wenqu/
+!template_files/hongwen/
 logs/
 staticfiles/
 runtime/
