@@ -1,0 +1,1 @@
+"""Knowledge-base services: source loading, path resolution, vector retrieval, ingestion."""

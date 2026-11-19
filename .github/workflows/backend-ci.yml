@@ -21,7 +21,7 @@ jobs:
     # rather than the SQLite / local-memory defaults used in development.
     services:
       postgres:
-        image: postgres:16
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_DB: waypost_ci
           POSTGRES_USER: waypost

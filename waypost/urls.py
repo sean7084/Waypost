@@ -12,6 +12,7 @@ from django.conf.urls.i18n import i18n_patterns
 from django.views.generic import RedirectView
 
 from api.views import APIDocumentationView
+from api.wenqu_views import WenquProviderAudioView, WenquUploadDownloadView
 from waypost.health import healthz
 
 # Non-internationalized URLs (API, admin, etc.)
@@ -38,6 +39,14 @@ urlpatterns = [
 
     # REST API
     path('api/v1/', include('api.urls')),
+
+    # Wenqu protected media downloads at the canonical helpdesk paths: every URL
+    # wenqu.services.utils.file_store.build_protected_upload_url emits points at
+    # /api/uploads/<...>, and Volcengine file ASR fetches /api/provider/audio/<id>.
+    # These live outside the /api/v1/wenqu/ namespace deliberately (the namespaced
+    # alias in api.urls serves the same view).
+    path('api/uploads/<path:relative_path>', WenquUploadDownloadView.as_view(), name='wenqu-upload-download-canonical'),
+    path('api/provider/audio/<str:share_id>', WenquProviderAudioView.as_view(), name='wenqu-provider-audio'),
 ]
 
 # Internationalized URLs
@@ -72,6 +81,9 @@ urlpatterns += i18n_patterns(
 
     # Invoices
     path('invoices/', include('invoices.urls')),
+
+    # Wenqu (问渠) helpdesk staff administration
+    path('wenqu/', include('wenqu.urls')),
 
     # Mobile interface
     path('m/', include('mobile.urls', namespace='mobile')),

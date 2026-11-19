@@ -1,5 +1,54 @@
 # Waypost - Changelog
 
+## Unreleased — Wenqu (问渠) brand launch and helpdesk merge
+
+**Branch:** `feat/wenqu-migration` (PR1–7). **Not yet released or deployed.** The standalone
+FastAPI Helpdesk is merged into Waypost as the **Wenqu (问渠)** customer helpdesk, and the
+public hostname prepares to move `ams.istore-tech.cn` → `waypost.istore-tech.cn`.
+
+### Highlights
+
+1. **The helpdesk product ships inside Waypost.** PR1 grafted the mini-program client history
+   into `wenqu-miniprogram/`; PR2 ported the SQLAlchemy schema to Django models
+   (`wenqu/models.py`) with the split identity — `accounts.User` + appid-scoped
+   `WeChatIdentity` + `WenquProfile` (the profile row marks a customer; no new role on the
+   user table) — and customer WeChat auth with the `tv` (token_version) revocation claim;
+   PR3 rewrote the services (chat orchestrator, KB ingestion/retrieval, triage engine,
+   Qwen/Volcengine providers, moderation, registries) onto the ORM; PR4 added the customer
+   API under `/api/v1/wenqu/` with synchronous SSE streams; PR5 added the staff admin pages
+   under `/wenqu/`; PR6 rewrote the client natively (no uni-app build chain).
+2. **Embeddings are JSONField lists with a query-time pgvector cast** — one codebase runs on
+   SQLite (dev/test) and `pgvector/pgvector:pg16` (prod); ivfflat is named performance debt.
+   **SSE stays WSGI** with `--threads 8` (ASGI rejected); nginx carries unbuffered stream
+   locations. **Customer uploads/TTS/KB attachments live on a dedicated private storage**
+   outside the public `/media/` alias, served only through authenticated views.
+   ADR-0021…0024 record these decisions.
+3. **Production data merge command** (`wenqu/management/commands/import_helpdesk.py`):
+   psycopg2 read-only connection to the legacy PG17 (`WENQU_LEGACY_DSN`), natural-key
+   idempotent upserts for all twelve business tables, legacy upload blobs copied through
+   `private_storage().save` (`WENQU_LEGACY_UPLOADS_DIR`), pgvector text parsed into JSON
+   lists (**embeddings never recomputed**), naive-UTC timestamps preserved through
+   `auto_now_add`, legacy admin users imported as customers with permission bits intact,
+   `password_reset_codes` skipped. `--dry-run` rolls the whole transaction back (no blob
+   writes); a normal run ends with a per-table source-vs-imported reconciliation.
+4. **Domain cutover prepared.** `docker/nginx/waypost.conf` serves both hostnames from one
+   site (host-preserving :80 redirect, cert-first install order reinforced — a bad reload
+   takes the shared Helpdesk down too); the inspection client's prod base URL switches to
+   waypost (needs a re-release); `DJANGO_ALLOWED_HOSTS`/`DJANGO_CSRF_TRUSTED_ORIGINS` are
+   env-driven and must list both names during the transition. `docs/DEPLOYMENT.md` §2.14–§2.15
+   carry the full Wenqu env list, the **env gap** (the root `.env` still has only the legacy
+   `WECHAT_HELPDESK_*` names — `WECHAT_WENQU_APPID/APPSECRET/CI_PRIVATE_KEY` must be set, and
+   the CI key file must be downloaded from the MP console), and a copy-pasteable cutover
+   runbook with observation→conclusion tables (certificate SAN → nginx → frozen-window
+   import → client release → retirement → rollback).
+5. **Retirement is an operational procedure, not a code change.** `docs/OPERATIONS_RUNBOOK.md`
+   §7: the legacy stack stays stopped-but-intact for one week (rollback = nginx back to 8090
+   + `docker start helpdesk_app`); 🔴 the helpdesk site owns the 80/443 `default_server`, so
+   removing it must give Waypost an explicit default fallback in the same edit. The Aliyun
+   ops KB (`instance/deployment.md`, `instance/operations.md`) is synced.
+
+---
+
 ## Release Notes v0.3.0
 
 **Version:** 0.3.0

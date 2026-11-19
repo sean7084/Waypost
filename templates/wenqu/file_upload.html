@@ -1,0 +1,409 @@
+{% extends "base/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Wenqu Knowledge Base" %} - Waypost{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kb-preview-snippet {
+        background: var(--wp-color-surface-sunken);
+        border: 1px solid var(--wp-color-border);
+        border-radius: var(--wp-radius-md);
+        padding: var(--wp-space-3);
+        font-size: var(--wp-font-size-sm);
+        white-space: pre-wrap;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+    .kb-preview-panel {
+        max-height: 560px;
+        overflow-y: auto;
+    }
+    .kb-result-list {
+        list-style: none;
+        padding-left: 0;
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-book text-primary me-2"></i>
+                {% trans "Wenqu Knowledge Base" %}
+            </h1>
+            <p class="text-muted mb-0">{% trans "Upload source documents, inspect extracted chunks, replace or remove them" %}</p>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-1">{% trans "Upload Documents" %}</h2>
+                    <p class="text-muted small">{% trans "Files are ingested into the retrieval index immediately." %}</p>
+                    <div id="kb-status" class="d-none" role="status" aria-live="polite"></div>
+                    <form id="kb-upload-form" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="kb-customer" class="form-label">{% trans "Customer" %}</label>
+                            <select id="kb-customer" name="customer_id" class="form-select">
+                                <option value="">{% trans "Global (shared across customers)" %}</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}" {% if selected_customer_id == customer.id %}selected{% endif %}>{{ customer.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="kb-conflict" class="form-label">{% trans "When a document has the same name" %}</label>
+                            <select id="kb-conflict" name="conflict_mode" class="form-select">
+                                <option value="keep_both">{% trans "Keep both documents" %}</option>
+                                <option value="overwrite">{% trans "Overwrite the same-name document" %}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="kb-files" class="form-label">{% trans "Source documents" %}</label>
+                            <input type="file" id="kb-files" name="files" class="form-control"
+                                   accept=".pdf,.docx,.doc,.txt" multiple required>
+                            <div class="form-text">{% trans "Supported formats: PDF, DOCX, DOC, TXT." %}</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" id="kb-upload-btn">
+                                <i class="fas fa-upload me-1"></i>
+                                {% trans "Upload" %}
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="kb-refresh-btn">
+                                <i class="fas fa-sync me-1"></i>
+                                {% trans "Refresh" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-1">{% trans "Document Preview" %}</h2>
+                    <p class="text-muted small">{% trans "Extracted chunk text - what retrieval actually searches against." %}</p>
+                    <div id="kb-preview-panel" class="kb-preview-panel">
+                        <div class="text-center text-muted py-5" id="kb-preview-empty">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i>
+                            <p class="mb-0">{% trans "Select a document to preview its chunks." %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 class="h5 mb-0">{% trans "Current Documents" %}</h2>
+                    <p class="text-muted small mb-0">{% trans "Scoped to the customer selected above." %}</p>
+                </div>
+                <span class="badge bg-primary-subtle text-primary-emphasis" id="kb-document-count"></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "Document" %}</th>
+                            <th>{% trans "Type" %}</th>
+                            <th>{% trans "Indexed" %}</th>
+                            <th>{% trans "Chunks" %}</th>
+                            <th class="text-end">{% trans "Actions" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kb-documents-body"></tbody>
+                </table>
+            </div>
+            <div id="kb-documents-empty" class="text-center text-muted py-4 d-none">
+                <i class="fas fa-folder-open fa-2x mb-2"></i>
+                <p class="mb-0">{% trans "No documents in this scope yet." %}</p>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="kb-replace-input" class="d-none" accept=".pdf,.docx,.doc,.txt">
+</div>
+
+{{ initial_documents|json_script:"kb-initial-documents" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    var KB_BASE = "{% url 'wenqu:kb_documents' %}";
+    var KB_UPLOAD_URL = "{% url 'wenqu:kb_upload' %}";
+    var MSG = {
+        uploading: "{% trans 'Uploading documents...' %}",
+        uploadFailed: "{% trans 'Upload failed.' %}",
+        loadFailed: "{% trans 'Could not load documents.' %}",
+        previewFailed: "{% trans 'Could not load the preview.' %}",
+        deleteFailed: "{% trans 'Could not delete the document.' %}",
+        replaceFailed: "{% trans 'Could not replace the document.' %}",
+        confirmDelete: "{% trans 'Delete this document and its indexed chunks?' %}",
+        replacing: "{% trans 'Replacing the selected document...' %}",
+        refreshed: "{% trans 'Document list refreshed.' %}",
+        documentsUnit: "{% trans 'documents' %}",
+        chunksUnit: "{% trans 'chunks' %}",
+        chunkLabel: "{% trans 'Chunk' %}",
+        noChunks: "{% trans 'This document has no indexed chunks.' %}",
+        noText: "{% trans 'No text' %}",
+        preview: "{% trans 'Preview' %}",
+        open: "{% trans 'Open' %}",
+        download: "{% trans 'Download' %}",
+        replace: "{% trans 'Replace' %}",
+        deleteAction: "{% trans 'Delete' %}",
+        success: "{% trans 'Success' %}",
+        error: "{% trans 'Error' %}",
+        unknownDate: "{% trans 'Unknown' %}"
+    };
+
+    var customerSelect = document.getElementById('kb-customer');
+    var uploadForm = document.getElementById('kb-upload-form');
+    var fileInput = document.getElementById('kb-files');
+    var statusBox = document.getElementById('kb-status');
+    var documentsBody = document.getElementById('kb-documents-body');
+    var documentsEmpty = document.getElementById('kb-documents-empty');
+    var documentCount = document.getElementById('kb-document-count');
+    var previewPanel = document.getElementById('kb-preview-panel');
+    var replaceInput = document.getElementById('kb-replace-input');
+    var replaceTargetId = null;
+
+    function readJsonScript(id, fallback) {
+        var node = document.getElementById(id);
+        if (!node) { return fallback; }
+        try { return JSON.parse(node.textContent); } catch (e) { return fallback; }
+    }
+
+    function csrfToken() {
+        var match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]*)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+        });
+    }
+
+    function scopeQuery() {
+        var cid = customerSelect.value;
+        return cid ? '?customer_id=' + encodeURIComponent(cid) : '';
+    }
+
+    function showStatus(kind, message, results) {
+        var html = '<div>' + escapeHtml(message) + '</div>';
+        if (Array.isArray(results) && results.length) {
+            html += '<ul class="kb-result-list mt-2">';
+            results.forEach(function (result) {
+                var badge = result.status === 'error'
+                    ? '<span class="badge bg-danger-subtle text-danger-emphasis">' + MSG.error + '</span>'
+                    : '<span class="badge bg-success-subtle text-success-emphasis">' + MSG.success + '</span>';
+                html += '<li class="d-flex justify-content-between align-items-start gap-2 mb-1">'
+                    + '<span><strong>' + escapeHtml(result.filename) + '</strong><br>'
+                    + '<span class="small text-muted">' + escapeHtml(result.message) + '</span></span>'
+                    + badge + '</li>';
+            });
+            html += '</ul>';
+        }
+        statusBox.innerHTML = html;
+        statusBox.className = 'alert alert-' + kind;
+    }
+
+    function hideStatus() {
+        statusBox.className = 'd-none';
+        statusBox.innerHTML = '';
+    }
+
+    function formatDate(isoValue) {
+        if (!isoValue) { return MSG.unknownDate; }
+        var parsed = new Date(isoValue);
+        return isNaN(parsed.getTime()) ? MSG.unknownDate : parsed.toLocaleString();
+    }
+
+    function renderDocuments(documents) {
+        documentsBody.innerHTML = '';
+        documentCount.textContent = documents.length + ' ' + MSG.documentsUnit;
+        documentsEmpty.classList.toggle('d-none', documents.length > 0);
+        documents.forEach(function (doc) {
+            var row = document.createElement('tr');
+            var downloadUrl = KB_BASE + doc.id + '/download/' + scopeQuery();
+            row.innerHTML =
+                '<td><div class="fw-semibold">' + escapeHtml(doc.display_name) + '</div></td>'
+                + '<td><span class="badge bg-light text-dark border">' + escapeHtml(String(doc.source_type || '').toUpperCase()) + '</span></td>'
+                + '<td class="text-muted small">' + escapeHtml(formatDate(doc.created_at)) + '</td>'
+                + '<td>' + escapeHtml(doc.chunk_count) + '</td>'
+                + '<td class="text-end"><div class="btn-group btn-group-sm">'
+                + '<button type="button" class="btn btn-outline-primary" data-action="preview" data-id="' + doc.id + '">' + MSG.preview + '</button>'
+                + '<a class="btn btn-outline-secondary" target="_blank" rel="noopener" href="' + downloadUrl + '">' + MSG.open + '</a>'
+                + '<a class="btn btn-outline-secondary" download href="' + downloadUrl + '">' + MSG.download + '</a>'
+                + '<button type="button" class="btn btn-outline-warning" data-action="replace" data-id="' + doc.id + '">' + MSG.replace + '</button>'
+                + '<button type="button" class="btn btn-outline-danger" data-action="delete" data-id="' + doc.id + '">' + MSG.deleteAction + '</button>'
+                + '</div></td>';
+            documentsBody.appendChild(row);
+        });
+    }
+
+    function renderPreview(preview) {
+        if (!preview) {
+            previewPanel.innerHTML =
+                '<div class="text-center text-muted py-5">'
+                + '<i class="fas fa-file-alt fa-2x mb-2"></i>'
+                + '<p class="mb-0">' + escapeHtml("{% trans 'Select a document to preview its chunks.' %}") + '</p></div>';
+            return;
+        }
+        var chunksHtml = '';
+        if (preview.chunks && preview.chunks.length) {
+            preview.chunks.forEach(function (chunk) {
+                var section = chunk.page_or_section ? ' &middot; ' + escapeHtml(chunk.page_or_section) : '';
+                chunksHtml +=
+                    '<div class="mb-3">'
+                    + '<div class="fw-semibold small mb-1">' + MSG.chunkLabel + ' ' + (chunk.chunk_index + 1)
+                    + ' <span class="text-muted fw-normal">' + escapeHtml(chunk.chunk_type) + section + '</span></div>'
+                    + '<div class="kb-preview-snippet">' + escapeHtml(chunk.snippet || MSG.noText) + '</div>'
+                    + '</div>';
+            });
+        } else {
+            chunksHtml = '<p class="text-muted">' + escapeHtml(MSG.noChunks) + '</p>';
+        }
+        var downloadUrl = KB_BASE + preview.id + '/download/' + scopeQuery();
+        previewPanel.innerHTML =
+            '<div class="d-flex flex-wrap gap-2 align-items-center mb-3">'
+            + '<span class="badge bg-primary-subtle text-primary-emphasis">' + escapeHtml(preview.display_name) + '</span>'
+            + '<span class="badge bg-light text-dark border">' + escapeHtml(String(preview.source_type || '').toUpperCase()) + '</span>'
+            + '<span class="badge bg-light text-dark border">' + preview.chunk_count + ' ' + MSG.chunksUnit + '</span>'
+            + '<a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" href="' + downloadUrl + '">' + MSG.open + '</a>'
+            + '<a class="btn btn-sm btn-outline-secondary" download href="' + downloadUrl + '">' + MSG.download + '</a>'
+            + '</div>' + chunksHtml;
+    }
+
+    async function loadDocuments() {
+        var response = await fetch(KB_BASE + scopeQuery(), { headers: { 'Accept': 'application/json' } });
+        var payload = await response.json();
+        if (!response.ok) { throw new Error(payload.detail || MSG.loadFailed); }
+        renderDocuments(payload.documents || []);
+    }
+
+    async function previewDocument(documentId) {
+        var response = await fetch(KB_BASE + documentId + '/' + scopeQuery(), { headers: { 'Accept': 'application/json' } });
+        var payload = await response.json();
+        if (!response.ok) { throw new Error(payload.detail || MSG.previewFailed); }
+        renderPreview(payload);
+    }
+
+    async function deleteDocument(documentId) {
+        if (!window.confirm(MSG.confirmDelete)) { return; }
+        var response = await fetch(KB_BASE + documentId + '/delete/' + scopeQuery(), {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken() }
+        });
+        var payload = await response.json();
+        if (!response.ok) { throw new Error(payload.detail || MSG.deleteFailed); }
+        showStatus('success', payload.message || '');
+        renderDocuments(payload.documents || []);
+        renderPreview(null);
+    }
+
+    async function replaceDocument(documentId, file) {
+        var formData = new FormData();
+        formData.append('file', file);
+        if (customerSelect.value) { formData.append('customer_id', customerSelect.value); }
+        var response = await fetch(KB_BASE + documentId + '/replace/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken() },
+            body: formData
+        });
+        var payload = await response.json();
+        if (!response.ok) { throw new Error(payload.detail || MSG.replaceFailed); }
+        showStatus('success', payload.message || '');
+        renderDocuments(payload.documents || []);
+        await previewDocument(documentId);
+    }
+
+    uploadForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        if (!fileInput.files || !fileInput.files.length) { return; }
+        showStatus('warning', MSG.uploading);
+        var formData = new FormData();
+        if (customerSelect.value) { formData.append('customer_id', customerSelect.value); }
+        formData.append('conflict_mode', document.getElementById('kb-conflict').value);
+        Array.prototype.forEach.call(fileInput.files, function (file) { formData.append('files', file); });
+        try {
+            var response = await fetch(KB_UPLOAD_URL, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken() },
+                body: formData
+            });
+            var payload = await response.json();
+            if (!response.ok) {
+                var detail = payload.detail || MSG.uploadFailed;
+                if (payload.errors) {
+                    Object.keys(payload.errors).forEach(function (field) {
+                        detail += ' ' + payload.errors[field].join(' ');
+                    });
+                }
+                throw new Error(detail);
+            }
+            var kind = payload.failure_count === 0 ? 'success' : (payload.success_count === 0 ? 'danger' : 'warning');
+            showStatus(kind, payload.message || '', payload.results || []);
+            renderDocuments(payload.documents || []);
+            fileInput.value = '';
+        } catch (error) {
+            showStatus('danger', error.message || MSG.uploadFailed);
+        }
+    });
+
+    customerSelect.addEventListener('change', async function () {
+        renderPreview(null);
+        hideStatus();
+        try { await loadDocuments(); } catch (error) { showStatus('danger', error.message || MSG.loadFailed); }
+    });
+
+    document.getElementById('kb-refresh-btn').addEventListener('click', async function () {
+        try {
+            await loadDocuments();
+            showStatus('success', MSG.refreshed);
+        } catch (error) {
+            showStatus('danger', error.message || MSG.loadFailed);
+        }
+    });
+
+    documentsBody.addEventListener('click', async function (event) {
+        var trigger = event.target.closest('[data-action]');
+        if (!trigger) { return; }
+        var action = trigger.getAttribute('data-action');
+        var documentId = trigger.getAttribute('data-id');
+        try {
+            if (action === 'preview') { await previewDocument(documentId); }
+            else if (action === 'delete') { await deleteDocument(documentId); }
+            else if (action === 'replace') { replaceTargetId = documentId; replaceInput.click(); }
+        } catch (error) {
+            showStatus('danger', error.message || MSG.loadFailed);
+        }
+    });
+
+    replaceInput.addEventListener('change', async function () {
+        var file = replaceInput.files && replaceInput.files[0];
+        if (!file || !replaceTargetId) { return; }
+        showStatus('warning', MSG.replacing);
+        try { await replaceDocument(replaceTargetId, file); }
+        catch (error) { showStatus('danger', error.message || MSG.replaceFailed); }
+        finally { replaceInput.value = ''; replaceTargetId = null; }
+    });
+
+    var initialDocuments = readJsonScript('kb-initial-documents', []);
+    renderDocuments(Array.isArray(initialDocuments) ? initialDocuments : []);
+    renderPreview(null);
+})();
+</script>
+{% endblock %}

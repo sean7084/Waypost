@@ -24,15 +24,22 @@ class WeChatAuthError(Exception):
         self.errmsg = errmsg
 
 
-def code2session(js_code, timeout=10):
+def code2session(js_code, timeout=10, appid=None, secret=None):
     """Exchange a wx.login() code for openid/unionid/session_key.
 
     Returns a dict: {'openid', 'unionid', 'session_key'}.
     Raises WeChatAuthError on missing config, network failure, or a WeChat
     API error (e.g. 40029 invalid code, 40163 code been used).
+
+    ``appid``/``secret`` default to the staff inspection mini program
+    (settings.WECHAT_MINI_APPID/SECRET). The Wenqu customer mini program passes
+    its own credentials (settings.WECHAT_WENQU_APPID/SECRET) so the two clients
+    never share an openid scope.
     """
-    appid = settings.WECHAT_MINI_APPID
-    secret = settings.WECHAT_MINI_APPSECRET
+    if appid is None:
+        appid = settings.WECHAT_MINI_APPID
+    if secret is None:
+        secret = settings.WECHAT_MINI_APPSECRET
     if not appid or not secret:
         raise WeChatAuthError('WeChat mini-program AppID/AppSecret are not configured.')
     if not js_code:

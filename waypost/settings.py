@@ -185,6 +185,22 @@ if not DEBUG and (not WECHAT_MINI_APPID or not WECHAT_MINI_APPSECRET):
         'DJANGO_DEBUG is False.'
     )
 
+# Wenqu (问渠) customer helpdesk mini program. A *separate* WeChat mini program
+# from the staff inspection client above, so it has its own AppID/AppSecret and
+# its own WeChatIdentity appid scope. Customers auto-register on first wx.login;
+# AppSecret is server-side only and MUST be set in production.
+WECHAT_WENQU_APPID = os.environ.get('WECHAT_WENQU_APPID', '').strip()
+WECHAT_WENQU_APPSECRET = os.environ.get('WECHAT_WENQU_APPSECRET', '').strip()
+
+# Same fail-fast shape as the staff mini program: without creds jscode2session
+# cannot work and customer login would silently fail.
+if not DEBUG and (not WECHAT_WENQU_APPID or not WECHAT_WENQU_APPSECRET):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        'WECHAT_WENQU_APPID and WECHAT_WENQU_APPSECRET must be set when '
+        'DJANGO_DEBUG is False.'
+    )
+
 # ---------------------------------------------------------------------------
 # RFQ LLM. Names are provider-neutral because the provider is configuration,
 # not identity: switching vendor must not rename settings, rewrite `.env`, and
@@ -288,6 +304,7 @@ INSTALLED_APPS = [
     'purchases',  # Purchase and stock management
     'deliveries',  # Delivery order management
     'invoices',  # Weekly sharepoint processing and invoice staging
+    'wenqu',  # Wenqu (问渠) customer AI helpdesk mini-program backend
 ]
 
 MIDDLEWARE = [
@@ -519,6 +536,116 @@ MEDIA_URL = (
     else '/media/'
 )
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# ---------------------------------------------------------------------------
+# Wenqu private storage and knowledge base.
+#
+# WENQU_PRIVATE_MEDIA_ROOT is deliberately NOT under MEDIA_ROOT: nginx serves
+# /media/ publicly, while Wenqu customer uploads / TTS audio / KB attachments
+# must only be reachable through authenticated Django views. wenqu.services.
+# storage.private_storage() pins a FileSystemStorage here (see that module).
+# In production this is a bind mount under ${WAYPOST_DATA_DIR}/private.
+#
+# WENQU_KB_SOURCES_DIR holds the source documents that KBDocument paths are relative to.
+# WENQU_TRIAGE_ENABLED gates the guided-triage engine (PR3/PR4).
+# ---------------------------------------------------------------------------
+WENQU_PRIVATE_MEDIA_ROOT = os.environ.get('WENQU_PRIVATE_MEDIA_ROOT') or str(BASE_DIR / 'private_media')
+WENQU_KB_SOURCES_DIR = os.environ.get('WENQU_KB_SOURCES_DIR') or str(BASE_DIR / 'kb_sources')
+WENQU_TRIAGE_ENABLED = _env_bool('WENQU_TRIAGE_ENABLED', True)
+
+# Legacy helpdesk data import (PR7, wenqu/management/commands/import_helpdesk.py).
+# Both empty in development; the command refuses to run without a DSN. The DSN
+# points at the standalone helpdesk's PostgreSQL 17 (pgvector/pgvector:pg17);
+# the uploads dir is the legacy blob root (prod:
+# /home/sean/helpdesk-rootless-data-v3/uploads). Set them only for the migration
+# window - the command opens the source read-only. See docs/DEPLOYMENT.md.
+WENQU_LEGACY_DSN = os.environ.get('WENQU_LEGACY_DSN', '').strip()
+WENQU_LEGACY_UPLOADS_DIR = os.environ.get('WENQU_LEGACY_UPLOADS_DIR', '').strip()
+
+# Wenqu cache registries (PR4): TTS stream playback + Volcengine ASR audio shares
+# live in django.core.cache (Redis prod / locmem dev) with the helpdesk's 15-minute
+# TTL. The speak/stream IP throttle is blast-radius protection only (XFF is
+# spoofable); per-customer can_chat/can_upload flags are the real gate.
+WENQU_REGISTRY_TTL_SECONDS = int(os.environ.get('WENQU_REGISTRY_TTL_SECONDS', '900'))
+WENQU_SPEAK_STREAM_IP_WINDOW_SECONDS = int(os.environ.get('WENQU_SPEAK_STREAM_IP_WINDOW_SECONDS', '900'))
+WENQU_SPEAK_STREAM_IP_MAX_HITS = int(os.environ.get('WENQU_SPEAK_STREAM_IP_MAX_HITS', '30'))
+
+# ---------------------------------------------------------------------------
+# Wenqu LLM providers, content moderation and password-reset email (PR3).
+#
+# Env names are kept verbatim from the standalone helpdesk backend so the same
+# .env block lifts across unchanged. Everything is empty in development; the
+# service modules raise at call time when a key they actually need is missing
+# (mirrors helpdesk's _require_api_key), so no extra hard prod guard is imposed
+# here beyond the WeChat customer-auth guard above. Numeric knobs are stored as
+# raw strings and parsed by the services, preserving helpdesk's floor/default
+# logic; boolean flags are parsed here.
+# ---------------------------------------------------------------------------
+QWEN_API_KEY = _env_first('QWEN_API_KEY', 'OPENROUTER_API_KEY')
+VOLCENGINE_API_KEY = _env_first('VOLCENGINE_API_KEY', 'VOLCENGINE_ARK_API_KEY', 'ARK_API_KEY')
+VOLCENGINE_SPEECH_API_KEY = _env_first('VOLCENGINE_SPEECH_API_KEY', 'VOLCENGINE_API_KEY')
+
+# Optional provider endpoint overrides (empty -> the vendor default URL).
+QWEN_EMBED_URL = _env_first('QWEN_EMBED_URL', 'OPENROUTER_EMBED_URL')
+QWEN_ASR_URL = _env_first('QWEN_ASR_URL', 'QWEN_GENERATION_URL', 'OPENROUTER_ASR_URL')
+QWEN_TTS_URL = _env_first('QWEN_TTS_URL', 'OPENROUTER_TTS_URL')
+QWEN_TTS_AUDIO_FORMAT = _env_first('QWEN_TTS_AUDIO_FORMAT', 'QWEN_TTS_FORMAT', 'OPENROUTER_TTS_AUDIO_FORMAT', 'OPENROUTER_TTS_FORMAT')
+QWEN_TTS_SAMPLE_RATE = _env_first('QWEN_TTS_SAMPLE_RATE', 'OPENROUTER_TTS_SAMPLE_RATE')
+QWEN_WORKSPACE_ID = _env_first('QWEN_WORKSPACE_ID', 'QWEN_WORKSPACE')
+QWEN_DATA_INSPECTION = _env_first('QWEN_DATA_INSPECTION')
+QWEN_INCLUDE_REASONING = _env_bool('QWEN_INCLUDE_REASONING', False)
+QWEN_REFERRER = _env_first('QWEN_REFERRER', 'OPENROUTER_REFERRER')
+QWEN_TITLE = _env_first('QWEN_TITLE', 'OPENROUTER_TITLE')
+
+VOLCENGINE_ARK_BASE_URL = _env_first('VOLCENGINE_ARK_BASE_URL', default='https://ark.cn-beijing.volces.com/api/v3')
+VOLCENGINE_EMBED_URL = _env_first('VOLCENGINE_EMBED_URL')
+VOLCENGINE_MULTIMODAL_EMBED_URL = _env_first('VOLCENGINE_MULTIMODAL_EMBED_URL')
+VOLCENGINE_ASR_SUBMIT_URL = _env_first('VOLCENGINE_ASR_SUBMIT_URL', default='https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit')
+VOLCENGINE_ASR_QUERY_URL = _env_first('VOLCENGINE_ASR_QUERY_URL', default='https://openspeech.bytedance.com/api/v3/auc/bigmodel/query')
+VOLCENGINE_TTS_WS_URL = _env_first('VOLCENGINE_TTS_WS_URL', 'VOLCENGINE_TTS_URL')
+VOLCENGINE_ASR_UID = _env_first('VOLCENGINE_ASR_UID')
+VOLCENGINE_TTS_UID = _env_first('VOLCENGINE_TTS_UID', 'VOLCENGINE_ASR_UID')
+VOLCENGINE_TTS_NAMESPACE = _env_first('VOLCENGINE_TTS_NAMESPACE')
+VOLCENGINE_ASR_POLL_INTERVAL_SECONDS = _env_first('VOLCENGINE_ASR_POLL_INTERVAL_SECONDS')
+VOLCENGINE_ASR_POLL_TIMEOUT_SECONDS = _env_first('VOLCENGINE_ASR_POLL_TIMEOUT_SECONDS')
+# Public base URL of this backend, required only for Volcengine file ASR (it must
+# be able to fetch the short-lived audio URL over the public internet).
+PUBLIC_API_BASE_URL = _env_first('PUBLIC_API_BASE_URL')
+
+# Model defaults (provider/model_id). Empty -> the code defaults in
+# wenqu.services.llm.model_selector remain the single source of truth.
+PRIMARY_TEXT_MODEL = _env_first('PRIMARY_TEXT_MODEL')
+BACKUP_TEXT_MODEL = _env_first('BACKUP_TEXT_MODEL')
+PRIMARY_VISION_MODEL = _env_first('PRIMARY_VISION_MODEL')
+BACKUP_VISION_MODEL = _env_first('BACKUP_VISION_MODEL')
+PRIMARY_ASR_MODEL = _env_first('PRIMARY_ASR_MODEL')
+BACKUP_ASR_MODEL = _env_first('BACKUP_ASR_MODEL')
+PRIMARY_EMBED_MODEL = _env_first('PRIMARY_EMBED_MODEL')
+BACKUP_EMBED_MODEL = _env_first('BACKUP_EMBED_MODEL')
+PRIMARY_TTS_MODEL = _env_first('PRIMARY_TTS_MODEL')
+BACKUP_TTS_MODEL = _env_first('BACKUP_TTS_MODEL')
+PRIMARY_OMNI_MODEL = _env_first('PRIMARY_OMNI_MODEL')
+BACKUP_OMNI_MODEL = _env_first('BACKUP_OMNI_MODEL', 'FALLBACK_OMNI_MODEL')
+QWEN_TTS_DEFAULT_VOICE = _env_first('QWEN_TTS_DEFAULT_VOICE', 'TTS_DEFAULT_VOICE')
+VOLCENGINE_TTS_DEFAULT_VOICE = _env_first('VOLCENGINE_TTS_DEFAULT_VOICE')
+
+# WeChat content moderation (msgSecCheck / imgSecCheck). Uses the wenqu appid
+# credentials above; with no credentials every check is skipped.
+MODERATION_ENABLED = _env_bool('MODERATION_ENABLED', True)
+MODERATION_FAIL_OPEN = _env_bool('MODERATION_FAIL_OPEN', True)
+MODERATION_SCENE = _env_first('MODERATION_SCENE')
+MODERATION_TIMEOUT_SECONDS = _env_first('MODERATION_TIMEOUT_SECONDS')
+
+# Password-reset email over plain SMTP (stdlib smtplib). Independent of Waypost's
+# per-mailbox DatabaseSMTPEmailBackend: this is the wenqu customer reset relay.
+PASSWORD_RESET_EMAIL_ENABLED = _env_bool('PASSWORD_RESET_EMAIL_ENABLED', True)
+SMTP_HOST = _env_first('SMTP_HOST')
+SMTP_PORT = _env_first('SMTP_PORT')
+SMTP_USERNAME = _env_first('SMTP_USERNAME')
+SMTP_PASSWORD = _env_first('SMTP_PASSWORD')
+SMTP_FROM = _env_first('SMTP_FROM')
+SMTP_SECURITY = _env_first('SMTP_SECURITY')
+SMTP_TIMEOUT_SECONDS = _env_first('SMTP_TIMEOUT_SECONDS')
 
 # Cache backend.
 # Production: Redis via django-redis when DJANGO_REDIS_CACHE_URL is set

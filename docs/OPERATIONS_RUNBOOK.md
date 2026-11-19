@@ -167,6 +167,7 @@ Run inside the app container: `docker exec waypost_app python manage.py <command
 | `cleanup_orphan_photo_zips` | Sweep orphaned deliverables | **Deletes files.** Has `--dry-run` |
 | `generate_photo_thumbnails --dry-run / --all` | Backfill photo derivatives | Writes objects; `--dry-run` first |
 | `import_kering_master --dry-run` | Master-data import with `ImportRun` tracking | Writes rows; dry run first |
+| `import_helpdesk --dry-run` | Legacy helpdesk → Wenqu data merge (natural-key upserts, `WENQU_LEGACY_DSN`) | **Dry run rolls back.** Real run upserts; re-runnable. Opens the legacy source read-only. Runbook: `DEPLOYMENT.md` §2.15 |
 | `reuse_historical_photos` | Copy a prior round's photos into a new inspection | **Net-additive** unless `--prune-superseded`, which deletes the superseded round |
 | `group_unbatched_inspections` | Batch assignment | Writes rows |
 | `setup_demo_admins`, `assets create_sample_assets`, `seed_service_cities` | Demo/seed data | **Never on production** |
@@ -188,7 +189,66 @@ permanently unreadable.
 
 ---
 
-## 7. Known gaps this runbook cannot close
+## 7. Wenqu co-tenancy and Helpdesk retirement
+
+The standalone FastAPI **Helpdesk** is merged into Waypost as **Wenqu (问渠)** (PR1–7):
+models, services, customer API + SSE, admin pages and a native WeChat client all ship
+inside this application. The legacy stack (`helpdesk_app` + `helpdesk_db` under sean's
+rootless daemon, nginx → `127.0.0.1:8090`) is a **co-tenant in retirement**, not a
+dependency. The cutover itself — certificate SAN, nginx deploy, the frozen-window data
+import and its reconciliation — is [`DEPLOYMENT.md`](DEPLOYMENT.md) §2.15; this section
+is the operational aftermath.
+
+**While both stacks run (the retention week):**
+
+- The legacy app is **stopped** after the migration window (`docker stop helpdesk_app`,
+  as sean). Its nginx site still answers `admin./api.helpdesk.istore-tech.cn` with 502
+  while stopped — that is expected, not an incident. Restarting it is the rollback.
+- Waypost serves `ams.istore-tech.cn` **and** `waypost.istore-tech.cn` from one site
+  file and one certificate (both SANs, HTTP-01, auto-renewed). The helpdesk wildcard
+  certificate remains manual DNS-01 — do not let the two renewal stories mix.
+- The legacy data (`/home/sean/helpdesk-rootless-data-v3/{uploads,kb_sources,tts}`,
+  the `postgres_data` volume, `/srv/helpdesk/backups/pre-merge-*.dump`) is the rollback
+  artifact. **Nothing is deleted during the retention week.**
+- The temporary `helpdesk_legacy` database inside `waypost_db` (the import source) can
+  be dropped once the reconciliation is signed off: `docker compose exec -T db dropdb
+  -U waypost_django helpdesk_legacy`. The pre-merge dump, not this copy, is the artifact.
+
+**Retirement (≥ 1 week after the client releases, root, ONE change):**
+
+1. 🔴 **The helpdesk site owns the 80/443 `default_server` (bare IP).** Removing
+   `/etc/nginx/sites-enabled/helpdesk` removes that default with it. The same edit
+   **must** give Waypost an explicit default fallback, or bare-IP requests silently
+   land on whichever block nginx picks first. Add `default_server` to the two
+   `listen` lines of the waypost site's :80 and :443 blocks **in the same change**
+   (this is the one moment the "no default_server" rule in `docker/nginx/waypost.conf`
+   is deliberately lifted — update that comment when you do), or install a dedicated
+   catch-all that 404s/redirects. Never remove the helpdesk site without this.
+2. `sudo nginx -t` **before** reload; then regression-probe all names: ams, waypost,
+   bare IP (now Waypost's default), and confirm the helpdesk names no longer resolve
+   to a live backend (DNS records can stay; they will hit the default).
+3. Stop and disable the legacy containers (as sean): `docker compose -f
+   /srv/helpdesk/app/docker-compose.yml stop` — **not** `down -v`; the volume and the
+   data directories are retained. Disable sean's helpdesk cron probes
+   (`cert-check.sh`, `app-probe.sh`) so they stop alerting on a deliberately dead app;
+   keep `disk-check.sh` (host-wide).
+4. Update the host probe/monitoring to `https://waypost.istore-tech.cn/healthz/`
+   (ams keeps working until the inspection client's re-release has propagated).
+5. Data deletion (legacy volumes, `helpdesk-rootless-data-v3`, old backups) is a
+   **separate, later, dated decision** — not part of retirement. The pre-merge dump
+   plus the Wenqu rows are then the only copies; verify the Wenqu side first.
+
+**Rollback within the retention week:** restore/re-enable the helpdesk nginx site
+(it was never edited during the cutover), `sudo nginx -t && sudo systemctl reload
+nginx`, `docker start helpdesk_app` (sean), probe `https://admin.helpdesk.istore-tech.cn/admin/login`
+→ 200. The legacy data is exactly pre-merge (the app was frozen before the dump).
+Waypost keeps running; the two systems diverge from the freeze point, so decide which
+is authoritative before accepting new writes on both. Full command blocks:
+[`DEPLOYMENT.md`](DEPLOYMENT.md) §2.15 Phase 6.
+
+---
+
+## 8. Known gaps this runbook cannot close
 
 These are infrastructure or process gaps, tracked in `RELEASE_PROCEDURE.md` §11: **no staging
 environment** (releases are verified in production), **no notification channel**, and **a real
@@ -212,4 +272,4 @@ once, deliberately, before the cutover release (§9.4 of that document).
 
 ---
 
-*Last Updated: October 22, 2026*
+*Last Updated: November 19, 2026*

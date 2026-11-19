@@ -22,6 +22,18 @@ pillow==12.1.1
 pyotp==2.9.0
 cryptography==50.0.1  # Fernet field encryption for stored mailbox/SMTP credentials
 
+# Wenqu (问渠) helpdesk services: KB ingestion, multimodal LLM providers, OCR.
+# PyMuPDF renders PDF pages / extracts embedded images; python-docx reads DOCX;
+# pytesseract OCRs KB screenshots (needs the tesseract-ocr system binary);
+# websockets drives the DashScope / Volcengine streaming TTS protocols (sync client).
+# PyMuPDF is bumped from the helpdesk's 1.24.9 to 1.27.2.2 for cp310-abi3 wheels
+# that install on both the py3.12 production image and py3.14 dev boxes;
+# pytesseract 0.3.13 likewise drops the pkgutil.find_loader import removed in 3.14.
+PyMuPDF==1.27.2.2
+python-docx==1.1.2
+pytesseract==0.3.13
+websockets==16.0
+
 # Production deployment (Ubuntu 24.04 LTS; Gunicorn behind Nginx)
 # gunicorn is Unix-only - the environment marker keeps Windows dev installs working.
 gunicorn==23.0.0 ; sys_platform != 'win32'

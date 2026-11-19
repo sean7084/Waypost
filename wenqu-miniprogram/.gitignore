@@ -1,35 +1,22 @@
-# Build artifacts
-unpackage/
-dist/
-
 # Dependencies
 node_modules/
 
-# Local configuration and editor files
-.DS_Store
-.hbuilderx/
-*.log
+# Test / coverage output
+coverage/
 
-# Environment files
-.env
-.env.local
-.env.*.local
-src/utils/config.local.js
-
-# OS files
-Thumbs.db
-
-# GEMINI file
-GEMINI.md
-
-# WeChat DevTool files
-# project.config.json
+# WeChat DevTools machine-local project config (auto-generated on open)
 project.private.config.json
 
-# test files
-temp
-preview-build-root.png
-preview-info.json
+# miniprogram-ci preview QR (regenerated on every `npm run preview`)
+preview-qr.jpg
 
-# IDE files
+# Local environment overrides
+.env
+.env.local
+
+# Logs / OS / editor noise
+*.log
+.DS_Store
+Thumbs.db
 .idea/
+.vscode/

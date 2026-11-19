@@ -16,12 +16,18 @@ const CONFIGS = {
   prod: {
     // Waypost production, served by the host Nginx on the shared ECS.
     //
-    // Before a release build can actually reach this host, the WeChat MP console
-    // (开发管理 → 开发设置 → 服务器域名) must list it in all THREE whitelists -
-    // request, uploadFile and downloadFile. The rules are HTTPS only, no port
-    // number, and an ICP-filed domain; this host satisfies all three.
-    // See docs/DEPLOYMENT_MINIPROGRAM.md sections 3 and 4.
-    API_BASE: 'https://ams.istore-tech.cn/api/v1',
+    // PR7 domain cutover: the public hostname moves ams.istore-tech.cn ->
+    // waypost.istore-tech.cn (Wenqu merge / rebrand). Both names are served by
+    // the same nginx site and certificate SANs, so the old base keeps working
+    // until retirement - but a release build must use the new one, and THIS
+    // CLIENT MUST BE RE-RELEASED (ci.js upload + MP review) for the switch to
+    // reach installed users. Before that release, the WeChat MP console
+    // (开发管理 → 开发设置 → 服务器域名) must list waypost.istore-tech.cn in
+    // all THREE whitelists - request, uploadFile and downloadFile. The rules
+    // are HTTPS only, no port number, and an ICP-filed domain; this host
+    // satisfies all three. See docs/DEPLOYMENT_MINIPROGRAM.md sections 3 and 4
+    // and the domain-cutover runbook in docs/DEPLOYMENT.md.
+    API_BASE: 'https://waypost.istore-tech.cn/api/v1',
   },
 };
 
