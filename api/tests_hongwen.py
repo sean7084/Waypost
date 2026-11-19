@@ -1,13 +1,13 @@
-"""HTTP-level contract tests for the Wenqu customer API (PR4).
+"""HTTP-level contract tests for the Hongwen customer API (PR4).
 
 DRF APIClient against the real URLconf; every provider/KB call is stubbed at
 its import site so no API key, ffmpeg, Redis or PostgreSQL is required:
 
-* turn/state helpers      -> ``wenqu.services.chat.*`` (views call through the
+* turn/state helpers      -> ``hongwen.services.chat.*`` (views call through the
   ``chat`` module object)
-* SSE deltas              -> ``wenqu.services.sse.stream_reply_deltas``
-* provider/media functions-> ``api.wenqu_views.*`` (imported by name)
-* WeChat moderation       -> ``wenqu.services.utils.moderation.check_text`` /
+* SSE deltas              -> ``hongwen.services.sse.stream_reply_deltas``
+* provider/media functions-> ``api.hongwen_views.*`` (imported by name)
+* WeChat moderation       -> ``hongwen.services.utils.moderation.check_text`` /
   ``check_image`` (module attribute, shared by every importer)
 
 The contract canon is helpdesk/backend/app/main.py; assertions mirror the
@@ -28,34 +28,34 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import WeChatIdentity
-from api.wenqu_views import CHAT_UPLOAD_MAX_BYTES
-from wenqu.models import (
-    ChatSession, Customer, KBChunk, KBDocument, Message, UploadFile, UserProfile, WenquProfile,
+from api.hongwen_views import CHAT_UPLOAD_MAX_BYTES
+from hongwen.models import (
+    ChatSession, Customer, KBChunk, KBDocument, Message, UploadFile, UserProfile, HongwenProfile,
 )
-from wenqu.services import registries
-from wenqu.services.llm.orchestrator import ReplyPreparation
-from wenqu.services.storage import private_storage
-from wenqu.services.triage import TriageTurn
-from wenqu.services.utils import moderation
-from wenqu.services.utils.file_store import store_upload_bytes
-from wenqu.services_testing import stub_vector
+from hongwen.services import registries
+from hongwen.services.llm.orchestrator import ReplyPreparation
+from hongwen.services.storage import private_storage
+from hongwen.services.triage import TriageTurn
+from hongwen.services.utils import moderation
+from hongwen.services.utils.file_store import store_upload_bytes
+from hongwen.services_testing import stub_vector
 
 User = get_user_model()
 
-_WENQU_APPID = 'wenqu-test-appid'
+_HONGWEN_APPID = 'hongwen-test-appid'
 _OPENID = 'o' * 28
 
-_BOOTSTRAP_URL = '/api/v1/wenqu/chatbot'
-_SESSIONS_URL = '/api/v1/wenqu/chat/sessions'
-_CHAT_URL = '/api/v1/wenqu/chat'
-_REGENERATE_URL = '/api/v1/wenqu/chat/regenerate'
-_STREAM_URL = '/api/v1/wenqu/chat/stream'
-_REGENERATE_STREAM_URL = '/api/v1/wenqu/chat/regenerate/stream'
-_UPLOAD_URL = '/api/v1/wenqu/files/upload'
-_TRANSCRIBE_URL = '/api/v1/wenqu/transcribe'
-_SPEAK_URL = '/api/v1/wenqu/speak'
-_SPEAK_STREAM_URL = '/api/v1/wenqu/speak/stream'
-_GET_PHONE_URL = '/api/v1/wenqu/auth/get-phone'
+_BOOTSTRAP_URL = '/api/v1/hongwen/chatbot'
+_SESSIONS_URL = '/api/v1/hongwen/chat/sessions'
+_CHAT_URL = '/api/v1/hongwen/chat'
+_REGENERATE_URL = '/api/v1/hongwen/chat/regenerate'
+_STREAM_URL = '/api/v1/hongwen/chat/stream'
+_REGENERATE_STREAM_URL = '/api/v1/hongwen/chat/regenerate/stream'
+_UPLOAD_URL = '/api/v1/hongwen/files/upload'
+_TRANSCRIBE_URL = '/api/v1/hongwen/transcribe'
+_SPEAK_URL = '/api/v1/hongwen/speak'
+_SPEAK_STREAM_URL = '/api/v1/hongwen/speak/stream'
+_GET_PHONE_URL = '/api/v1/hongwen/auth/get-phone'
 
 _REPLY = '请先重启路由器，再检查电源适配器。'
 _META = {
@@ -72,15 +72,15 @@ _UPDATES = {'weak_points': '{"network": true}', 'suggested_solutions': '{}'}
 
 def _make_customer(username='wx_customer', openid=_OPENID, customer=None, **flags):
     user = User.objects.create_user(username=username, password='pw')
-    profile = WenquProfile.objects.create(user=user, external_id=username, customer=customer, **flags)
-    WeChatIdentity.objects.create(user=user, appid=_WENQU_APPID, openid=openid)
+    profile = HongwenProfile.objects.create(user=user, external_id=username, customer=customer, **flags)
+    WeChatIdentity.objects.create(user=user, appid=_HONGWEN_APPID, openid=openid)
     return user, profile
 
 
 def _access_token(user, tv=None):
     refresh = RefreshToken.for_user(user)
     access = refresh.access_token
-    profile = getattr(user, 'wenqu_profile', None)
+    profile = getattr(user, 'hongwen_profile', None)
     if profile is not None:
         access['tv'] = profile.token_version if tv is None else tv
     return str(access)
@@ -133,9 +133,9 @@ class _PrivateMediaMixin:
 
     def setUp(self):
         super().setUp()
-        self.private_root = tempfile.mkdtemp(prefix='wenqu-api-private-')
+        self.private_root = tempfile.mkdtemp(prefix='hongwen-api-private-')
         self.addCleanup(shutil.rmtree, self.private_root, True)
-        override = override_settings(WENQU_PRIVATE_MEDIA_ROOT=self.private_root)
+        override = override_settings(HONGWEN_PRIVATE_MEDIA_ROOT=self.private_root)
         override.enable()
         self.addCleanup(override.disable)
 
@@ -149,7 +149,7 @@ class BootstrapTests(_CustomerAPIMixin, TestCase):
             set(data.keys()),
             {'greeting', 'session_id', 'restored', 'sessions', 'external_user_id', 'messages'},
         )
-        self.assertIn('问渠', data['greeting'])
+        self.assertIn('泓问', data['greeting'])
         self.assertFalse(data['restored'])
         self.assertTrue(data['session_id'].startswith('pc_sess_'))
         self.assertEqual(data['external_user_id'], self.profile.external_id)
@@ -262,7 +262,7 @@ class SessionCrudTests(_CustomerAPIMixin, TestCase):
         )
         self.assertEqual(res.data['current_session_id'], bootstrap['session_id'])
         self.assertNotEqual(bootstrap['session_id'], 'sess_cur')
-        self.assertIn('问渠', bootstrap['greeting'])
+        self.assertIn('泓问', bootstrap['greeting'])
 
     def test_delete_foreign_session_404(self):
         res = self.client.delete(f'{_SESSIONS_URL}/sess_missing')
@@ -271,7 +271,7 @@ class SessionCrudTests(_CustomerAPIMixin, TestCase):
 
 class ChatSyncTests(_CustomerAPIMixin, TestCase):
     def test_chat_reply_contract_and_persistence(self):
-        with mock.patch('wenqu.services.chat.generate_reply_and_update_profile', side_effect=_fake_generate):
+        with mock.patch('hongwen.services.chat.generate_reply_and_update_profile', side_effect=_fake_generate):
             res = self.client.post(_CHAT_URL, {'type': 'text', 'content': {'text': '路由器亮红灯'}}, format='json')
         self.assertEqual(res.status_code, 200, res.content)
         self.assertEqual(set(res.data.keys()), {'reply', 'session_id', 'meta'})
@@ -294,7 +294,7 @@ class ChatSyncTests(_CustomerAPIMixin, TestCase):
 
     def test_chat_reuses_given_session(self):
         session, _u, _a = _seed_turn(self.user, 'sess_given')
-        with mock.patch('wenqu.services.chat.generate_reply_and_update_profile', side_effect=_fake_generate):
+        with mock.patch('hongwen.services.chat.generate_reply_and_update_profile', side_effect=_fake_generate):
             res = self.client.post(
                 _CHAT_URL, {'type': 'text', 'content': {'text': '再问一次'}, 'session_id': session.session_id},
                 format='json',
@@ -329,7 +329,7 @@ class ChatSyncTests(_CustomerAPIMixin, TestCase):
             # Only the generated reply is risky; the user's question passes.
             return moderation.Suggest.RISKY if text == '违规回复' else moderation.Suggest.PASS
 
-        with mock.patch('wenqu.services.chat.generate_reply_and_update_profile', side_effect=_risky_reply), \
+        with mock.patch('hongwen.services.chat.generate_reply_and_update_profile', side_effect=_risky_reply), \
              mock.patch.object(moderation, 'check_text', side_effect=_check):
             res = self.client.post(_CHAT_URL, {'type': 'text', 'content': {'text': '问题'}}, format='json')
         self.assertEqual(res.status_code, 200, res.content)
@@ -342,7 +342,7 @@ class ChatSyncTests(_CustomerAPIMixin, TestCase):
         # The real client bootstraps first: the greeting carries identifying=True,
         # which is what routes the first chat turn into company identification.
         session_id = self.client.get(_BOOTSTRAP_URL).data['session_id']
-        with mock.patch('wenqu.services.chat.identify_customer_from_llm', return_value=self.customer.id):
+        with mock.patch('hongwen.services.chat.identify_customer_from_llm', return_value=self.customer.id):
             first = self.client.post(
                 _CHAT_URL, {'type': 'text', 'content': {'text': 'Acme'}, 'session_id': session_id}, format='json',
             )
@@ -363,8 +363,8 @@ class ChatSyncTests(_CustomerAPIMixin, TestCase):
             meta={'used_knowledge_base': False, 'knowledge_sources': [], 'quick_replies': [{'label_zh': '已检查', 'value': 'checked'}],
                   'triage': {'playbook_slug': 'no-internet', 'step_index': 0, 'kind': 'check', 'status': 'in_progress'}},
         )
-        with mock.patch('wenqu.services.chat.start_or_advance', return_value=turn) as triage, \
-             mock.patch('wenqu.services.chat.generate_reply_and_update_profile') as gen:
+        with mock.patch('hongwen.services.chat.start_or_advance', return_value=turn) as triage, \
+             mock.patch('hongwen.services.chat.generate_reply_and_update_profile') as gen:
             res = self.client.post(
                 _CHAT_URL, {'type': 'text', 'content': {'text': '设备上不了网', 'quick_value': 'checked'}}, format='json',
             )
@@ -379,7 +379,7 @@ class ChatSyncTests(_CustomerAPIMixin, TestCase):
 class RegenerateTests(_CustomerAPIMixin, TestCase):
     def test_regenerate_replaces_latest_reply(self):
         session, _user_msg, assistant = _seed_turn(self.user, 'sess_regen')
-        with mock.patch('wenqu.services.chat.generate_reply_and_update_profile', side_effect=_fake_generate) as gen:
+        with mock.patch('hongwen.services.chat.generate_reply_and_update_profile', side_effect=_fake_generate) as gen:
             res = self.client.post(
                 _REGENERATE_URL, {'session_id': session.session_id, 'message_id': str(assistant.id)}, format='json',
             )
@@ -429,7 +429,7 @@ class RegenerateTests(_CustomerAPIMixin, TestCase):
         # The helpdesk regenerates a second time when the model returns the very
         # same text (main.py:2992); seed the old reply equal to the stub's reply.
         session, _u, _a = _seed_turn(self.user, 'sess_same', reply_text=_REPLY)
-        with mock.patch('wenqu.services.chat.generate_reply_and_update_profile', side_effect=_fake_generate) as gen:
+        with mock.patch('hongwen.services.chat.generate_reply_and_update_profile', side_effect=_fake_generate) as gen:
             res = self.client.post(_REGENERATE_URL, {'session_id': session.session_id}, format='json')
         self.assertEqual(res.status_code, 200, res.content)
         self.assertEqual(gen.call_count, 2)
@@ -516,8 +516,8 @@ class ChatStreamTests(_CustomerAPIMixin, TransactionTestCase):
         )
 
     def test_sse_frame_sequence_and_headers(self):
-        with mock.patch('wenqu.services.chat.prepare_reply_generation', return_value=_preparation()), \
-             mock.patch('wenqu.services.sse.stream_reply_deltas', side_effect=_fake_deltas) as deltas:
+        with mock.patch('hongwen.services.chat.prepare_reply_generation', return_value=_preparation()), \
+             mock.patch('hongwen.services.sse.stream_reply_deltas', side_effect=_fake_deltas) as deltas:
             res = self._post_stream()
             self.assertEqual(res.status_code, 200)
             self.assertEqual(res['Content-Type'], 'text/event-stream')
@@ -560,8 +560,8 @@ class ChatStreamTests(_CustomerAPIMixin, TransactionTestCase):
         def _check(text, openid):
             return moderation.Suggest.RISKY if text == '你好世界' else moderation.Suggest.PASS
 
-        with mock.patch('wenqu.services.chat.prepare_reply_generation', return_value=_preparation()), \
-             mock.patch('wenqu.services.sse.stream_reply_deltas', side_effect=_fake_deltas), \
+        with mock.patch('hongwen.services.chat.prepare_reply_generation', return_value=_preparation()), \
+             mock.patch('hongwen.services.sse.stream_reply_deltas', side_effect=_fake_deltas), \
              mock.patch.object(moderation, 'check_text', side_effect=_check):
             frames = _consume_sse(self._post_stream())
         self.assertEqual([name for name, _ in frames], ['start', 'delta', 'delta', 'final', 'done'])
@@ -577,8 +577,8 @@ class ChatStreamTests(_CustomerAPIMixin, TransactionTestCase):
             yield '第二段', 'dashscope/qwen-test'
             yield '第三段', 'dashscope/qwen-test'
 
-        with mock.patch('wenqu.services.chat.prepare_reply_generation', return_value=_preparation()), \
-             mock.patch('wenqu.services.sse.stream_reply_deltas', side_effect=_slow_deltas):
+        with mock.patch('hongwen.services.chat.prepare_reply_generation', return_value=_preparation()), \
+             mock.patch('hongwen.services.sse.stream_reply_deltas', side_effect=_slow_deltas):
             res = self._post_stream()
             iterator = iter(res.streaming_content)
             start_frame = next(iterator)  # start
@@ -600,8 +600,8 @@ class ChatStreamTests(_CustomerAPIMixin, TransactionTestCase):
             yield '第一段', 'dashscope/qwen-test'
             raise BrokenPipeError('client went away')
 
-        with mock.patch('wenqu.services.chat.prepare_reply_generation', return_value=_preparation()), \
-             mock.patch('wenqu.services.sse.stream_reply_deltas', side_effect=_broken_deltas):
+        with mock.patch('hongwen.services.chat.prepare_reply_generation', return_value=_preparation()), \
+             mock.patch('hongwen.services.sse.stream_reply_deltas', side_effect=_broken_deltas):
             frames = _consume_sse(self._post_stream())
         self.assertEqual([name for name, _ in frames], ['start', 'delta'])
         stored = Message.objects.filter(user=self.user, role='assistant').first()
@@ -612,8 +612,8 @@ class ChatStreamTests(_CustomerAPIMixin, TransactionTestCase):
             raise RuntimeError('provider down')
             yield  # pragma: no cover - makes this a generator
 
-        with mock.patch('wenqu.services.chat.prepare_reply_generation', return_value=_preparation()), \
-             mock.patch('wenqu.services.sse.stream_reply_deltas', side_effect=_broken_deltas):
+        with mock.patch('hongwen.services.chat.prepare_reply_generation', return_value=_preparation()), \
+             mock.patch('hongwen.services.sse.stream_reply_deltas', side_effect=_broken_deltas):
             frames = _consume_sse(self._post_stream())
         self.assertEqual([name for name, _ in frames], ['start', 'error'])
         self.assertEqual(frames[1][1]['detail'], 'provider down')
@@ -626,8 +626,8 @@ class ChatStreamTests(_CustomerAPIMixin, TransactionTestCase):
             meta={'triage': {'playbook_slug': 'no-internet', 'step_index': 0, 'kind': 'check', 'status': 'in_progress'},
                   'quick_replies': []},
         )
-        with mock.patch('wenqu.services.chat.start_or_advance', return_value=turn), \
-             mock.patch('wenqu.services.chat.prepare_reply_generation') as prep:
+        with mock.patch('hongwen.services.chat.start_or_advance', return_value=turn), \
+             mock.patch('hongwen.services.chat.prepare_reply_generation') as prep:
             frames = _consume_sse(self._post_stream({'type': 'text', 'content': {'text': '设备上不了网'}}))
         self.assertEqual([name for name, _ in frames], ['start', 'final', 'done'])
         self.assertEqual(frames[0][1]['meta'], {'triage': turn.meta['triage']})
@@ -638,7 +638,7 @@ class ChatStreamTests(_CustomerAPIMixin, TransactionTestCase):
         self.profile.customer = None
         self.profile.save(update_fields=['customer'])
         session_id = self.client.get(_BOOTSTRAP_URL).data['session_id']
-        with mock.patch('wenqu.services.chat.identify_customer_from_llm', return_value=self.customer.id):
+        with mock.patch('hongwen.services.chat.identify_customer_from_llm', return_value=self.customer.id):
             frames = _consume_sse(self._post_stream(
                 {'type': 'text', 'content': {'text': 'Acme'}, 'session_id': session_id},
             ))
@@ -655,8 +655,8 @@ class ChatStreamTests(_CustomerAPIMixin, TransactionTestCase):
         )
         self.assertEqual(stale.status_code, 409)
 
-        with mock.patch('wenqu.services.chat.prepare_reply_generation', return_value=_preparation()), \
-             mock.patch('wenqu.services.sse.stream_reply_deltas', side_effect=_fake_deltas) as deltas:
+        with mock.patch('hongwen.services.chat.prepare_reply_generation', return_value=_preparation()), \
+             mock.patch('hongwen.services.sse.stream_reply_deltas', side_effect=_fake_deltas) as deltas:
             res = self.client.post(
                 _REGENERATE_STREAM_URL, {'session_id': session.session_id, 'message_id': str(assistant.id)},
                 format='json',
@@ -760,7 +760,7 @@ class TranscribeTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
 
     def test_transcribe_contract(self):
         with mock.patch(
-            'api.wenqu_views.transcribe_audio_with_fallback',
+            'api.hongwen_views.transcribe_audio_with_fallback',
             return_value={'text': '  转写结果  ', 'model_used': 'dashscope/qwen3-asr-flash'},
         ) as asr:
             res = self._post()
@@ -770,18 +770,18 @@ class TranscribeTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
         self.assertTrue(asr.call_args.kwargs['file_path'].endswith('.mp3'))
 
     def test_transcribe_empty_422(self):
-        with mock.patch('api.wenqu_views.transcribe_audio_with_fallback', return_value={'text': '  ', 'model_used': 'm'}):
+        with mock.patch('api.hongwen_views.transcribe_audio_with_fallback', return_value={'text': '  ', 'model_used': 'm'}):
             res = self._post()
         self.assertEqual(res.status_code, 422)
 
     def test_transcribe_provider_failure_502(self):
-        with mock.patch('api.wenqu_views.transcribe_audio_with_fallback', side_effect=RuntimeError('asr down')):
+        with mock.patch('api.hongwen_views.transcribe_audio_with_fallback', side_effect=RuntimeError('asr down')):
             res = self._post()
         self.assertEqual(res.status_code, 502)
         self.assertEqual(res.data['detail'], 'asr down')
 
     def test_transcribe_moderation_block_400(self):
-        with mock.patch('api.wenqu_views.transcribe_audio_with_fallback', return_value={'text': '违规', 'model_used': 'm'}), \
+        with mock.patch('api.hongwen_views.transcribe_audio_with_fallback', return_value={'text': '违规', 'model_used': 'm'}), \
              mock.patch.object(moderation, 'check_text', return_value=moderation.Suggest.RISKY):
             res = self._post()
         self.assertEqual(res.status_code, 400)
@@ -793,7 +793,7 @@ class TranscribeTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
     def test_transcribe_volcengine_public_share(self):
         with override_settings(PRIMARY_ASR_MODEL='volcengine/asr-test', PUBLIC_API_BASE_URL='https://api.example.com'), \
              mock.patch(
-                 'api.wenqu_views.transcribe_audio_with_fallback',
+                 'api.hongwen_views.transcribe_audio_with_fallback',
                  return_value={'text': '结果', 'model_used': 'volcengine/asr-test'},
              ) as asr:
             res = self._post()
@@ -808,8 +808,8 @@ class TranscribeTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
         fd, converted = tempfile.mkstemp(suffix='.mp3')
         os.close(fd)
         with override_settings(PRIMARY_ASR_MODEL='volcengine/asr-test', PUBLIC_API_BASE_URL='https://api.example.com'), \
-             mock.patch('api.wenqu_views.convert_to_mp3', return_value=converted) as conv, \
-             mock.patch('api.wenqu_views.transcribe_audio_with_fallback', return_value={'text': '结果', 'model_used': 'm'}):
+             mock.patch('api.hongwen_views.convert_to_mp3', return_value=converted) as conv, \
+             mock.patch('api.hongwen_views.transcribe_audio_with_fallback', return_value={'text': '结果', 'model_used': 'm'}):
             res = self.client.post(
                 _TRANSCRIBE_URL, {'file': _upload_file('voice.amr', b'audio', 'audio/amr')}, format='multipart',
             )
@@ -827,10 +827,10 @@ class TranscribeTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
 class SpeakTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
     def test_speak_contract(self):
         result = {
-            'audio_url': '/api/uploads/tts/tts_abc.mp3', 'stored_path': 'wenqu/tts/tts_abc.mp3',
+            'audio_url': '/api/uploads/tts/tts_abc.mp3', 'stored_path': 'hongwen/tts/tts_abc.mp3',
             '_model_used': 'dashscope/cosyvoice-v3-flash', '_voice_used': 'longanyang',
         }
-        with mock.patch('api.wenqu_views.synthesize_speech_with_fallback', return_value=result) as tts:
+        with mock.patch('api.hongwen_views.synthesize_speech_with_fallback', return_value=result) as tts:
             res = self.client.post(
                 _SPEAK_URL, {'text': '你好', 'message_id': '12', 'language_type': 'zh'}, format='json',
             )
@@ -849,14 +849,14 @@ class SpeakTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
         self.assertEqual(res.status_code, 422)
 
     def test_speak_provider_failure_502(self):
-        with mock.patch('api.wenqu_views.synthesize_speech_with_fallback', side_effect=RuntimeError('tts down')):
+        with mock.patch('api.hongwen_views.synthesize_speech_with_fallback', side_effect=RuntimeError('tts down')):
             res = self.client.post(_SPEAK_URL, {'text': '你好'}, format='json')
         self.assertEqual(res.status_code, 502)
 
 
 class SpeakStreamTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
     def _post(self, text='你好'):
-        with mock.patch('api.wenqu_views.stream_speech_audio_with_fallback', return_value=iter([b'ID3', b'-mp3'])):
+        with mock.patch('api.hongwen_views.stream_speech_audio_with_fallback', return_value=iter([b'ID3', b'-mp3'])):
             return self.client.post(_SPEAK_STREAM_URL, {'text': text, 'message_id': '7'}, format='json')
 
     def test_stream_registry_and_playback(self):
@@ -864,7 +864,7 @@ class SpeakStreamTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
         self.assertEqual(res.status_code, 200, res.content)
         self.assertEqual(set(res.data.keys()), {'stream_url', 'model', 'voice', 'message_id'})
         stream_url = res.data['stream_url']
-        self.assertTrue(stream_url.startswith('/api/v1/wenqu/speak/stream/'))
+        self.assertTrue(stream_url.startswith('/api/v1/hongwen/speak/stream/'))
         stream_id = stream_url.rsplit('/', 1)[1]
         self.assertEqual(res.data['message_id'], '7')
 
@@ -900,17 +900,17 @@ class SpeakStreamTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
         self.assertEqual(self.client.get(stream_url).status_code, 404)
 
     def test_stream_unknown_id_404(self):
-        self.assertEqual(self.client.get('/api/v1/wenqu/speak/stream/deadbeef').status_code, 404)
+        self.assertEqual(self.client.get('/api/v1/hongwen/speak/stream/deadbeef').status_code, 404)
 
     def test_stream_expired_404(self):
         stream_url = self._post().data['stream_url']
         stream_id = stream_url.rsplit('/', 1)[1]
         # Simulate the 15-minute TTL elapsing.
-        cache.delete(f'wenqu:tts_stream:{stream_id}')
+        cache.delete(f'hongwen:tts_stream:{stream_id}')
         self.assertEqual(self.client.get(stream_url).status_code, 404)
 
     def test_stream_zero_ttl_expires_immediately(self):
-        with override_settings(WENQU_REGISTRY_TTL_SECONDS=0):
+        with override_settings(HONGWEN_REGISTRY_TTL_SECONDS=0):
             stream_url = self._post().data['stream_url']
         self.assertEqual(self.client.get(stream_url).status_code, 404)
 
@@ -919,12 +919,12 @@ class SpeakStreamTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
         self.assertEqual(res.status_code, 422)
 
     def test_stream_provider_failure_502(self):
-        with mock.patch('api.wenqu_views.stream_speech_audio_with_fallback', side_effect=RuntimeError('tts down')):
+        with mock.patch('api.hongwen_views.stream_speech_audio_with_fallback', side_effect=RuntimeError('tts down')):
             res = self.client.post(_SPEAK_STREAM_URL, {'text': '你好'}, format='json')
         self.assertEqual(res.status_code, 502)
 
     def test_stream_ip_throttle_429(self):
-        with override_settings(WENQU_SPEAK_STREAM_IP_MAX_HITS=1):
+        with override_settings(HONGWEN_SPEAK_STREAM_IP_MAX_HITS=1):
             first = self._post()
             second = self._post()
         self.assertEqual(first.status_code, 200)
@@ -967,12 +967,12 @@ class ProtectedDownloadTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
         self.assertEqual(self.client.get(f'{self.url}?access_token={token}').status_code, 401)
 
     def test_download_namespaced_alias(self):
-        res = self.client.get(f'/api/v1/wenqu/uploads/{self.relative}')
+        res = self.client.get(f'/api/v1/hongwen/uploads/{self.relative}')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(_body(res), b'image-bytes')
 
     def test_download_tts_subdir(self):
-        private_storage().save('wenqu/tts/song.mp3', ContentFile(b'mp3-bytes'))
+        private_storage().save('hongwen/tts/song.mp3', ContentFile(b'mp3-bytes'))
         res = self.client.get('/api/uploads/tts/song.mp3')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(_body(res), b'mp3-bytes')
@@ -1090,27 +1090,27 @@ class IdentificationServiceTests(TestCase):
         self.customer = Customer.objects.create(name='Acme')
 
     def test_identify_returns_numeric_id(self):
-        from wenqu.services import chat
+        from hongwen.services import chat
         completion = {'choices': [{'message': {'content': str(self.customer.id)}}]}
-        with mock.patch('wenqu.services.chat.chat_completion', return_value=completion):
+        with mock.patch('hongwen.services.chat.chat_completion', return_value=completion):
             self.assertEqual(chat.identify_customer_from_llm('我在 Acme'), self.customer.id)
 
     def test_identify_none_for_non_numeric(self):
-        from wenqu.services import chat
+        from hongwen.services import chat
         completion = {'choices': [{'message': {'content': 'NONE'}}]}
-        with mock.patch('wenqu.services.chat.chat_completion', return_value=completion):
+        with mock.patch('hongwen.services.chat.chat_completion', return_value=completion):
             self.assertIsNone(chat.identify_customer_from_llm('不知道'))
 
     def test_identify_no_customers_short_circuits(self):
-        from wenqu.services import chat
+        from hongwen.services import chat
         Customer.objects.all().delete()
-        with mock.patch('wenqu.services.chat.chat_completion') as completion:
+        with mock.patch('hongwen.services.chat.chat_completion') as completion:
             self.assertIsNone(chat.identify_customer_from_llm('Acme'))
         completion.assert_not_called()
 
     def test_identify_provider_error_degrades_to_none(self):
-        from wenqu.services import chat
-        with mock.patch('wenqu.services.chat.chat_completion', side_effect=RuntimeError('llm down')):
+        from hongwen.services import chat
+        with mock.patch('hongwen.services.chat.chat_completion', side_effect=RuntimeError('llm down')):
             self.assertIsNone(chat.identify_customer_from_llm('Acme'))
 
 
@@ -1119,7 +1119,7 @@ class GetPhoneServiceTests(TestCase):
         self.user, self.profile = _make_customer(username='wx_phone')
 
     def test_get_phone_number_persists_mobile(self):
-        from wenqu.services import auth
+        from hongwen.services import auth
         response = mock.Mock()
         response.json.return_value = {'phone_info': {'phoneNumber': '13800138000'}}
         with mock.patch.object(auth.wechat_token, 'get_access_token', return_value='token'), \
@@ -1132,18 +1132,18 @@ class GetPhoneServiceTests(TestCase):
         self.assertEqual(post.call_args.kwargs['params'], {'access_token': 'token'})
 
     def test_get_phone_number_wechat_refused(self):
-        from wenqu.services import auth
+        from hongwen.services import auth
         response = mock.Mock()
         response.json.return_value = {'errcode': 40029, 'errmsg': 'invalid code'}
         with mock.patch.object(auth.wechat_token, 'get_access_token', return_value='token'), \
              mock.patch.object(auth.requests, 'post', return_value=response):
-            with self.assertRaises(auth.WenquPhoneError):
+            with self.assertRaises(auth.HongwenPhoneError):
                 auth.get_phone_number(self.user, 'bad')
 
     def test_get_phone_number_no_credentials(self):
-        from wenqu.services import auth
+        from hongwen.services import auth
         with mock.patch.object(auth.wechat_token, 'get_access_token', return_value=None):
-            with self.assertRaises(auth.WenquPhoneUnavailable):
+            with self.assertRaises(auth.HongwenPhoneUnavailable):
                 auth.get_phone_number(self.user, 'code')
 
 
@@ -1152,7 +1152,7 @@ class ChatKBPostgresTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
     """End-to-end KB retrieval through the chat view on the pgvector SQL path.
 
     Embeddings are stubbed (hash vectors) so no provider key is needed; the
-    SQLite brute-force path is covered by wenqu/tests_services_vector_store.py.
+    SQLite brute-force path is covered by hongwen/tests_services_vector_store.py.
     """
 
     def test_chat_retrieves_kb_on_postgres(self):
@@ -1165,8 +1165,8 @@ class ChatKBPostgresTests(_PrivateMediaMixin, _CustomerAPIMixin, TestCase):
         completion = {'choices': [{'message': {'content': reply_json}}], '_model_used': 'dashscope/qwen-test'}
         # Only the LLM completion is stubbed: prepare_reply_generation runs for
         # real and search_kb takes the pgvector SQL path with hash embeddings.
-        with mock.patch('wenqu.services.kb.vector_store.embed_text', side_effect=lambda *, model, texts, **_: [stub_vector(t) for t in texts]), \
-             mock.patch('wenqu.services.llm.orchestrator.chat_completion_with_fallback', return_value=completion):
+        with mock.patch('hongwen.services.kb.vector_store.embed_text', side_effect=lambda *, model, texts, **_: [stub_vector(t) for t in texts]), \
+             mock.patch('hongwen.services.llm.orchestrator.chat_completion_with_fallback', return_value=completion):
             res = self.client.post(_CHAT_URL, {'type': 'text', 'content': {'text': '路由器亮红灯'}}, format='json')
         self.assertEqual(res.status_code, 200, res.content)
         self.assertEqual(res.data['reply'], _REPLY)

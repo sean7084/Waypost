@@ -10,15 +10,15 @@ from unittest import mock
 
 from django.test import TestCase, override_settings
 
-from wenqu.services.kb import loader, paths
+from hongwen.services.kb import loader, paths
 
 
 class _KbRootMixin:
     def setUp(self):
         super().setUp()
-        self.kb_root = tempfile.mkdtemp(prefix='wenqu-test-kb-')
-        self.private_root = tempfile.mkdtemp(prefix='wenqu-test-private-')
-        ov = override_settings(WENQU_KB_SOURCES_DIR=self.kb_root, WENQU_PRIVATE_MEDIA_ROOT=self.private_root)
+        self.kb_root = tempfile.mkdtemp(prefix='hongwen-test-kb-')
+        self.private_root = tempfile.mkdtemp(prefix='hongwen-test-private-')
+        ov = override_settings(HONGWEN_KB_SOURCES_DIR=self.kb_root, HONGWEN_PRIVATE_MEDIA_ROOT=self.private_root)
         ov.enable()
         self.addCleanup(ov.disable)
 
@@ -98,7 +98,7 @@ class LoaderTests(_KbRootMixin, TestCase):
         doc.save(path)
         doc.close()
 
-        with mock.patch('wenqu.services.utils.ocr.ocr_image_bytes', return_value=''):
+        with mock.patch('hongwen.services.utils.ocr.ocr_image_bytes', return_value=''):
             content_hash, segments = loader.load_knowledge_base_document(path)
         self.assertEqual(len(content_hash), 64)
         self.assertEqual(segments[0]['page_or_section'], 'page_1')
@@ -115,7 +115,7 @@ class LoaderTests(_KbRootMixin, TestCase):
         d.add_paragraph('收银打印机离线处理步骤')
         d.save(path)
 
-        with mock.patch('wenqu.services.utils.ocr.ocr_image_bytes', return_value=''):
+        with mock.patch('hongwen.services.utils.ocr.ocr_image_bytes', return_value=''):
             content_hash, segments = loader.load_knowledge_base_document(path)
         self.assertEqual(len(content_hash), 64)
         self.assertEqual(segments[0]['page_or_section'], 'docx')

@@ -96,13 +96,13 @@ describe('createSseParser', () => {
   it('reassembles a multi-byte character split across a chunk boundary', () => {
     const seen = [];
     const parser = sse.createSseParser((event, data) => seen.push([event, data]));
-    const whole = frame('delta', { text: '问渠😀' });
+    const whole = frame('delta', { text: '泓问😀' });
     // 'event: delta\ndata: {"text":"' is 28 ASCII bytes, so byte 29 lands inside
     // 问 (3 bytes) and byte 35 lands inside the emoji (4 bytes).
     parser.push(whole.slice(0, 29));
     parser.push(whole.slice(29, 35));
     parser.push(whole.slice(35));
-    expect(seen).toEqual([['delta', { text: '问渠😀' }]]);
+    expect(seen).toEqual([['delta', { text: '泓问😀' }]]);
   });
 
   it('handles CRLF frame boundaries', () => {

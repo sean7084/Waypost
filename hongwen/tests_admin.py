@@ -1,11 +1,11 @@
-"""Tests for the Wenqu staff admin pages (PR5): access gate, customer/user CRUD,
+"""Tests for the Hongwen staff admin pages (PR5): access gate, customer/user CRUD,
 permission bits + token-version bump, KB upload/list/preview/replace/delete and
 the staff-authenticated PC chat console with SSE streaming.
 
 The chat tests mock the LLM/KB service boundary (prepare_reply_generation /
 stream_reply_deltas) so no provider credentials or network are needed; the KB
 upload tests mock ingest_one/replace_document (embedding is a provider call)
-while pinning WENQU_KB_SOURCES_DIR to a temp directory.
+while pinning HONGWEN_KB_SOURCES_DIR to a temp directory.
 """
 import json
 import os
@@ -18,8 +18,8 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import AdminRole
-from wenqu.models import ChatSession, Customer, KBChunk, KBDocument, Message, WenquProfile
-from wenqu.services.llm.orchestrator import ReplyPreparation
+from hongwen.models import ChatSession, Customer, KBChunk, KBDocument, Message, HongwenProfile
+from hongwen.services.llm.orchestrator import ReplyPreparation
 
 User = get_user_model()
 
@@ -41,7 +41,7 @@ def _plain(username='plain'):
 
 def _customer_user(username='wx_acme', customer=None):
     user = User.objects.create_user(username=username, password='pw')
-    profile = WenquProfile.objects.create(user=user, external_id=username, customer=customer)
+    profile = HongwenProfile.objects.create(user=user, external_id=username, customer=customer)
     return user, profile
 
 
@@ -82,14 +82,14 @@ def _sse_frames(response):
 
 
 class AdminAccessTests(TestCase):
-    """WenquAdminMixin mirrors invoices: denial is messages + dashboard redirect."""
+    """HongwenAdminMixin mirrors invoices: denial is messages + dashboard redirect."""
 
     def setUp(self):
         self.pages = [
-            reverse('wenqu:customer_list'),
-            reverse('wenqu:user_list'),
-            reverse('wenqu:file_upload'),
-            reverse('wenqu:chatbot'),
+            reverse('hongwen:customer_list'),
+            reverse('hongwen:user_list'),
+            reverse('hongwen:file_upload'),
+            reverse('hongwen:chatbot'),
         ]
 
     def test_anonymous_redirected_to_dashboard(self):
@@ -102,7 +102,7 @@ class AdminAccessTests(TestCase):
         self.client.force_login(_plain())
         response = self.client.get(self.pages[0], follow=True)
         self.assertEqual(response.redirect_chain[-1][0], reverse('dashboard:dashboard'))
-        self.assertContains(response, 'You do not have access to Wenqu administration.')
+        self.assertContains(response, 'You do not have access to Hongwen administration.')
 
     def test_viewer_role_denied(self):
         AdminRole.objects.get_or_create(code='viewer', defaults={'name': 'Viewer'})
@@ -114,7 +114,7 @@ class AdminAccessTests(TestCase):
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, reverse('dashboard:dashboard'))
 
-    def test_wenqu_customer_denied(self):
+    def test_hongwen_customer_denied(self):
         customer_user, _profile = _customer_user()
         self.client.force_login(customer_user)
         for url in self.pages:
@@ -133,14 +133,14 @@ class AdminAccessTests(TestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200, url)
 
-    def test_nav_entry_visible_only_to_wenqu_admins(self):
+    def test_nav_entry_visible_only_to_hongwen_admins(self):
         self.client.force_login(_superadmin())
-        response = self.client.get(reverse('wenqu:customer_list'))
-        self.assertContains(response, reverse('wenqu:file_upload'))
-        self.assertContains(response, 'Wenqu')
+        response = self.client.get(reverse('hongwen:customer_list'))
+        self.assertContains(response, reverse('hongwen:file_upload'))
+        self.assertContains(response, 'Hongwen')
         self.client.force_login(_plain('navplain'))
         response = self.client.get(reverse('dashboard:dashboard'))
-        self.assertNotContains(response, reverse('wenqu:customer_list'))
+        self.assertNotContains(response, reverse('hongwen:customer_list'))
 
 
 class CustomerCRUDTests(TestCase):
@@ -149,22 +149,22 @@ class CustomerCRUDTests(TestCase):
         self.client.force_login(self.admin)
 
     def test_create_customer(self):
-        response = self.client.post(reverse('wenqu:customer_create'), {'name': 'Acme', 'notes': 'printer fleet'})
-        self.assertRedirects(response, reverse('wenqu:customer_list'))
+        response = self.client.post(reverse('hongwen:customer_create'), {'name': 'Acme', 'notes': 'printer fleet'})
+        self.assertRedirects(response, reverse('hongwen:customer_list'))
         customer = Customer.objects.get(name='Acme')
         self.assertEqual(customer.notes, 'printer fleet')
 
     def test_duplicate_name_rejected(self):
         Customer.objects.create(name='Acme')
-        response = self.client.post(reverse('wenqu:customer_create'), {'name': 'Acme', 'notes': ''})
+        response = self.client.post(reverse('hongwen:customer_create'), {'name': 'Acme', 'notes': ''})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['form'].errors)
         self.assertEqual(Customer.objects.filter(name='Acme').count(), 1)
 
     def test_edit_customer(self):
         customer = Customer.objects.create(name='Acme', notes='old')
-        response = self.client.post(reverse('wenqu:customer_edit', args=[customer.pk]), {'name': 'Acme Corp', 'notes': 'new'})
-        self.assertRedirects(response, reverse('wenqu:customer_list'))
+        response = self.client.post(reverse('hongwen:customer_edit', args=[customer.pk]), {'name': 'Acme Corp', 'notes': 'new'})
+        self.assertRedirects(response, reverse('hongwen:customer_list'))
         customer.refresh_from_db()
         self.assertEqual(customer.name, 'Acme Corp')
         self.assertEqual(customer.notes, 'new')
@@ -173,8 +173,8 @@ class CustomerCRUDTests(TestCase):
         customer = Customer.objects.create(name='Acme')
         _user, profile = _customer_user(customer=customer)
         doc = KBDocument.objects.create(path='acme.txt', source_type='txt', content_hash='h', customer=customer)
-        response = self.client.post(reverse('wenqu:customer_delete', args=[customer.pk]))
-        self.assertRedirects(response, reverse('wenqu:customer_list'))
+        response = self.client.post(reverse('hongwen:customer_delete', args=[customer.pk]))
+        self.assertRedirects(response, reverse('hongwen:customer_list'))
         self.assertFalse(Customer.objects.filter(pk=customer.pk).exists())
         profile.refresh_from_db()
         doc.refresh_from_db()
@@ -184,7 +184,7 @@ class CustomerCRUDTests(TestCase):
     def test_list_search(self):
         Customer.objects.create(name='Acme')
         Customer.objects.create(name='Globex')
-        response = self.client.get(reverse('wenqu:customer_list'), {'search': 'acm'})
+        response = self.client.get(reverse('hongwen:customer_list'), {'search': 'acm'})
         self.assertEqual([c.name for c in response.context['customers']], ['Acme'])
 
 
@@ -195,13 +195,13 @@ class UserAdminTests(TestCase):
         self.customer = Customer.objects.create(name='Acme')
 
     def test_create_customer_user_with_password(self):
-        response = self.client.post(reverse('wenqu:user_create'), {
+        response = self.client.post(reverse('hongwen:user_create'), {
             'username': 'acme_ops', 'password': 'secret123', 'customer': self.customer.pk,
             'nickname': 'Ops', 'mobile': '13800000000',
             'can_chat': 'on', 'can_upload': 'on',
         })
-        self.assertRedirects(response, reverse('wenqu:user_list'))
-        profile = WenquProfile.objects.get(external_id='acme_ops')
+        self.assertRedirects(response, reverse('hongwen:user_list'))
+        profile = HongwenProfile.objects.get(external_id='acme_ops')
         self.assertEqual(profile.customer_id, self.customer.pk)
         self.assertTrue(profile.can_chat)
         self.assertTrue(profile.can_upload)
@@ -210,24 +210,24 @@ class UserAdminTests(TestCase):
         self.assertEqual(profile.token_version, 0)
 
     def test_create_without_password_sets_unusable(self):
-        self.client.post(reverse('wenqu:user_create'), {'username': 'wx_only', 'can_chat': 'on'})
-        profile = WenquProfile.objects.get(external_id='wx_only')
+        self.client.post(reverse('hongwen:user_create'), {'username': 'wx_only', 'can_chat': 'on'})
+        profile = HongwenProfile.objects.get(external_id='wx_only')
         self.assertFalse(profile.user.has_usable_password())
         self.assertIsNone(profile.customer_id)
 
     def test_duplicate_username_rejected(self):
         _customer_user('taken')
-        response = self.client.post(reverse('wenqu:user_create'), {'username': 'taken'})
+        response = self.client.post(reverse('hongwen:user_create'), {'username': 'taken'})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['form'].errors)
 
     def test_edit_permission_bits(self):
         _user, profile = _customer_user(customer=self.customer)
-        response = self.client.post(reverse('wenqu:user_edit', args=[profile.pk]), {
+        response = self.client.post(reverse('hongwen:user_edit', args=[profile.pk]), {
             'customer': '', 'nickname': 'Changed', 'mobile': '',
             'can_chat': 'on', 'can_manage_users': 'on', 'can_manage_customers': 'on',
         })
-        self.assertRedirects(response, reverse('wenqu:user_list'))
+        self.assertRedirects(response, reverse('hongwen:user_list'))
         profile.refresh_from_db()
         self.assertIsNone(profile.customer_id)
         self.assertEqual(profile.nickname, 'Changed')
@@ -238,9 +238,9 @@ class UserAdminTests(TestCase):
 
     def test_bump_token_version_forces_signout(self):
         _user, profile = _customer_user()
-        url = reverse('wenqu:user_bump_token', args=[profile.pk])
+        url = reverse('hongwen:user_bump_token', args=[profile.pk])
         response = self.client.post(url)
-        self.assertRedirects(response, reverse('wenqu:user_list'))
+        self.assertRedirects(response, reverse('hongwen:user_list'))
         profile.refresh_from_db()
         self.assertEqual(profile.token_version, 1)
         self.client.post(url)
@@ -249,35 +249,35 @@ class UserAdminTests(TestCase):
 
     def test_bump_requires_post(self):
         _user, profile = _customer_user()
-        response = self.client.get(reverse('wenqu:user_bump_token', args=[profile.pk]))
+        response = self.client.get(reverse('hongwen:user_bump_token', args=[profile.pk]))
         self.assertEqual(response.status_code, 405)
         profile.refresh_from_db()
         self.assertEqual(profile.token_version, 0)
 
     def test_delete_customer_user_removes_account(self):
         user, profile = _customer_user()
-        response = self.client.post(reverse('wenqu:user_delete', args=[profile.pk]))
-        self.assertRedirects(response, reverse('wenqu:user_list'))
-        self.assertFalse(WenquProfile.objects.filter(pk=profile.pk).exists())
+        response = self.client.post(reverse('hongwen:user_delete', args=[profile.pk]))
+        self.assertRedirects(response, reverse('hongwen:user_list'))
+        self.assertFalse(HongwenProfile.objects.filter(pk=profile.pk).exists())
         self.assertFalse(User.objects.filter(pk=user.pk).exists())
 
     def test_list_and_search(self):
         _customer_user('wx_findme')
         _customer_user('wx_other')
-        response = self.client.get(reverse('wenqu:user_list'), {'search': 'findme'})
+        response = self.client.get(reverse('hongwen:user_list'), {'search': 'findme'})
         self.assertEqual([p.external_id for p in response.context['profiles']], ['wx_findme'])
 
     def test_non_admin_cannot_bump(self):
         _user, profile = _customer_user()
         self.client.force_login(_plain('intruder'))
-        response = self.client.post(reverse('wenqu:user_bump_token', args=[profile.pk]))
+        response = self.client.post(reverse('hongwen:user_bump_token', args=[profile.pk]))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('dashboard:dashboard'))
         profile.refresh_from_db()
         self.assertEqual(profile.token_version, 0)
 
 
-@override_settings(WENQU_TRIAGE_ENABLED=False)
+@override_settings(HONGWEN_TRIAGE_ENABLED=False)
 class KBAdminTests(TestCase):
     def setUp(self):
         self.admin = _superadmin()
@@ -286,7 +286,7 @@ class KBAdminTests(TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
         self.kb_dir = os.path.join(self._tmp.name, 'kb_sources')
-        self._settings = override_settings(WENQU_KB_SOURCES_DIR=self.kb_dir)
+        self._settings = override_settings(HONGWEN_KB_SOURCES_DIR=self.kb_dir)
         self._settings.enable()
         self.addCleanup(self._settings.disable)
 
@@ -294,16 +294,16 @@ class KBAdminTests(TestCase):
         data = {'conflict_mode': conflict, 'files': SimpleUploadedFile(name, content)}
         if customer_id is not None:
             data['customer_id'] = customer_id
-        return self.client.post(reverse('wenqu:kb_upload'), data)
+        return self.client.post(reverse('hongwen:kb_upload'), data)
 
     def _fake_ingest(self, path, customer_id=None, **kwargs):
-        from wenqu.services.kb.paths import to_stored_path
+        from hongwen.services.kb.paths import to_stored_path
         return KBDocument.objects.create(
             path=to_stored_path(path), source_type='txt', content_hash='fakehash', customer_id=customer_id,
         )
 
     def test_upload_stores_source_and_ingests(self):
-        with mock.patch('wenqu.services.kb.ingest.ingest_one', side_effect=self._fake_ingest) as ingest_one:
+        with mock.patch('hongwen.services.kb.ingest.ingest_one', side_effect=self._fake_ingest) as ingest_one:
             response = self._upload(customer_id=self.customer.pk)
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -319,7 +319,7 @@ class KBAdminTests(TestCase):
         self.assertEqual(KBDocument.objects.get().customer_id, self.customer.pk)
 
     def test_upload_failure_cleans_orphan_source(self):
-        with mock.patch('wenqu.services.kb.ingest.ingest_one', side_effect=RuntimeError('embed down')):
+        with mock.patch('hongwen.services.kb.ingest.ingest_one', side_effect=RuntimeError('embed down')):
             response = self._upload()
         self.assertEqual(response.status_code, 200)
         payload = response.json()
@@ -335,9 +335,9 @@ class KBAdminTests(TestCase):
 
     def test_overwrite_mode_replaces_same_name_document(self):
         doc = KBDocument.objects.create(path='old_guide.txt', source_type='txt', content_hash='h', customer_id=None)
-        with mock.patch('wenqu.services.kb.ingest.find_customer_document_by_display_name', return_value=doc) as find, \
-             mock.patch('wenqu.services.kb.ingest.replace_document', return_value=doc) as replace, \
-             mock.patch('wenqu.services.kb.ingest.ingest_one') as ingest_one:
+        with mock.patch('hongwen.services.kb.ingest.find_customer_document_by_display_name', return_value=doc) as find, \
+             mock.patch('hongwen.services.kb.ingest.replace_document', return_value=doc) as replace, \
+             mock.patch('hongwen.services.kb.ingest.ingest_one') as ingest_one:
             response = self._upload(conflict='overwrite')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['results'][0]['action'], 'replaced')
@@ -348,15 +348,15 @@ class KBAdminTests(TestCase):
     def test_document_list_scoped_by_customer(self):
         KBDocument.objects.create(path='global.txt', source_type='txt', content_hash='h')
         KBDocument.objects.create(path='acme.txt', source_type='txt', content_hash='h', customer=self.customer)
-        response = self.client.get(reverse('wenqu:kb_documents'))
+        response = self.client.get(reverse('hongwen:kb_documents'))
         self.assertEqual([d['display_name'] for d in response.json()['documents']], ['global.txt'])
-        response = self.client.get(reverse('wenqu:kb_documents'), {'customer_id': self.customer.pk})
+        response = self.client.get(reverse('hongwen:kb_documents'), {'customer_id': self.customer.pk})
         self.assertEqual([d['display_name'] for d in response.json()['documents']], ['acme.txt'])
 
     def test_preview_returns_chunks(self):
         doc = KBDocument.objects.create(path='guide.txt', source_type='txt', content_hash='h')
         KBChunk.objects.create(document=doc, chunk_index=0, content='replace the paper roll', embedding=[0.0], source_path='guide.txt')
-        response = self.client.get(reverse('wenqu:kb_document_preview', args=[doc.pk]))
+        response = self.client.get(reverse('hongwen:kb_document_preview', args=[doc.pk]))
         payload = response.json()
         self.assertEqual(payload['display_name'], 'guide.txt')
         self.assertEqual(payload['chunk_count'], 1)
@@ -364,7 +364,7 @@ class KBAdminTests(TestCase):
 
     def test_preview_foreign_scope_404(self):
         doc = KBDocument.objects.create(path='acme.txt', source_type='txt', content_hash='h', customer=self.customer)
-        response = self.client.get(reverse('wenqu:kb_document_preview', args=[doc.pk]))
+        response = self.client.get(reverse('hongwen:kb_document_preview', args=[doc.pk]))
         self.assertEqual(response.status_code, 404)
 
     def test_download_streams_source_file(self):
@@ -373,16 +373,16 @@ class KBAdminTests(TestCase):
         with open(stored, 'wb') as fh:
             fh.write(b'paper roll instructions')
         doc = KBDocument.objects.create(path='abc_guide.txt', source_type='txt', content_hash='h')
-        response = self.client.get(reverse('wenqu:kb_document_download', args=[doc.pk]))
+        response = self.client.get(reverse('hongwen:kb_document_download', args=[doc.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(b''.join(response.streaming_content), b'paper roll instructions')
         self.assertIn('inline', response['Content-Disposition'])
 
     def test_replace_uses_ingest_service(self):
         doc = KBDocument.objects.create(path='old.txt', source_type='txt', content_hash='h')
-        with mock.patch('wenqu.services.kb.ingest.replace_document', return_value=doc) as replace:
+        with mock.patch('hongwen.services.kb.ingest.replace_document', return_value=doc) as replace:
             response = self.client.post(
-                reverse('wenqu:kb_document_replace', args=[doc.pk]),
+                reverse('hongwen:kb_document_replace', args=[doc.pk]),
                 {'file': SimpleUploadedFile('new.txt', b'fresh content')},
             )
         self.assertEqual(response.status_code, 200)
@@ -396,7 +396,7 @@ class KBAdminTests(TestCase):
             fh.write(b'bye')
         doc = KBDocument.objects.create(path='gone.txt', source_type='txt', content_hash='h')
         KBChunk.objects.create(document=doc, chunk_index=0, content='bye', embedding=[0.0], source_path='gone.txt')
-        response = self.client.post(reverse('wenqu:kb_document_delete', args=[doc.pk]))
+        response = self.client.post(reverse('hongwen:kb_document_delete', args=[doc.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['documents'], [])
         self.assertFalse(KBDocument.objects.exists())
@@ -405,7 +405,7 @@ class KBAdminTests(TestCase):
 
     def test_kb_page_renders_initial_documents(self):
         KBDocument.objects.create(path='guide.txt', source_type='txt', content_hash='h')
-        response = self.client.get(reverse('wenqu:file_upload'))
+        response = self.client.get(reverse('hongwen:file_upload'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['initial_documents']), 1)
         self.assertContains(response, 'kb-initial-documents')
@@ -418,12 +418,12 @@ class KBAdminTests(TestCase):
         self.assertFalse(KBDocument.objects.exists())
 
 
-@override_settings(WENQU_TRIAGE_ENABLED=False)
+@override_settings(HONGWEN_TRIAGE_ENABLED=False)
 class AdminChatTests(TestCase):
     """The PC console is session-authenticated staff surface, not the customer API.
 
-    Staff have no WenquProfile, so the customer JWT endpoints would reject them;
-    these views gate on can_manage_wenqu and call the services directly. The LLM
+    Staff have no HongwenProfile, so the customer JWT endpoints would reject them;
+    these views gate on can_manage_hongwen and call the services directly. The LLM
     boundary (prepare_reply_generation / stream_reply_deltas) is mocked - the
     SSE generators, persistence and moderation wrappers run for real.
     """
@@ -436,40 +436,40 @@ class AdminChatTests(TestCase):
         return self.client.post(url, data=json.dumps(payload), content_type='application/json')
 
     def test_root_redirects_to_chatbot(self):
-        response = self.client.get(reverse('wenqu:root'))
-        self.assertRedirects(response, reverse('wenqu:chatbot'))
+        response = self.client.get(reverse('hongwen:root'))
+        self.assertRedirects(response, reverse('hongwen:chatbot'))
 
     def test_chatbot_bootstraps_session_without_profile(self):
-        self.assertFalse(WenquProfile.objects.filter(user=self.admin).exists())
-        response = self.client.get(reverse('wenqu:chatbot'))
+        self.assertFalse(HongwenProfile.objects.filter(user=self.admin).exists())
+        response = self.client.get(reverse('hongwen:chatbot'))
         self.assertEqual(response.status_code, 200)
         session = ChatSession.objects.get(user=self.admin)
         self.assertTrue(session.session_id.startswith('pc_sess_'))
         self.assertEqual(response.context['session_id'], session.session_id)
         greeting = Message.objects.get(session_id=session.session_id, role='assistant')
-        self.assertIn('Wenqu staff console', greeting.content)
+        self.assertIn('Hongwen staff console', greeting.content)
         self.assertEqual(len(response.context['session_summaries']), 1)
         self.assertContains(response, 'wq-initial-history')
 
     def test_it_administrator_reaches_chatbot(self):
         self.client.force_login(_it_admin('itchat'))
-        response = self.client.get(reverse('wenqu:chatbot'))
+        response = self.client.get(reverse('hongwen:chatbot'))
         self.assertEqual(response.status_code, 200)
 
     def test_force_new_creates_second_session(self):
-        self.client.get(reverse('wenqu:chatbot'))
-        self.client.get(reverse('wenqu:chatbot'), {'force_new': '1'})
+        self.client.get(reverse('hongwen:chatbot'))
+        self.client.get(reverse('hongwen:chatbot'), {'force_new': '1'})
         self.assertEqual(ChatSession.objects.filter(user=self.admin).count(), 2)
 
     def test_foreign_session_redirects_with_message(self):
         other = _plain('chatother')
         foreign = ChatSession.objects.create(user=other, session_id='sess_foreign000')
-        response = self.client.get(reverse('wenqu:chatbot'), {'session_id': foreign.session_id}, follow=True)
-        self.assertRedirects(response, reverse('wenqu:chatbot'))
+        response = self.client.get(reverse('hongwen:chatbot'), {'session_id': foreign.session_id}, follow=True)
+        self.assertRedirects(response, reverse('hongwen:chatbot'))
         self.assertContains(response, 'Chat session not found.')
 
     def test_stream_denied_for_anonymous_plain_and_customer(self):
-        url = reverse('wenqu:chat_stream')
+        url = reverse('hongwen:chat_stream')
         payload = {'type': 'text', 'content': {'text': 'hi'}}
         self.client.logout()
         response = self.client.post(url, data=json.dumps(payload), content_type='application/json')
@@ -487,10 +487,10 @@ class AdminChatTests(TestCase):
     def test_stream_sse_lifecycle_and_persistence(self):
         # The SSE generator is lazy: consume it INSIDE the mock context, or the
         # real provider router runs once the patches are gone.
-        with mock.patch('wenqu.services.admin_chat.prepare_reply_generation', return_value=_preparation()), \
-             mock.patch('wenqu.services.sse.stream_reply_deltas',
+        with mock.patch('hongwen.services.admin_chat.prepare_reply_generation', return_value=_preparation()), \
+             mock.patch('hongwen.services.sse.stream_reply_deltas',
                         return_value=iter([('Hello', 'test/primary'), (' world', 'test/primary')])):
-            response = self._post_json(reverse('wenqu:chat_stream'), {'type': 'text', 'content': {'text': 'hi'}})
+            response = self._post_json(reverse('hongwen:chat_stream'), {'type': 'text', 'content': {'text': 'hi'}})
             frames = _sse_frames(response)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'text/event-stream')
@@ -507,15 +507,15 @@ class AdminChatTests(TestCase):
         self.assertTrue(ChatSession.objects.filter(user=self.admin, session_id=final['session_id']).exists())
 
     def test_stream_moderation_block_is_plain_json_400(self):
-        from wenqu.services.utils.moderation import Suggest
-        with mock.patch('wenqu.services.utils.moderation.check_text', return_value=Suggest.RISKY):
-            response = self._post_json(reverse('wenqu:chat_stream'), {'type': 'text', 'content': {'text': 'bad text'}})
+        from hongwen.services.utils.moderation import Suggest
+        with mock.patch('hongwen.services.utils.moderation.check_text', return_value=Suggest.RISKY):
+            response = self._post_json(reverse('hongwen:chat_stream'), {'type': 'text', 'content': {'text': 'bad text'}})
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response['Content-Type'], 'application/json')
         self.assertFalse(Message.objects.exists())
 
     def test_stream_invalid_json_400(self):
-        response = self.client.post(reverse('wenqu:chat_stream'), data='not-json', content_type='application/json')
+        response = self.client.post(reverse('hongwen:chat_stream'), data='not-json', content_type='application/json')
         self.assertEqual(response.status_code, 400)
 
     def _seed_turn(self, session_id='sess_regen00001'):
@@ -532,9 +532,9 @@ class AdminChatTests(TestCase):
 
     def test_regenerate_stream_replaces_latest_reply(self):
         session, old_reply = self._seed_turn()
-        with mock.patch('wenqu.services.admin_chat.prepare_reply_generation', return_value=_preparation()), \
-             mock.patch('wenqu.services.sse.stream_reply_deltas', return_value=iter([('New reply', 'test/primary')])):
-            response = self._post_json(reverse('wenqu:chat_regenerate_stream'), {'session_id': session.session_id})
+        with mock.patch('hongwen.services.admin_chat.prepare_reply_generation', return_value=_preparation()), \
+             mock.patch('hongwen.services.sse.stream_reply_deltas', return_value=iter([('New reply', 'test/primary')])):
+            response = self._post_json(reverse('hongwen:chat_regenerate_stream'), {'session_id': session.session_id})
             frames = _sse_frames(response)
         self.assertEqual(response.status_code, 200)
         self.assertEqual([event for event, _ in frames], ['start', 'delta', 'final', 'done'], frames)
@@ -548,7 +548,7 @@ class AdminChatTests(TestCase):
     def test_regenerate_stale_message_id_conflict_409(self):
         session, old_reply = self._seed_turn()
         response = self._post_json(
-            reverse('wenqu:chat_regenerate_stream'),
+            reverse('hongwen:chat_regenerate_stream'),
             {'session_id': session.session_id, 'message_id': str(old_reply.pk + 999)},
         )
         self.assertEqual(response.status_code, 409)
@@ -560,16 +560,16 @@ class AdminChatTests(TestCase):
             user=self.admin, session_id=session.session_id, role='user', type='text',
             content=json.dumps({'type': 'text', 'content': {'text': 'hi'}}),
         )
-        response = self._post_json(reverse('wenqu:chat_regenerate_stream'), {'session_id': session.session_id})
+        response = self._post_json(reverse('hongwen:chat_regenerate_stream'), {'session_id': session.session_id})
         self.assertEqual(response.status_code, 422)
 
     def test_regenerate_requires_session_id(self):
-        response = self._post_json(reverse('wenqu:chat_regenerate_stream'), {})
+        response = self._post_json(reverse('hongwen:chat_regenerate_stream'), {})
         self.assertEqual(response.status_code, 400)
 
     def test_session_rename_and_clear(self):
         session = ChatSession.objects.create(user=self.admin, session_id='sess_rename0001')
-        url = reverse('wenqu:chat_session_rename', args=[session.session_id])
+        url = reverse('hongwen:chat_session_rename', args=[session.session_id])
         response = self._post_json(url, {'title': '  Printer   issues  '})
         self.assertEqual(response.status_code, 200)
         session.refresh_from_db()
@@ -581,14 +581,14 @@ class AdminChatTests(TestCase):
 
     def test_session_rename_too_long_400(self):
         session = ChatSession.objects.create(user=self.admin, session_id='sess_rename0002')
-        response = self._post_json(reverse('wenqu:chat_session_rename', args=[session.session_id]), {'title': 'x' * 256})
+        response = self._post_json(reverse('hongwen:chat_session_rename', args=[session.session_id]), {'title': 'x' * 256})
         self.assertEqual(response.status_code, 400)
 
     def test_session_delete_current_bootstraps_replacement(self):
-        self.client.get(reverse('wenqu:chatbot'))
+        self.client.get(reverse('hongwen:chatbot'))
         session = ChatSession.objects.get(user=self.admin)
         response = self._post_json(
-            reverse('wenqu:chat_session_delete', args=[session.session_id]),
+            reverse('hongwen:chat_session_delete', args=[session.session_id]),
             {'current_session_id': session.session_id},
         )
         self.assertEqual(response.status_code, 200)
@@ -602,8 +602,8 @@ class AdminChatTests(TestCase):
     def test_session_actions_reject_foreign_sessions(self):
         other = _plain('sessother')
         foreign = ChatSession.objects.create(user=other, session_id='sess_foreign001')
-        response = self._post_json(reverse('wenqu:chat_session_rename', args=[foreign.session_id]), {'title': 'x'})
+        response = self._post_json(reverse('hongwen:chat_session_rename', args=[foreign.session_id]), {'title': 'x'})
         self.assertEqual(response.status_code, 404)
-        response = self._post_json(reverse('wenqu:chat_session_delete', args=[foreign.session_id]), {})
+        response = self._post_json(reverse('hongwen:chat_session_delete', args=[foreign.session_id]), {})
         self.assertEqual(response.status_code, 404)
         self.assertTrue(ChatSession.objects.filter(pk=foreign.pk).exists())

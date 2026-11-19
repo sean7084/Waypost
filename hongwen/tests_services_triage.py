@@ -12,10 +12,10 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
-from wenqu.models import Customer, TriageAsset, TriagePlaybook, TriageSession, TriageStep, WenquProfile
-from wenqu.services.triage import engine, seed
-from wenqu.services.triage.assets import asset_exists, asset_relative_path
-from wenqu.services_testing import triage_chat_completion, triage_vector
+from hongwen.models import Customer, TriageAsset, TriagePlaybook, TriageSession, TriageStep, HongwenProfile
+from hongwen.services.triage import engine, seed
+from hongwen.services.triage.assets import asset_exists, asset_relative_path
+from hongwen.services_testing import triage_chat_completion, triage_vector
 
 User = get_user_model()
 
@@ -23,14 +23,14 @@ User = get_user_model()
 class _TriageMixin:
     def setUp(self):
         super().setUp()
-        self.private_root = tempfile.mkdtemp(prefix='wenqu-triage-')
-        ov = override_settings(WENQU_PRIVATE_MEDIA_ROOT=self.private_root)
+        self.private_root = tempfile.mkdtemp(prefix='hongwen-triage-')
+        ov = override_settings(HONGWEN_PRIVATE_MEDIA_ROOT=self.private_root)
         ov.enable()
         self.addCleanup(ov.disable)
 
         self.customer = Customer.objects.create(name='Acme')
         self.user = User.objects.create_user(username='triage-user', password='pw')
-        WenquProfile.objects.create(user=self.user, external_id='triage-user', customer=self.customer)
+        HongwenProfile.objects.create(user=self.user, external_id='triage-user', customer=self.customer)
 
         p1 = mock.patch.object(engine, 'embed_query', side_effect=triage_vector)
         p2 = mock.patch.object(seed, 'embed_query', side_effect=triage_vector)

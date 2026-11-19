@@ -9,8 +9,8 @@ from unittest import mock
 
 from django.test import TestCase, override_settings
 
-from wenqu.services.llm import dashscope_client, model_selector, prompts, provider_router, volcengine_client
-from wenqu.services.llm.model_selector import ProviderModelRef, parse_model_ref
+from hongwen.services.llm import dashscope_client, model_selector, prompts, provider_router, volcengine_client
+from hongwen.services.llm.model_selector import ProviderModelRef, parse_model_ref
 
 
 class FakeResponse:
@@ -86,12 +86,12 @@ class PromptPackTests(TestCase):
 
     def test_pack_loads_markdown_from_template_files(self):
         pack = prompts.load_prompt_pack('qwen/qwen3.6-plus')
-        self.assertIn('问渠', pack.sections['SOUL'])
+        self.assertIn('泓问', pack.sections['SOUL'])
         self.assertEqual(pack.locale, 'zh-CN')
 
     def test_default_pack_uses_branded_fallback(self):
         pack = prompts.load_prompt_pack('unknown/model')
-        self.assertIn('问渠', pack.sections['SOUL'])
+        self.assertIn('泓问', pack.sections['SOUL'])
 
     def test_chat_mode_asks_for_json(self):
         rendered = prompts.render_helpdesk_system_prompt(model='qwen/qwen3.6-plus', mode='chat')

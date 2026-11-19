@@ -11,9 +11,9 @@ from unittest import mock, skipUnless
 from django.db import connection
 from django.test import TestCase, override_settings
 
-from wenqu.models import Customer, KBChunk, KBDocument
-from wenqu.services.kb import ingest, vector_store
-from wenqu.services_testing import stub_vector
+from hongwen.models import Customer, KBChunk, KBDocument
+from hongwen.services.kb import ingest, vector_store
+from hongwen.services_testing import stub_vector
 
 
 def _fake_embed_text(*, model, texts, **_):
@@ -114,9 +114,9 @@ class SearchPostgresTests(_KbDataMixin, TestCase):
 
 class IngestTests(TestCase):
     def setUp(self):
-        self.kb_root = tempfile.mkdtemp(prefix='wenqu-ingest-kb-')
-        self.private_root = tempfile.mkdtemp(prefix='wenqu-ingest-private-')
-        ov = override_settings(WENQU_KB_SOURCES_DIR=self.kb_root, WENQU_PRIVATE_MEDIA_ROOT=self.private_root)
+        self.kb_root = tempfile.mkdtemp(prefix='hongwen-ingest-kb-')
+        self.private_root = tempfile.mkdtemp(prefix='hongwen-ingest-private-')
+        ov = override_settings(HONGWEN_KB_SOURCES_DIR=self.kb_root, HONGWEN_PRIVATE_MEDIA_ROOT=self.private_root)
         ov.enable()
         self.addCleanup(ov.disable)
         self.customer = Customer.objects.create(name='Acme')

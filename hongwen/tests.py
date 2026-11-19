@@ -1,7 +1,7 @@
-"""Tests for the wenqu app: models, private storage, auth service and the
-staff-directory / role wiring that keeps Wenqu customers separate from staff.
+"""Tests for the hongwen app: models, private storage, auth service and the
+staff-directory / role wiring that keeps Hongwen customers separate from staff.
 
-HTTP-level endpoint and authentication-class tests live in api/tests_wenqu_auth.py.
+HTTP-level endpoint and authentication-class tests live in api/tests_hongwen_auth.py.
 """
 import os
 import tempfile
@@ -17,29 +17,29 @@ from django.urls import reverse
 from rest_framework_simplejwt.tokens import AccessToken
 
 from accounts.models import AdminRole, WeChatIdentity
-from wenqu.models import (
+from hongwen.models import (
     ChatSession, Customer, KBChunk, KBDocument, Message, TriageAsset,
     TriagePlaybook, TriageSession, TriageStep, UploadFile, UserProfile,
-    WenquProfile,
+    HongwenProfile,
 )
-from wenqu.services.auth import (
-    WenquAccountDisabled, WenquAuthConflict, WenquOpenIDMismatch,
+from hongwen.services.auth import (
+    HongwenAccountDisabled, HongwenAuthConflict, HongwenOpenIDMismatch,
     update_wx_user, wx_login,
 )
-from wenqu.services.storage import private_storage
+from hongwen.services.storage import private_storage
 
 User = get_user_model()
 
-_WENQU_APPID = 'wenqu-test-appid'
+_HONGWEN_APPID = 'hongwen-test-appid'
 _OPENID = 'o' * 28
 _FAKE_SESSION = {'openid': _OPENID, 'unionid': '', 'session_key': 'never-persisted'}
 
 
-def _make_customer(username='wx_customer', openid=_OPENID, appid=_WENQU_APPID, active=True):
+def _make_customer(username='wx_customer', openid=_OPENID, appid=_HONGWEN_APPID, active=True):
     user = User.objects.create_user(username=username, password='pw')
     user.is_active = active
     user.save()
-    profile = WenquProfile.objects.create(user=user, external_id=username)
+    profile = HongwenProfile.objects.create(user=user, external_id=username)
     WeChatIdentity.objects.create(user=user, appid=appid, openid=openid)
     return user, profile
 
@@ -54,16 +54,16 @@ class ModelTests(TestCase):
         self.assertEqual(str(customer), 'Acme')
         self.assertEqual(customer.notes, '')
 
-    def test_wenqu_profile_defaults(self):
+    def test_hongwen_profile_defaults(self):
         user = User.objects.create_user(username='c1', password='pw')
-        profile = WenquProfile.objects.create(user=user, external_id='c1')
+        profile = HongwenProfile.objects.create(user=user, external_id='c1')
         self.assertFalse(profile.can_upload)
         self.assertTrue(profile.can_chat)
         self.assertFalse(profile.can_manage_customers)
         self.assertFalse(profile.can_manage_users)
         self.assertEqual(profile.token_version, 0)
         self.assertEqual(str(profile), 'c1')
-        self.assertEqual(user.wenqu_profile, profile)
+        self.assertEqual(user.hongwen_profile, profile)
 
     def test_message_links_session_by_business_key(self):
         user = User.objects.create_user(username='c2', password='pw')
@@ -79,7 +79,7 @@ class ModelTests(TestCase):
     def test_user_profile_one_to_one_pk(self):
         user = User.objects.create_user(username='c3', password='pw')
         UserProfile.objects.create(user=user, weak_points='{}')
-        self.assertEqual(user.wenqu_learning_profile.user_id, user.id)
+        self.assertEqual(user.hongwen_learning_profile.user_id, user.id)
 
     def test_kb_chunk_embedding_roundtrip_and_unique(self):
         doc = KBDocument.objects.create(path='a.txt', source_type='txt', content_hash='h' * 64)
@@ -121,7 +121,7 @@ class ModelTests(TestCase):
     def test_str_representations(self):
         user = User.objects.create_user(username='struser', password='pw')
         customer = Customer.objects.create(name='StrCo')
-        profile = WenquProfile.objects.create(user=user, external_id='struser', customer=customer)
+        profile = HongwenProfile.objects.create(user=user, external_id='struser', customer=customer)
         session = ChatSession.objects.create(session_id='str-sess', user=user)
         message = Message.objects.create(session=session, user=user, role='user', type='text', content='{}')
         learning = UserProfile.objects.create(user=user)
@@ -157,7 +157,7 @@ class UploadFileStorageTests(TestCase):
         self.addCleanup(setattr, self.field, 'storage', original)
 
     def test_private_storage_callable_reads_setting_lazily(self):
-        with override_settings(WENQU_PRIVATE_MEDIA_ROOT=self._tmp.name):
+        with override_settings(HONGWEN_PRIVATE_MEDIA_ROOT=self._tmp.name):
             self.assertEqual(str(private_storage().location), self._tmp.name)
 
     def test_field_default_storage_is_private_root_not_media(self):
@@ -165,7 +165,7 @@ class UploadFileStorageTests(TestCase):
         self.assertIsInstance(storage, FileSystemStorage)
         self.assertEqual(
             os.path.normpath(storage.location),
-            os.path.normpath(str(settings.WENQU_PRIVATE_MEDIA_ROOT)),
+            os.path.normpath(str(settings.HONGWEN_PRIVATE_MEDIA_ROOT)),
         )
         self.assertNotEqual(
             os.path.normpath(storage.location), os.path.normpath(str(settings.MEDIA_ROOT)),
@@ -186,7 +186,7 @@ class UploadFileStorageTests(TestCase):
             user=user, file_type=UploadFile.FileType.AUDIO, original_filename='v.m4a',
         )
         upload.file.save('voice.m4a', ContentFile(b'audio-bytes'), save=True)
-        self.assertTrue(upload.file.name.startswith('wenqu/uploads/'))
+        self.assertTrue(upload.file.name.startswith('hongwen/uploads/'))
         storage = upload.file.storage
         self.assertTrue(storage.exists(upload.file.name))
         self.assertEqual(os.path.normpath(storage.location), os.path.normpath(self._tmp.name))
@@ -197,23 +197,23 @@ class UploadFileStorageTests(TestCase):
             self.assertEqual(fh.read(), b'audio-bytes')
 
 
-@override_settings(WECHAT_WENQU_APPID=_WENQU_APPID, WECHAT_WENQU_APPSECRET='wenqu-secret')
+@override_settings(WECHAT_HONGWEN_APPID=_HONGWEN_APPID, WECHAT_HONGWEN_APPSECRET='hongwen-secret')
 class WxLoginServiceTests(TestCase):
-    @mock.patch('wenqu.services.auth.code2session', return_value=_FAKE_SESSION)
+    @mock.patch('hongwen.services.auth.code2session', return_value=_FAKE_SESSION)
     def test_new_user_auto_registers(self, _m):
         payload = wx_login('code')
         self.assertEqual(payload['status'], 'new_user')
         self.assertEqual(payload['token_type'], 'Bearer')
         user = User.objects.get(username=f'wx_{_OPENID[:12]}')
         self.assertFalse(user.has_usable_password())
-        profile = user.wenqu_profile
+        profile = user.hongwen_profile
         self.assertEqual(profile.external_id, user.username)
-        self.assertTrue(WeChatIdentity.objects.filter(appid=_WENQU_APPID, openid=_OPENID, user=user).exists())
+        self.assertTrue(WeChatIdentity.objects.filter(appid=_HONGWEN_APPID, openid=_OPENID, user=user).exists())
         self.assertEqual(payload['user']['user_id'], str(user.id))
         self.assertEqual(AccessToken(payload['auth_token'])['tv'], profile.token_version)
         self.assertIn('refresh', payload)
 
-    @mock.patch('wenqu.services.auth.code2session', return_value=_FAKE_SESSION)
+    @mock.patch('hongwen.services.auth.code2session', return_value=_FAKE_SESSION)
     def test_existing_user_returns_ok(self, _m):
         user, profile = _make_customer(username=f'wx_{_OPENID[:12]}')
         payload = wx_login('code')
@@ -221,26 +221,26 @@ class WxLoginServiceTests(TestCase):
         self.assertEqual(payload['user']['user_id'], str(user.id))
         self.assertEqual(User.objects.count(), 1)
 
-    @mock.patch('wenqu.services.auth.code2session', return_value=_FAKE_SESSION)
+    @mock.patch('hongwen.services.auth.code2session', return_value=_FAKE_SESSION)
     def test_conflict_when_openid_bound_to_non_customer(self, _m):
         staff = User.objects.create_user(username='staff', password='pw')
-        WeChatIdentity.objects.create(user=staff, appid=_WENQU_APPID, openid=_OPENID)
-        with self.assertRaises(WenquAuthConflict):
+        WeChatIdentity.objects.create(user=staff, appid=_HONGWEN_APPID, openid=_OPENID)
+        with self.assertRaises(HongwenAuthConflict):
             wx_login('code')
 
-    @mock.patch('wenqu.services.auth.code2session', return_value=_FAKE_SESSION)
+    @mock.patch('hongwen.services.auth.code2session', return_value=_FAKE_SESSION)
     def test_disabled_account_rejected(self, _m):
         _make_customer(username=f'wx_{_OPENID[:12]}', active=False)
-        with self.assertRaises(WenquAccountDisabled):
+        with self.assertRaises(HongwenAccountDisabled):
             wx_login('code')
 
-    @mock.patch('wenqu.services.auth.code2session', return_value={**_FAKE_SESSION, 'unionid': 'union-1'})
+    @mock.patch('hongwen.services.auth.code2session', return_value={**_FAKE_SESSION, 'unionid': 'union-1'})
     def test_unionid_refreshed_on_login(self, _m):
         user, _profile = _make_customer(username=f'wx_{_OPENID[:12]}')
         wx_login('code')
         self.assertEqual(WeChatIdentity.objects.get(user=user).unionid, 'union-1')
 
-    @mock.patch('wenqu.services.auth.code2session', return_value=_FAKE_SESSION)
+    @mock.patch('hongwen.services.auth.code2session', return_value=_FAKE_SESSION)
     def test_username_collision_gets_suffix(self, _m):
         User.objects.create_user(username=f'wx_{_OPENID[:12]}', password='pw')
         payload = wx_login('code')
@@ -248,7 +248,7 @@ class WxLoginServiceTests(TestCase):
         self.assertEqual(User.objects.count(), 2)
 
 
-@override_settings(WECHAT_WENQU_APPID=_WENQU_APPID, WECHAT_WENQU_APPSECRET='wenqu-secret')
+@override_settings(WECHAT_HONGWEN_APPID=_HONGWEN_APPID, WECHAT_HONGWEN_APPSECRET='hongwen-secret')
 class UpdateWxUserServiceTests(TestCase):
     def setUp(self):
         self.user, self.profile = _make_customer()
@@ -265,7 +265,7 @@ class UpdateWxUserServiceTests(TestCase):
         self.assertEqual(AccessToken(payload['auth_token'])['tv'], self.profile.token_version)
 
     def test_openid_mismatch_rejected(self):
-        with self.assertRaises(WenquOpenIDMismatch):
+        with self.assertRaises(HongwenOpenIDMismatch):
             update_wx_user(self.user, {'openid': 'someone-else'})
 
     def test_matching_openid_accepted(self):
@@ -279,29 +279,29 @@ class UpdateWxUserServiceTests(TestCase):
         self.assertEqual(payload['status'], 'ok')
 
 
-class CanManageWenquTests(TestCase):
+class CanManageHongwenTests(TestCase):
     def test_superadmin(self):
         user = User.objects.create_user(username='root', password='pw', is_superuser=True)
-        self.assertTrue(user.can_manage_wenqu())
+        self.assertTrue(user.can_manage_hongwen())
 
     def test_it_administrator(self):
         _role('it_administrator')
         user = User.objects.create_user(username='it', password='pw')
         user.set_admin_roles(['it_administrator'])
-        self.assertTrue(user.can_manage_wenqu())
+        self.assertTrue(user.can_manage_hongwen())
 
     def test_other_roles_and_plain_user_denied(self):
         for code in ('viewer', 'order_management_specialist', 'inspection_engineer'):
             _role(code)
         user = User.objects.create_user(username='other', password='pw')
         user.set_admin_roles(['viewer', 'order_management_specialist', 'inspection_engineer'])
-        self.assertFalse(user.can_manage_wenqu())
+        self.assertFalse(user.can_manage_hongwen())
         plain = User.objects.create_user(username='plain', password='pw')
-        self.assertFalse(plain.can_manage_wenqu())
+        self.assertFalse(plain.can_manage_hongwen())
 
 
 class StaffDirectoryExcludesCustomersTests(TestCase):
-    def test_web_user_list_excludes_wenqu_customers(self):
+    def test_web_user_list_excludes_hongwen_customers(self):
         admin = User.objects.create_user(username='admin', password='pw', is_superuser=True, is_staff=True)
         staff = User.objects.create_user(username='staffer', password='pw')
         customer, _profile = _make_customer(username='wx_external')
@@ -326,7 +326,7 @@ class PgVectorTests(TestCase):
         KBChunk.objects.create(document=doc, chunk_index=1, content='far', embedding=[0.0, 1.0, 0.0], source_path='p.txt')
         with connection.cursor() as cur:
             cur.execute(
-                "SELECT chunk_index FROM wenqu_kbchunk "
+                "SELECT chunk_index FROM hongwen_kbchunk "
                 "ORDER BY embedding::text::vector <=> CAST(%s AS vector) LIMIT 1",
                 ['[1.0,0.0,0.0]'],
             )

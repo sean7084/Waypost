@@ -16,10 +16,10 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from PIL import Image
 
-from wenqu.models import UploadFile
-from wenqu.services.utils import chunking, email as email_utils, moderation, wechat_token
-from wenqu.services.utils.audio_utils import encode_audio_as_base64
-from wenqu.services.utils.file_store import (
+from hongwen.models import UploadFile
+from hongwen.services.utils import chunking, email as email_utils, moderation, wechat_token
+from hongwen.services.utils.audio_utils import encode_audio_as_base64
+from hongwen.services.utils.file_store import (
     build_attachment_caption,
     build_protected_upload_url,
     kb_document_display_name,
@@ -30,21 +30,21 @@ from wenqu.services.utils.file_store import (
     store_upload_bytes,
     upload_exists,
 )
-from wenqu.services.utils.image_utils import encode_image_as_data_url
-from wenqu.services.utils.ocr import ocr_image_bytes
-from wenqu.services.utils.video_utils import encode_video_as_base64
+from hongwen.services.utils.image_utils import encode_image_as_data_url
+from hongwen.services.utils.ocr import ocr_image_bytes
+from hongwen.services.utils.video_utils import encode_video_as_base64
 
 User = get_user_model()
 OPENID = 'o' * 28
 
 
 class _PrivateRootMixin:
-    """Point WENQU_PRIVATE_MEDIA_ROOT at a scratch dir for the duration of a test."""
+    """Point HONGWEN_PRIVATE_MEDIA_ROOT at a scratch dir for the duration of a test."""
 
     def setUp(self):
         super().setUp()
-        self.tmp_root = tempfile.mkdtemp(prefix='wenqu-test-private-')
-        ov = override_settings(WENQU_PRIVATE_MEDIA_ROOT=self.tmp_root)
+        self.tmp_root = tempfile.mkdtemp(prefix='hongwen-test-private-')
+        ov = override_settings(HONGWEN_PRIVATE_MEDIA_ROOT=self.tmp_root)
         ov.enable()
         self.addCleanup(ov.disable)
 
@@ -100,12 +100,12 @@ class UploadPathTests(TestCase):
         self.assertEqual(build_protected_upload_url(''), '/api/uploads')
 
     def test_storage_name_mapping(self):
-        self.assertEqual(storage_name_for_relative_path('kb_assets/x.png'), 'wenqu/kb_assets/x.png')
-        self.assertEqual(storage_name_for_relative_path('triage_assets/x.png'), 'wenqu/triage_assets/x.png')
-        self.assertEqual(storage_name_for_relative_path('tts/x.mp3'), 'wenqu/tts/x.mp3')
+        self.assertEqual(storage_name_for_relative_path('kb_assets/x.png'), 'hongwen/kb_assets/x.png')
+        self.assertEqual(storage_name_for_relative_path('triage_assets/x.png'), 'hongwen/triage_assets/x.png')
+        self.assertEqual(storage_name_for_relative_path('tts/x.mp3'), 'hongwen/tts/x.mp3')
         # A bare filename (uploads/ collapsed by the URL) is a customer upload.
-        self.assertEqual(storage_name_for_relative_path('abc__name.mp3'), 'wenqu/uploads/abc__name.mp3')
-        self.assertEqual(storage_name_for_relative_path('uploads/abc__name.mp3'), 'wenqu/uploads/abc__name.mp3')
+        self.assertEqual(storage_name_for_relative_path('abc__name.mp3'), 'hongwen/uploads/abc__name.mp3')
+        self.assertEqual(storage_name_for_relative_path('uploads/abc__name.mp3'), 'hongwen/uploads/abc__name.mp3')
 
 
 class PrivateStorageTests(_PrivateRootMixin, TestCase):
@@ -119,7 +119,7 @@ class PrivateStorageTests(_PrivateRootMixin, TestCase):
         )
         self.assertIsInstance(upload, UploadFile)
         self.assertEqual(len(upload.file_id), 32)
-        self.assertTrue(upload.file.name.startswith('wenqu/uploads/'))
+        self.assertTrue(upload.file.name.startswith('hongwen/uploads/'))
         self.assertTrue(upload.file.name.endswith('__voice.mp3'))
         # Reached through the storage API, never .path.
         with open_upload(f'uploads/{upload.file_id}__voice.mp3') as fh:
@@ -137,7 +137,7 @@ class PrivateStorageTests(_PrivateRootMixin, TestCase):
             os.remove(tmp)
 
     def test_kb_asset_bytes_round_trip(self):
-        from wenqu.services.utils.file_store import save_kb_asset_bytes
+        from hongwen.services.utils.file_store import save_kb_asset_bytes
         rel = save_kb_asset_bytes(b'PNG', 'png', subdir='kb_assets')
         self.assertTrue(rel.startswith('kb_assets/'))
         with open_upload(rel) as fh:
@@ -176,7 +176,7 @@ class MediaEncodingTests(TestCase):
             fh.write(b'ID3fake')
             path = fh.name
         try:
-            with mock.patch('wenqu.services.utils.audio_utils.convert_to_mp3', side_effect=RuntimeError('no ffmpeg')):
+            with mock.patch('hongwen.services.utils.audio_utils.convert_to_mp3', side_effect=RuntimeError('no ffmpeg')):
                 data_url = encode_audio_as_base64(path)
             self.assertTrue(data_url.startswith('data:audio/mpeg;base64,'))
         finally:
@@ -190,7 +190,7 @@ class MediaEncodingTests(TestCase):
         with open(converted, 'wb') as fh:
             fh.write(b'MP3DATA')
         try:
-            with mock.patch('wenqu.services.utils.audio_utils.convert_to_mp3', return_value=converted):
+            with mock.patch('hongwen.services.utils.audio_utils.convert_to_mp3', return_value=converted):
                 data_url = encode_audio_as_base64(path)
             self.assertTrue(data_url.startswith('data:audio/mpeg;base64,'))
             self.assertFalse(os.path.exists(converted))  # temp cleaned up
@@ -204,7 +204,7 @@ class MediaEncodingTests(TestCase):
             fh.write(b'fakevideo')
             path = fh.name
         try:
-            with mock.patch('wenqu.services.utils.video_utils.convert_to_mp4', side_effect=RuntimeError('no ffmpeg')):
+            with mock.patch('hongwen.services.utils.video_utils.convert_to_mp4', side_effect=RuntimeError('no ffmpeg')):
                 data_url = encode_video_as_base64(path)
             self.assertTrue(data_url.startswith('data:video/mp4;base64,'))
         finally:
@@ -221,7 +221,7 @@ class WeChatTokenTests(TestCase):
         self.addCleanup(wechat_token.reset_cache)
 
     def test_no_credentials_returns_none(self):
-        with override_settings(WECHAT_WENQU_APPID='', WECHAT_WENQU_APPSECRET=''):
+        with override_settings(WECHAT_HONGWEN_APPID='', WECHAT_HONGWEN_APPSECRET=''):
             self.assertFalse(wechat_token.has_credentials())
             self.assertIsNone(wechat_token.get_access_token())
 
@@ -232,7 +232,7 @@ class WeChatTokenTests(TestCase):
             calls['n'] += 1
             return SimpleNamespace(json=lambda: {'access_token': f'tok-{calls["n"]}', 'expires_in': 7200})
 
-        with override_settings(WECHAT_WENQU_APPID='appid', WECHAT_WENQU_APPSECRET='secret'):
+        with override_settings(WECHAT_HONGWEN_APPID='appid', WECHAT_HONGWEN_APPSECRET='secret'):
             with mock.patch.object(wechat_token.requests, 'get', side_effect=fake_get):
                 self.assertEqual(wechat_token.get_access_token(), 'tok-1')
                 self.assertEqual(wechat_token.get_access_token(), 'tok-1')
@@ -272,7 +272,7 @@ class _ModerationStub:
         testcase.addCleanup(wechat_token.reset_cache)
         wechat_token.reset_cache()
         ov = override_settings(
-            WECHAT_WENQU_APPID='test-app-id', WECHAT_WENQU_APPSECRET='test-secret', MODERATION_ENABLED=True,
+            WECHAT_HONGWEN_APPID='test-app-id', WECHAT_HONGWEN_APPSECRET='test-secret', MODERATION_ENABLED=True,
         )
         ov.enable()
         testcase.addCleanup(ov.disable)
@@ -447,13 +447,13 @@ class EmailTests(TestCase):
         sent = []
         with override_settings(
             PASSWORD_RESET_EMAIL_ENABLED=True, SMTP_HOST='smtp.test.invalid', SMTP_PORT='465',
-            SMTP_USERNAME='noreply@test.invalid', SMTP_PASSWORD='pw', SMTP_FROM='问渠 <noreply@test.invalid>',
+            SMTP_USERNAME='noreply@test.invalid', SMTP_PASSWORD='pw', SMTP_FROM='泓问 <noreply@test.invalid>',
         ):
             with mock.patch.object(email_utils, '_send', side_effect=lambda m: sent.append(m)):
                 message = email_utils.build_password_reset_email(to_addr='user@example.com', code='123456', minutes=10)
                 self.assertTrue(email_utils.send_email(message))
         self.assertEqual(len(sent), 1)
-        self.assertIn('问渠', sent[0]['Subject'])
+        self.assertIn('泓问', sent[0]['Subject'])
         self.assertIn('123456', sent[0].get_body(preferencelist=('plain',)).get_content())
 
     def test_send_failure_is_fail_closed(self):

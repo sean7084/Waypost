@@ -14,10 +14,10 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from PIL import Image
 
-from wenqu.models import ChatSession, Customer, KBChunk, KBDocument, Message, UploadFile, UserProfile, WenquProfile
-from wenqu.services.llm import orchestrator
-from wenqu.services.utils.file_store import store_upload_bytes
-from wenqu.services_testing import DEFAULT_REPLY, fake_stream_chat, stub_vector
+from hongwen.models import ChatSession, Customer, KBChunk, KBDocument, Message, UploadFile, UserProfile, HongwenProfile
+from hongwen.services.llm import orchestrator
+from hongwen.services.utils.file_store import store_upload_bytes
+from hongwen.services_testing import DEFAULT_REPLY, fake_stream_chat, stub_vector
 
 User = get_user_model()
 
@@ -31,7 +31,7 @@ class _CustomerMixin:
         super().setUp()
         self.customer = Customer.objects.create(name='Acme')
         self.user = User.objects.create_user(username='chat-user', password='pw')
-        WenquProfile.objects.create(user=self.user, external_id='chat-user', customer=self.customer)
+        HongwenProfile.objects.create(user=self.user, external_id='chat-user', customer=self.customer)
         self.session = ChatSession.objects.create(session_id='sess-1', user=self.user)
 
     def _message(self, type='text', content=None):
@@ -186,15 +186,15 @@ class OrchestratorAttachmentTests(_CustomerMixin, TestCase):
 
     def test_pdf_page_render_attachment(self):
         import fitz
-        kb_root = tempfile.mkdtemp(prefix='wenqu-orch-kb-')
-        private_root = tempfile.mkdtemp(prefix='wenqu-orch-private-')
+        kb_root = tempfile.mkdtemp(prefix='hongwen-orch-kb-')
+        private_root = tempfile.mkdtemp(prefix='hongwen-orch-private-')
         pdf_path = os.path.join(kb_root, 'guide.pdf')
         doc = fitz.open()
         doc.new_page()
         doc.save(pdf_path)
         doc.close()
         entries = [{'source': 'guide.pdf', 'snippet': 'text only', 'score': 0.9, 'page_or_section': 'page_1', 'metadata': {}}]
-        with override_settings(WENQU_KB_SOURCES_DIR=kb_root, WENQU_PRIVATE_MEDIA_ROOT=private_root), \
+        with override_settings(HONGWEN_KB_SOURCES_DIR=kb_root, HONGWEN_PRIVATE_MEDIA_ROOT=private_root), \
              mock.patch.object(orchestrator, 'search_kb', return_value=entries):
             prep = orchestrator.prepare_reply_generation(user=self.user, new_message=self._message(), session_id='sess-1')
         self.assertEqual(len(prep.kb_attachments), 1)
@@ -218,8 +218,8 @@ class OrchestratorAttachmentTests(_CustomerMixin, TestCase):
 class OrchestratorMultimodalTests(_CustomerMixin, TestCase):
     def setUp(self):
         super().setUp()
-        self.private_root = tempfile.mkdtemp(prefix='wenqu-orch-mm-')
-        ov = override_settings(WENQU_PRIVATE_MEDIA_ROOT=self.private_root)
+        self.private_root = tempfile.mkdtemp(prefix='hongwen-orch-mm-')
+        ov = override_settings(HONGWEN_PRIVATE_MEDIA_ROOT=self.private_root)
         ov.enable()
         self.addCleanup(ov.disable)
 
@@ -274,7 +274,7 @@ class OrchestratorMultimodalTests(_CustomerMixin, TestCase):
         message = self._message(type='audio', content={'file_id': upload.file_id})
         with mock.patch.object(orchestrator, 'transcribe_audio', side_effect=RuntimeError('asr down')), \
              mock.patch.object(orchestrator, 'search_kb', return_value=[]), \
-             mock.patch('wenqu.services.utils.audio_utils.convert_to_mp3', side_effect=RuntimeError('no ffmpeg')):
+             mock.patch('hongwen.services.utils.audio_utils.convert_to_mp3', side_effect=RuntimeError('no ffmpeg')):
             prep = orchestrator.prepare_reply_generation(user=self.user, new_message=message, session_id='sess-1')
         parts = prep.user_message['content']
         self.assertTrue(any(p.get('type') == 'input_audio' for p in parts))
@@ -306,7 +306,7 @@ class OrchestratorRealRetrievalTests(_CustomerMixin, TestCase):
             source_path='manual.pdf', page_or_section='page_1',
         )
         message = self._message(content={'text': 'router power adapter reset procedure'})
-        with mock.patch('wenqu.services.kb.vector_store.embed_text', side_effect=lambda *, model, texts, **_: [stub_vector(t) for t in texts]), \
+        with mock.patch('hongwen.services.kb.vector_store.embed_text', side_effect=lambda *, model, texts, **_: [stub_vector(t) for t in texts]), \
              mock.patch.object(orchestrator, 'chat_completion_with_fallback', return_value=_json_reply('重启路由器')):
             _, meta, _ = orchestrator.generate_reply_and_update_profile(
                 user=self.user, new_message=message, session_id='sess-1',

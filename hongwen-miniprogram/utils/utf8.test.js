@@ -18,7 +18,7 @@ describe('decodeUtf8', () => {
   });
 
   it('decodes 3-byte Chinese sequences', () => {
-    expect(decodeUtf8(encode('问渠清如许'))).toBe('问渠清如许');
+    expect(decodeUtf8(encode('泓问清如许'))).toBe('泓问清如许');
   });
 
   it('decodes 4-byte astral sequences as surrogate pairs', () => {
@@ -79,12 +79,12 @@ describe('decodeUtf8', () => {
 
 describe('createUtf8Decoder', () => {
   it('holds back a multi-byte character split across chunks', () => {
-    const bytes = encode('问渠');
+    const bytes = encode('泓问');
     const decoder = createUtf8Decoder();
     // Split inside the first character (3 bytes each).
     expect(decoder.push(bytes.slice(0, 1))).toBe('');
-    expect(decoder.push(bytes.slice(1, 4))).toBe('问');
-    expect(decoder.push(bytes.slice(4))).toBe('渠');
+    expect(decoder.push(bytes.slice(1, 4))).toBe('泓');
+    expect(decoder.push(bytes.slice(4))).toBe('问');
     expect(decoder.flush()).toBe('');
   });
 
@@ -97,7 +97,7 @@ describe('createUtf8Decoder', () => {
   });
 
   it('reassembles a sentence fed one byte at a time', () => {
-    const text = 'event: delta\ndata: {"text":"你好，问渠 😀"}\n\n';
+    const text = 'event: delta\ndata: {"text":"你好，泓问 😀"}\n\n';
     const bytes = encode(text);
     const decoder = createUtf8Decoder();
     let out = '';
@@ -110,7 +110,7 @@ describe('createUtf8Decoder', () => {
 
   it('does not hold back a complete trailing character', () => {
     const decoder = createUtf8Decoder();
-    expect(decoder.push(encode('渠'))).toBe('渠');
+    expect(decoder.push(encode('泓'))).toBe('泓');
     expect(decoder.pendingLength).toBe(0);
   });
 
@@ -150,7 +150,7 @@ describe('byte helpers', () => {
   });
 
   it('does not lossily convert a string to bytes', () => {
-    expect(toUint8Array('问渠').length).toBe(0);
+    expect(toUint8Array('泓问').length).toBe(0);
   });
 
   it('concatenates without copying when one side is empty', () => {

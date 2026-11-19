@@ -40,17 +40,17 @@ function createWxMock({ requestResponses = [], uploadResponses = [], downloadRes
 }
 
 describe('config/env', () => {
-  it('points API_BASE at the wenqu customer namespace', () => {
-    expect(env.API_BASE.endsWith('/api/v1/wenqu')).toBe(true);
+  it('points API_BASE at the hongwen customer namespace', () => {
+    expect(env.API_BASE.endsWith('/api/v1/hongwen')).toBe(true);
     expect(['dev', 'prod']).toContain(env.ENV);
   });
 
   it('derives the origin without the namespace path', () => {
-    expect(env.API_ORIGIN).toBe(env.API_BASE.replace(/\/api\/v1\/wenqu$/, ''));
+    expect(env.API_ORIGIN).toBe(env.API_BASE.replace(/\/api\/v1\/hongwen$/, ''));
     expect(env.API_ORIGIN).not.toContain('/api/v1');
   });
 
-  it('puts the refresh route outside the wenqu namespace', () => {
+  it('puts the refresh route outside the hongwen namespace', () => {
     expect(env.REFRESH_URL).toBe(`${env.API_ORIGIN}/api/v1/auth/token/refresh/`);
     expect(env.REFRESH_URL.startsWith(env.API_BASE)).toBe(false);
   });
@@ -304,9 +304,9 @@ describe('asset URLs', () => {
   });
 
   it('joins root-canonical media paths to the ORIGIN, never to API_BASE', () => {
-    expect(request.resolveAssetUrl('/api/uploads/wenqu/a.png')).toBe(`${env.API_ORIGIN}/api/uploads/wenqu/a.png`);
+    expect(request.resolveAssetUrl('/api/uploads/hongwen/a.png')).toBe(`${env.API_ORIGIN}/api/uploads/hongwen/a.png`);
     expect(request.resolveAssetUrl('/api/provider/audio/abc')).toBe(`${env.API_ORIGIN}/api/provider/audio/abc`);
-    expect(request.resolveAssetUrl('/api/uploads/a.png')).not.toContain('/api/v1/wenqu/api/uploads');
+    expect(request.resolveAssetUrl('/api/uploads/a.png')).not.toContain('/api/v1/hongwen/api/uploads');
   });
 
   it('passes an absolute URL through and tolerates a missing leading slash', () => {

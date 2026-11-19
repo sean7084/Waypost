@@ -1,7 +1,7 @@
-"""Deterministic, credential-free provider stubs shared by the wenqu service tests.
+"""Deterministic, credential-free provider stubs shared by the hongwen service tests.
 
 Ported from helpdesk/backend/tests/conftest.py. Provider functions are patched at
-the *import site* (e.g. ``wenqu.services.llm.orchestrator.search_kb``), never at
+the *import site* (e.g. ``hongwen.services.llm.orchestrator.search_kb``), never at
 the source module, because the services do ``from ... import X``.
 
 This module is a helper, not a test module: it defines no TestCase / test_*

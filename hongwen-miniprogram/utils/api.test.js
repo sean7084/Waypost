@@ -197,10 +197,10 @@ describe('endpoint contract', () => {
   });
 
   it('resolves speak/stream stream_url against the origin', async () => {
-    const m = use({ requestResponses: [{ statusCode: 200, data: { stream_url: '/api/v1/wenqu/speak/stream/abc' } }] });
+    const m = use({ requestResponses: [{ statusCode: 200, data: { stream_url: '/api/v1/hongwen/speak/stream/abc' } }] });
     const result = await api.synthesizeSpeechStream({ text: 'hi', messageId: '12' });
     expect(m.calls.request[0].url).toBe(`${env.API_BASE}/speak/stream`);
-    expect(result.stream_url).toBe(`${env.API_ORIGIN}/api/v1/wenqu/speak/stream/abc`);
+    expect(result.stream_url).toBe(`${env.API_ORIGIN}/api/v1/hongwen/speak/stream/abc`);
   });
 
   it('only sends a numeric message_id to regenerate', async () => {

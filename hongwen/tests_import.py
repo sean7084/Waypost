@@ -7,7 +7,7 @@ which keeps the fixtures honest about column order.
 
 Covered: dry-run rollback (no rows, no blobs), idempotent re-runs, natural-key
 upserts, pgvector text parsing, the User -> accounts.User + WeChatIdentity +
-WenquProfile mapping (including legacy admins and pre-existing identities),
+HongwenProfile mapping (including legacy admins and pre-existing identities),
 blob transfer through private storage, timestamp preservation, count
 reconciliation / mismatch detection, and the graceful no-DSN error.
 """
@@ -24,15 +24,15 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from accounts.models import User, WeChatIdentity
-from wenqu.management.commands import import_helpdesk as cmd_mod
-from wenqu.models import (
+from hongwen.management.commands import import_helpdesk as cmd_mod
+from hongwen.models import (
     ChatSession, Customer, KBChunk, KBDocument, Message, TriageAsset,
     TriagePlaybook, TriageSession, TriageStep, UploadFile, UserProfile,
-    WenquProfile,
+    HongwenProfile,
 )
-from wenqu.services.storage import private_storage
+from hongwen.services.storage import private_storage
 
-_APPID = 'wenqu-test-appid'
+_APPID = 'hongwen-test-appid'
 _NAIVE = datetime(2026, 10, 1, 8, 30, 0)
 _NAIVE_LATER = datetime(2026, 10, 2, 9, 0, 0)
 _AWARE = timezone.make_aware(_NAIVE, dt_timezone.utc)
@@ -153,8 +153,8 @@ def _legacy_tables():
 
 
 @override_settings(
-    WENQU_LEGACY_DSN='postgresql://fake-user:fake@127.0.0.1:5432/legacy',
-    WECHAT_WENQU_APPID=_APPID,
+    HONGWEN_LEGACY_DSN='postgresql://fake-user:fake@127.0.0.1:5432/legacy',
+    WECHAT_HONGWEN_APPID=_APPID,
 )
 class ImportHelpdeskTests(TestCase):
     def setUp(self):
@@ -178,8 +178,8 @@ class ImportHelpdeskTests(TestCase):
         self.out = io.StringIO()
         self.err = io.StringIO()
         self._overrides = override_settings(
-            WENQU_LEGACY_UPLOADS_DIR=self.uploads_dir,
-            WENQU_PRIVATE_MEDIA_ROOT=self.private_root,
+            HONGWEN_LEGACY_UPLOADS_DIR=self.uploads_dir,
+            HONGWEN_PRIVATE_MEDIA_ROOT=self.private_root,
         )
         self._overrides.enable()
         self.addCleanup(self._overrides.disable)
@@ -205,7 +205,7 @@ class ImportHelpdeskTests(TestCase):
         self._run('--dry-run')
         self.assertEqual(Customer.objects.count(), 0)
         self.assertEqual(User.objects.count(), 0)
-        self.assertEqual(WenquProfile.objects.count(), 0)
+        self.assertEqual(HongwenProfile.objects.count(), 0)
         self.assertEqual(ChatSession.objects.count(), 0)
         self.assertEqual(Message.objects.count(), 0)
         self.assertEqual(UploadFile.objects.count(), 0)
@@ -223,7 +223,7 @@ class ImportHelpdeskTests(TestCase):
     def test_full_import_maps_every_table(self):
         self._run()
         self.assertEqual(Customer.objects.count(), 1)
-        self.assertEqual(WenquProfile.objects.count(), 2)
+        self.assertEqual(HongwenProfile.objects.count(), 2)
         self.assertEqual(ChatSession.objects.count(), 1)
         self.assertEqual(Message.objects.count(), 2)
         self.assertEqual(UserProfile.objects.count(), 1)
@@ -249,7 +249,7 @@ class ImportHelpdeskTests(TestCase):
         self.assertEqual(identity.appid, _APPID)
         self.assertEqual(identity.openid, 'openid-1')
         self.assertEqual(identity.unionid, '')
-        profile = user.wenqu_profile
+        profile = user.hongwen_profile
         self.assertEqual(profile.external_id, 'wx_o1')
         self.assertEqual(profile.customer, customer)
         self.assertTrue(profile.can_upload)
@@ -263,9 +263,9 @@ class ImportHelpdeskTests(TestCase):
         self.assertFalse(admin.is_staff)
         self.assertFalse(admin.is_superuser)
         self.assertFalse(admin.has_usable_password())
-        self.assertTrue(admin.wenqu_profile.can_manage_users)
-        self.assertTrue(admin.wenqu_profile.can_manage_customers)
-        self.assertIsNone(admin.wenqu_profile.customer)
+        self.assertTrue(admin.hongwen_profile.can_manage_users)
+        self.assertTrue(admin.hongwen_profile.can_manage_customers)
+        self.assertIsNone(admin.hongwen_profile.customer)
         self.assertEqual(WeChatIdentity.objects.count(), 1)  # no openid -> no identity
 
         session = ChatSession.objects.get(session_id='sess_a')
@@ -317,12 +317,12 @@ class ImportHelpdeskTests(TestCase):
         self.assertEqual(upload.created_at, _AWARE)
         storage = private_storage()
         self.assertTrue(storage.exists(upload.file.name))
-        self.assertTrue(upload.file.name.startswith('wenqu/uploads/'))
+        self.assertTrue(upload.file.name.startswith('hongwen/uploads/'))
         with storage.open(upload.file.name) as fh:
             self.assertEqual(fh.read(), b'audio-bytes')
         # Avatar and triage screenshot blobs travelled too.
-        self.assertTrue(storage.exists('wenqu/uploads/avatars/a.png'))
-        self.assertTrue(storage.exists('wenqu/triage_assets/shot.png'))
+        self.assertTrue(storage.exists('hongwen/uploads/avatars/a.png'))
+        self.assertTrue(storage.exists('hongwen/triage_assets/shot.png'))
 
     # -- idempotency / upsert ----------------------------------------------------
 
@@ -365,17 +365,17 @@ class ImportHelpdeskTests(TestCase):
         self.assertEqual(ChatSession.objects.get().pk, session_pk)
         self.assertEqual(ChatSession.objects.get().title, 'New title')
 
-    def test_existing_wenqu_identity_is_reused_not_duplicated(self):
+    def test_existing_hongwen_identity_is_reused_not_duplicated(self):
         # A customer who already logged into the new client before the merge.
         early = User.objects.create_user(username='early_user', password='pw')
         early.set_unusable_password()
         early.save()
-        WenquProfile.objects.create(user=early, external_id='wx_o1')
+        HongwenProfile.objects.create(user=early, external_id='wx_o1')
         WeChatIdentity.objects.create(user=early, appid=_APPID, openid='openid-1')
         self._run()
         self.assertEqual(User.objects.count(), 2)  # early + admin_pc, no third account
         self.assertEqual(WeChatIdentity.objects.filter(openid='openid-1').count(), 1)
-        profile = WenquProfile.objects.get(user=early)
+        profile = HongwenProfile.objects.get(user=early)
         self.assertEqual(profile.token_version, 7)
         self.assertEqual(profile.nickname, 'Nick')
         self.assertEqual(Message.objects.first().user, early)
@@ -383,7 +383,7 @@ class ImportHelpdeskTests(TestCase):
     def test_username_collision_gets_deterministic_suffix(self):
         User.objects.create_user(username='wx_o1', password='pw')  # unrelated account
         self._run()
-        imported = WenquProfile.objects.get(external_id='wx_o1').user
+        imported = HongwenProfile.objects.get(external_id='wx_o1').user
         self.assertEqual(imported.username, 'wx_o1_h10')
         self._run()
         self.assertEqual(User.objects.filter(username__startswith='wx_o1').count(), 2)
@@ -405,10 +405,10 @@ class ImportHelpdeskTests(TestCase):
         self.assertEqual(cmd_mod.aware_utc(_AWARE), _AWARE)
 
     def test_missing_dsn_fails_gracefully_without_connecting(self):
-        with override_settings(WENQU_LEGACY_DSN=''):
+        with override_settings(HONGWEN_LEGACY_DSN=''):
             with self.assertRaises(CommandError) as ctx:
                 self._run()
-        self.assertIn('WENQU_LEGACY_DSN', str(ctx.exception))
+        self.assertIn('HONGWEN_LEGACY_DSN', str(ctx.exception))
         self.connect.assert_not_called()
 
     def test_missing_blob_skips_row_and_reports_mismatch(self):
@@ -423,11 +423,11 @@ class ImportHelpdeskTests(TestCase):
         self.assertEqual(Message.objects.count(), 2)
 
     def test_unset_uploads_dir_skips_blobs_but_imports_metadata(self):
-        with override_settings(WENQU_LEGACY_UPLOADS_DIR=''):
+        with override_settings(HONGWEN_LEGACY_UPLOADS_DIR=''):
             self._run()
         self.assertEqual(UploadFile.objects.count(), 0)
         self.assertEqual(TriageAsset.objects.count(), 1)  # metadata row still imported
-        self.assertIn('WENQU_LEGACY_UPLOADS_DIR is not set', self.err.getvalue())
+        self.assertIn('HONGWEN_LEGACY_UPLOADS_DIR is not set', self.err.getvalue())
         self.assertEqual(self._stored_files(), [])
 
     def test_malformed_legacy_json_aborts_atomically(self):

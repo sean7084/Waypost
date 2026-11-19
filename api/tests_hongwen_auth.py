@@ -1,9 +1,9 @@
-"""HTTP-level tests for the Wenqu customer auth surface and its DRF glue.
+"""HTTP-level tests for the Hongwen customer auth surface and its DRF glue.
 
-Covers api.wenqu_auth_views (wx_login / update_wx_user / get-phone stub),
-api.wenqu_authentication (tv enforcement + customer permissions) and the staff
+Covers api.hongwen_auth_views (wx_login / update_wx_user / get-phone stub),
+api.hongwen_authentication (tv enforcement + customer permissions) and the staff
 directory exclusion in api.views.UserViewSet. Service-level logic is tested in
-wenqu/tests.py.
+hongwen/tests.py.
 """
 from unittest import mock
 
@@ -16,45 +16,45 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import WeChatIdentity
 from accounts.wechat import WeChatAuthError
-from api.wenqu_authentication import (
-    CanChat, CanUpload, WenquCustomerPermission, WenquJWTAuthentication,
+from api.hongwen_authentication import (
+    CanChat, CanUpload, HongwenCustomerPermission, HongwenJWTAuthentication,
 )
-from wenqu.models import WenquProfile
+from hongwen.models import HongwenProfile
 
 User = get_user_model()
 
-_WENQU_APPID = 'wenqu-test-appid'
+_HONGWEN_APPID = 'hongwen-test-appid'
 _OPENID = 'o' * 28
 _FAKE_SESSION = {'openid': _OPENID, 'unionid': '', 'session_key': 'never-persisted'}
-_WX_LOGIN_URL = '/api/v1/wenqu/auth/wx_login'
-_UPDATE_URL = '/api/v1/wenqu/auth/update_wx_user'
-_GET_PHONE_URL = '/api/v1/wenqu/auth/get-phone'
+_WX_LOGIN_URL = '/api/v1/hongwen/auth/wx_login'
+_UPDATE_URL = '/api/v1/hongwen/auth/update_wx_user'
+_GET_PHONE_URL = '/api/v1/hongwen/auth/get-phone'
 
 
 def _make_customer(username='wx_customer', openid=_OPENID, active=True):
     user = User.objects.create_user(username=username, password='pw')
     user.is_active = active
     user.save()
-    profile = WenquProfile.objects.create(user=user, external_id=username)
-    WeChatIdentity.objects.create(user=user, appid=_WENQU_APPID, openid=openid)
+    profile = HongwenProfile.objects.create(user=user, external_id=username)
+    WeChatIdentity.objects.create(user=user, appid=_HONGWEN_APPID, openid=openid)
     return user, profile
 
 
 def _access_token(user, tv=None):
     refresh = RefreshToken.for_user(user)
     access = refresh.access_token
-    profile = getattr(user, 'wenqu_profile', None)
+    profile = getattr(user, 'hongwen_profile', None)
     if profile is not None:
         access['tv'] = profile.token_version if tv is None else tv
     return str(access)
 
 
-@override_settings(WECHAT_WENQU_APPID=_WENQU_APPID, WECHAT_WENQU_APPSECRET='wenqu-secret')
-class WenquAuthEndpointTests(TestCase):
+@override_settings(WECHAT_HONGWEN_APPID=_HONGWEN_APPID, WECHAT_HONGWEN_APPSECRET='hongwen-secret')
+class HongwenAuthEndpointTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
-    @mock.patch('wenqu.services.auth.code2session', return_value=_FAKE_SESSION)
+    @mock.patch('hongwen.services.auth.code2session', return_value=_FAKE_SESSION)
     def test_wx_login_new_user(self, _m):
         res = self.client.post(_WX_LOGIN_URL, {'code': 'wx-code'}, format='json')
         self.assertEqual(res.status_code, 200, res.content)
@@ -64,7 +64,7 @@ class WenquAuthEndpointTests(TestCase):
         self.assertIn('refresh', res.data)
         self.assertTrue(User.objects.filter(username=f'wx_{_OPENID[:12]}').exists())
 
-    @mock.patch('wenqu.services.auth.code2session', return_value=_FAKE_SESSION)
+    @mock.patch('hongwen.services.auth.code2session', return_value=_FAKE_SESSION)
     def test_wx_login_existing_user(self, _m):
         user, _profile = _make_customer(username=f'wx_{_OPENID[:12]}')
         res = self.client.post(_WX_LOGIN_URL, {'code': 'wx-code'}, format='json')
@@ -76,19 +76,19 @@ class WenquAuthEndpointTests(TestCase):
         res = self.client.post(_WX_LOGIN_URL, {}, format='json')
         self.assertEqual(res.status_code, 400)
 
-    @mock.patch('wenqu.services.auth.code2session', side_effect=WeChatAuthError('bad code'))
+    @mock.patch('hongwen.services.auth.code2session', side_effect=WeChatAuthError('bad code'))
     def test_wx_login_wechat_error(self, _m):
         res = self.client.post(_WX_LOGIN_URL, {'code': 'wx-code'}, format='json')
         self.assertEqual(res.status_code, 400)
 
-    @mock.patch('wenqu.services.auth.code2session', return_value=_FAKE_SESSION)
+    @mock.patch('hongwen.services.auth.code2session', return_value=_FAKE_SESSION)
     def test_wx_login_conflict(self, _m):
         staff = User.objects.create_user(username='staff', password='pw')
-        WeChatIdentity.objects.create(user=staff, appid=_WENQU_APPID, openid=_OPENID)
+        WeChatIdentity.objects.create(user=staff, appid=_HONGWEN_APPID, openid=_OPENID)
         res = self.client.post(_WX_LOGIN_URL, {'code': 'wx-code'}, format='json')
         self.assertEqual(res.status_code, 409)
 
-    @mock.patch('wenqu.services.auth.code2session', return_value=_FAKE_SESSION)
+    @mock.patch('hongwen.services.auth.code2session', return_value=_FAKE_SESSION)
     def test_wx_login_disabled(self, _m):
         _make_customer(username=f'wx_{_OPENID[:12]}', active=False)
         res = self.client.post(_WX_LOGIN_URL, {'code': 'wx-code'}, format='json')
@@ -131,7 +131,7 @@ class WenquAuthEndpointTests(TestCase):
     def test_get_phone_success(self):
         user, profile = _make_customer()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_access_token(user)}')
-        with mock.patch('api.wenqu_auth_views.get_phone_number', return_value='13800138000') as phone_mock:
+        with mock.patch('api.hongwen_auth_views.get_phone_number', return_value='13800138000') as phone_mock:
             res = self.client.post(_GET_PHONE_URL, {'code': 'phone-code'}, format='json')
         self.assertEqual(res.status_code, 200, res.content)
         self.assertEqual(res.data, {'status': 'success', 'phone': '13800138000'})
@@ -144,18 +144,18 @@ class WenquAuthEndpointTests(TestCase):
         self.assertEqual(res.status_code, 400)
 
     def test_get_phone_wechat_refused(self):
-        from wenqu.services.auth import WenquPhoneError
+        from hongwen.services.auth import HongwenPhoneError
         user, _profile = _make_customer()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_access_token(user)}')
-        with mock.patch('api.wenqu_auth_views.get_phone_number', side_effect=WenquPhoneError('获取手机号失败')):
+        with mock.patch('api.hongwen_auth_views.get_phone_number', side_effect=HongwenPhoneError('获取手机号失败')):
             res = self.client.post(_GET_PHONE_URL, {'code': 'bad'}, format='json')
         self.assertEqual(res.status_code, 400)
 
     def test_get_phone_token_unavailable(self):
-        from wenqu.services.auth import WenquPhoneUnavailable
+        from hongwen.services.auth import HongwenPhoneUnavailable
         user, _profile = _make_customer()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_access_token(user)}')
-        with mock.patch('api.wenqu_auth_views.get_phone_number', side_effect=WenquPhoneUnavailable('微信配置缺失')):
+        with mock.patch('api.hongwen_auth_views.get_phone_number', side_effect=HongwenPhoneUnavailable('微信配置缺失')):
             res = self.client.post(_GET_PHONE_URL, {'code': 'phone-code'}, format='json')
         self.assertEqual(res.status_code, 500)
 
@@ -164,10 +164,10 @@ class WenquAuthEndpointTests(TestCase):
         self.assertEqual(res.status_code, 401)
 
 
-class WenquJWTAuthenticationTests(TestCase):
+class HongwenJWTAuthenticationTests(TestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
-        self.auth = WenquJWTAuthentication()
+        self.auth = HongwenJWTAuthentication()
 
     def _authenticate(self, token):
         request = self.factory.get('/', HTTP_AUTHORIZATION=f'Bearer {token}')
@@ -201,7 +201,7 @@ class WenquJWTAuthenticationTests(TestCase):
         self.assertEqual(authenticated, user)
 
 
-class WenquPermissionTests(TestCase):
+class HongwenPermissionTests(TestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
 
@@ -212,12 +212,12 @@ class WenquPermissionTests(TestCase):
 
     def test_customer_permission_allows_profile_user(self):
         user, _profile = _make_customer()
-        self.assertTrue(WenquCustomerPermission().has_permission(self._request(user), None))
+        self.assertTrue(HongwenCustomerPermission().has_permission(self._request(user), None))
 
     def test_customer_permission_denies_staff_and_anonymous(self):
         staff = User.objects.create_user(username='staff', password='pw')
-        self.assertFalse(WenquCustomerPermission().has_permission(self._request(staff), None))
-        self.assertFalse(WenquCustomerPermission().has_permission(self._request(AnonymousUser()), None))
+        self.assertFalse(HongwenCustomerPermission().has_permission(self._request(staff), None))
+        self.assertFalse(HongwenCustomerPermission().has_permission(self._request(AnonymousUser()), None))
 
     def test_can_chat_respects_flag(self):
         user, profile = _make_customer()
@@ -235,7 +235,7 @@ class WenquPermissionTests(TestCase):
 
 
 class StaffDirectoryApiTests(TestCase):
-    def test_user_list_excludes_wenqu_customers(self):
+    def test_user_list_excludes_hongwen_customers(self):
         admin = User.objects.create_user(username='admin', password='pw', is_superuser=True)
         User.objects.create_user(username='staffer', password='pw')
         _make_customer(username='wx_external')

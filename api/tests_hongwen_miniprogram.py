@@ -1,6 +1,6 @@
-"""Static contract scan for the 问渠 native WeChat mini program client.
+"""Static contract scan for the 泓问 native WeChat mini program client.
 
-PR6 replaced the grafted uni-app/Vue client in ``wenqu-miniprogram/`` with a
+PR6 replaced the grafted uni-app/Vue client in ``hongwen-miniprogram/`` with a
 native WXML/WXSS/JS/JSON mini program. The WeChat runtime cannot be exercised
 from CI (no DevTools, no wx.login, no recorder), so the guarantee that the client
 still speaks the PR4 API contract has to be static: read the shipped source and
@@ -13,7 +13,7 @@ breaking the client. Modelled on ``tests/test_repo_hygiene.py``: SimpleTestCase,
 regex over the tree, no database, milliseconds to run.
 
 What this does NOT cover (must be hand-tested in WeChat DevTools / on a device,
-see wenqu-miniprogram/README.md): wx.login, profile/phone authorization, the
+see hongwen-miniprogram/README.md): wx.login, profile/phone authorization, the
 recorder meter, TTS playback, and the custom navigation-bar layout.
 """
 import json
@@ -24,7 +24,7 @@ from django.test import SimpleTestCase
 from django.urls import reverse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-CLIENT_DIR = BASE_DIR / "wenqu-miniprogram"
+CLIENT_DIR = BASE_DIR / "hongwen-miniprogram"
 
 APP_JSON = CLIENT_DIR / "app.json"
 PROJECT_CONFIG = CLIENT_DIR / "project.config.json"
@@ -42,9 +42,9 @@ CHAT_WXML = CLIENT_DIR / "pages" / "chat" / "chat.wxml"
 INDEX_WXML = CLIENT_DIR / "pages" / "index" / "index.wxml"
 CI_JS = CLIENT_DIR / "scripts" / "ci.js"
 
-WENQU_APPID = "wxd152caad9f9c76ef"
-NAMESPACE_PREFIX = "/api/v1/wenqu"
-BRAND = "问渠"
+HONGWEN_APPID = "wxd152caad9f9c76ef"
+NAMESPACE_PREFIX = "/api/v1/hongwen"
+BRAND = "泓问"
 
 # Directories that are not part of the shipped client.
 SKIPPED_DIR_NAMES = {"node_modules", ".git", "__pycache__", "coverage"}
@@ -112,7 +112,7 @@ def _client_sources(suffixes):
 def _namespace_path(route_name, **kwargs):
     """Backend route -> the path the client appends to API_BASE."""
     url = reverse(route_name, kwargs=kwargs or None)
-    assert url.startswith(NAMESPACE_PREFIX), f"{route_name} moved out of the wenqu namespace: {url}"
+    assert url.startswith(NAMESPACE_PREFIX), f"{route_name} moved out of the hongwen namespace: {url}"
     return url[len(NAMESPACE_PREFIX):]
 
 
@@ -120,7 +120,7 @@ class NativeStructureTests(SimpleTestCase):
     """The client must be a native mini program, not a compiled uni-app bundle."""
 
     def test_client_directory_exists(self):
-        self.assertTrue(CLIENT_DIR.is_dir(), "wenqu-miniprogram/ disappeared")
+        self.assertTrue(CLIENT_DIR.is_dir(), "hongwen-miniprogram/ disappeared")
         for name in ("app.js", "app.json", "app.wxss", "sitemap.json"):
             self.assertTrue((CLIENT_DIR / name).is_file(), f"missing {name}")
 
@@ -180,7 +180,7 @@ class NativeStructureTests(SimpleTestCase):
 
     def test_project_config_targets_the_native_root(self):
         config = _json(PROJECT_CONFIG)
-        self.assertEqual(config["appid"], WENQU_APPID)
+        self.assertEqual(config["appid"], HONGWEN_APPID)
         self.assertEqual(config["compileType"], "miniprogram")
         self.assertIn(config["miniprogramRoot"], ("./", "."))
         self.assertIn(BRAND, config["description"])
@@ -199,19 +199,19 @@ class ApiContractTests(SimpleTestCase):
 
     def test_client_paths_match_backend_routes(self):
         cases = [
-            ("wenqu-wx-login", {}, "'/auth/wx_login'"),
-            ("wenqu-update-wx-user", {}, "'/auth/update_wx_user'"),
-            ("wenqu-get-phone", {}, "'/auth/get-phone'"),
-            ("wenqu-chatbot", {}, "`/chatbot"),
-            ("wenqu-chat-sessions", {}, "'/chat/sessions'"),
-            ("wenqu-chat", {}, "'/chat'"),
-            ("wenqu-chat-stream", {}, "'/chat/stream'"),
-            ("wenqu-chat-regenerate", {}, "'/chat/regenerate'"),
-            ("wenqu-chat-regenerate-stream", {}, "'/chat/regenerate/stream'"),
-            ("wenqu-file-upload", {}, "'/files/upload'"),
-            ("wenqu-transcribe", {}, "'/transcribe'"),
-            ("wenqu-speak", {}, "'/speak'"),
-            ("wenqu-speak-stream", {}, "'/speak/stream'"),
+            ("hongwen-wx-login", {}, "'/auth/wx_login'"),
+            ("hongwen-update-wx-user", {}, "'/auth/update_wx_user'"),
+            ("hongwen-get-phone", {}, "'/auth/get-phone'"),
+            ("hongwen-chatbot", {}, "`/chatbot"),
+            ("hongwen-chat-sessions", {}, "'/chat/sessions'"),
+            ("hongwen-chat", {}, "'/chat'"),
+            ("hongwen-chat-stream", {}, "'/chat/stream'"),
+            ("hongwen-chat-regenerate", {}, "'/chat/regenerate'"),
+            ("hongwen-chat-regenerate-stream", {}, "'/chat/regenerate/stream'"),
+            ("hongwen-file-upload", {}, "'/files/upload'"),
+            ("hongwen-transcribe", {}, "'/transcribe'"),
+            ("hongwen-speak", {}, "'/speak'"),
+            ("hongwen-speak-stream", {}, "'/speak/stream'"),
         ]
         source = _read(API_JS)
         for route_name, kwargs, literal in cases:
@@ -223,7 +223,7 @@ class ApiContractTests(SimpleTestCase):
             self.assertTrue(literal in source, f"utils/api.js never calls {expected} ({route_name})")
 
     def test_session_detail_path_is_parameterized(self):
-        expected = _namespace_path("wenqu-chat-session-detail", session_id="SID")
+        expected = _namespace_path("hongwen-chat-session-detail", session_id="SID")
         self.assertEqual(expected, "/chat/sessions/SID")
         source = _read(API_JS)
         self.assertIn("/chat/sessions/${encodeURIComponent(sessionId || '')}", source)
@@ -231,10 +231,10 @@ class ApiContractTests(SimpleTestCase):
         self.assertIn("method: 'PATCH'", source)
         self.assertIn("method: 'DELETE'", source)
 
-    def test_env_bases_are_the_wenqu_namespace(self):
+    def test_env_bases_are_the_hongwen_namespace(self):
         source = _read(ENV_JS)
-        self.assertIn("http://127.0.0.1:8000/api/v1/wenqu", source)
-        self.assertIn("https://waypost.istore-tech.cn/api/v1/wenqu", source)
+        self.assertIn("http://127.0.0.1:8000/api/v1/hongwen", source)
+        self.assertIn("https://waypost.istore-tech.cn/api/v1/hongwen", source)
         self.assertIn("const ENV = 'dev'", source, "a fresh clone must not talk to production")
 
     def test_refresh_uses_the_shared_simplejwt_route_outside_the_namespace(self):
@@ -335,7 +335,7 @@ class ApiContractTests(SimpleTestCase):
 
 
 class BrandTests(SimpleTestCase):
-    """Every customer-facing surface says 问渠, never helpdesk."""
+    """Every customer-facing surface says 泓问, never helpdesk."""
 
     def test_navigation_and_pages_are_branded(self):
         self.assertEqual(_json(APP_JSON)["window"]["navigationBarTitleText"], BRAND)
@@ -348,7 +348,7 @@ class BrandTests(SimpleTestCase):
         for path in _client_sources({".wxml", ".wxss", ".json", ".md"}):
             if "helpdesk" in _read(path).lower():
                 offenders.append(_relative(path))
-        self.assertEqual(offenders, [], "helpdesk branding leaked into the 问渠 client: " + ", ".join(offenders))
+        self.assertEqual(offenders, [], "helpdesk branding leaked into the 泓问 client: " + ", ".join(offenders))
 
     def test_readme_documents_the_native_workflow(self):
         readme = _read(CLIENT_DIR / "README.md")
@@ -411,15 +411,15 @@ class CompressionTests(SimpleTestCase):
 
 
 class CiScriptTests(SimpleTestCase):
-    """preview/upload must be runnable locally with the wenqu upload key."""
+    """preview/upload must be runnable locally with the hongwen upload key."""
 
-    def test_ci_reads_the_wenqu_private_key(self):
+    def test_ci_reads_the_hongwen_private_key(self):
         source = _read(CI_JS)
-        self.assertIn("WECHAT_WENQU_CI_PRIVATE_KEY", source)
+        self.assertIn("WECHAT_HONGWEN_CI_PRIVATE_KEY", source)
         self.assertIn("miniprogram-ci", source)
         self.assertIn("ci.preview", source)
         self.assertIn("ci.upload", source)
-        self.assertIn(WENQU_APPID, source)
+        self.assertIn(HONGWEN_APPID, source)
 
     def test_ci_ignores_node_tooling(self):
         source = _read(CI_JS)
