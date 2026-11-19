@@ -1,10 +1,13 @@
 # Waypost - Changelog
 
-## Unreleased — Hongwen (泓问) brand launch and helpdesk merge
+## Release Notes v0.4.0
 
-**Branch:** `feat/hongwen-migration` (PR1–7). **Not yet released or deployed.** The standalone
-FastAPI Helpdesk is merged into Waypost as the **Hongwen (泓问)** customer helpdesk, and the
-public hostname prepares to move `ams.istore-tech.cn` → `waypost.istore-tech.cn`.
+**Version:** 0.4.0
+**Release Date:** November 19, 2026
+**Focus:** Hongwen (泓问) customer helpdesk merged into Waypost; brand launch and ams→waypost domain cutover
+
+The standalone FastAPI Helpdesk ships inside Waypost as the **Hongwen (泓问)** customer
+helpdesk; the public hostname moves `ams.istore-tech.cn` → `waypost.istore-tech.cn`.
 
 ### Highlights
 
@@ -55,6 +58,20 @@ public hostname prepares to move `ams.istore-tech.cn` → `waypost.istore-tech.c
    the app has not shipped to production, the initial migration was edited in place (no
    `RenameModel`): default DB tables and auto-generated index names now derive from the
    `hongwen` app label.
+
+### Migration Files Added
+
+1. `accounts/migrations/0024_llmcallrecord.py`
+2. `hongwen/migrations/0001_initial.py`
+3. `hongwen/migrations/0002_pgvector.py`
+4. `inspections/migrations/0006_remove_photo_zip.py`
+5. `inspections/migrations/0007_remove_storeinspection_inspections_locatio_f449d8_idx_and_more.py`
+
+### Validation
+
+- Full suite green on CI (pgvector PG); `manage.py test hongwen api` 434 OK locally; ruff + repo/design guards pass; coverage ≥ 57.
+- DevTools automator harness: 10 PASS / 1 MANUAL (real-device recorder), `hongwen-miniprogram/tests/automation/RESULTS.md`.
+- Pre-deploy: prod inspections duplicate-triple check = 0 (126 rows); backup `db_2026-11-19-232917.dump`.
 
 ---
 

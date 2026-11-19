@@ -274,11 +274,11 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 
 | Version | Date | Focus |
 |---------|------|-------|
+| v0.4.0 | November 2026 | Hongwen (泓问) customer helpdesk merged into Waypost — native WeChat mini program, RAG chat with SSE, guided triage, staff admin; ams→waypost domain cutover |
 | v0.3.0 | November 2026 | Quotation Excel import with per-line review and rollback, RFQ LLM spend metering/cap, gated OSS media backend, deploy checkpoint + runner-drift hardening, debug-only security guards |
 | v0.2.0 | October 2026 | Store-inspection module + WeChat mini program, Waypost rebrand, token-driven UI with full zh-cn coverage, containerised production deployment |
-| v0.1.7 | May 2026 | Separate ServiceItem catalog + direct dispatch + hardware-only asset cleanup |
 
-### Current Status (v0.3.0)
+### Current Status (v0.4.0)
 
 #### Fully Operational Features
 
@@ -295,6 +295,7 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 - Asset list customization (column visibility, filtering)
 - **Store Inspection Module** - New `inspections` app: batches, stores, devices, Wi-Fi weak points, sign-off logs, AM/PM slot scheduling, field-engineer assignment, review and bundle export. Replaces the legacy `audit` module, which is retired and deleted
 - **WeChat Mini Program** - Offline-first client for store inspections against a dedicated REST API with WeChat JWT auth, plus field-audit tooling, Chinese-name login and blind count
+- **Hongwen (泓问) Customer Helpdesk** - The standalone FastAPI helpdesk merged into Waypost as the `hongwen` app: native WeChat mini program (`hongwen-miniprogram/`), RAG knowledge-base chat with synchronous SSE streaming, guided troubleshooting triage, voice transcription/TTS, image upload, and staff admin pages under `/hongwen/`. Split identity (`accounts.User` + appid-scoped `WeChatIdentity` + `HongwenProfile`), customer API under `/api/v1/hongwen/`, pgvector embeddings, idempotent legacy data import (`import_helpdesk`)
 - **Waypost Rebrand** - Renamed from HengJi AMS across the UI, docs and templates; conda replaced by `.venv`; new navbar/login logo and favicon
 - **Token-driven Design System** - Design tokens instead of hard-coded hex colors (enforced by a conformance test), priority+ navigation overflow, and a segmented language switcher
 - **Complete zh-cn Coverage** - Full Simplified Chinese translation plus per-locale date and number formats
@@ -377,6 +378,25 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 - `products.ProductPrice` - Unified price list for hardware models and service items
 - `assets.AssetActivityLog` / `assets.AssetFieldChange` - Field-level asset change tracking (replaces the retired `audit` app)
 - `inspections.*` - Store inspections: batches, stores, devices, Wi-Fi weak points, sign-off logs
+
+### v0.4.0 Migration Notes
+
+**Read this before deploying.** v0.4.0 ships the prepared-but-untagged v0.3.0 migrations
+plus the new `hongwen` app:
+
+- `hongwen/0001_initial` — creates the Hongwen customer-helpdesk tables (additive).
+- `hongwen/0002_pgvector` — vendor-guarded `CREATE EXTENSION vector` (PostgreSQL only;
+  SQLite skips). Requires the `pgvector/pgvector:pg16` image (compose updated from
+  `postgres:16`; the data volume persists across the image switch).
+- `accounts/0024_llmcallrecord`, `inspections/0006_remove_photo_zip`,
+  `inspections/0007_remove_storeinspection_inspections_locatio_f449d8_idx_and_more` —
+  as documented under v0.3.0 below. **inspections/0007 needs the duplicate-triple dry run
+  first** (prod pre-deploy check = 0 duplicates across 126 rows, verified).
+
+Rollback for the inspections data is Tier 3 — restore the pre-deploy `pg_dump`
+(`db_2026-11-19-232917.dump`) — not `migrate <app> zero`. The runner-drift gate refuses to
+deploy if the host's `docker/bin/*.sh` differs from the tag (re-dispatch with
+`reinstall_runner=true`).
 
 ### v0.3.0 Migration Notes
 
