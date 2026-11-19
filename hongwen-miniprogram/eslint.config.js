@@ -63,6 +63,26 @@ module.exports = [
     rules: SHARED_RULES,
   },
   {
+    // DevTools automator harness: Node tooling that also references mini program
+    // globals (wx / getCurrentPages) inside automator evaluate() callbacks.
+    files: ['tests/automation/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: {
+        ...COMMONJS_GLOBALS,
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        wx: 'readonly',
+        getApp: 'readonly',
+        getCurrentPages: 'readonly',
+      },
+    },
+    rules: SHARED_RULES,
+  },
+  {
     // vitest suites load the CommonJS utils through node:module createRequire,
     // so they are ESM files with Node globals rather than mini program globals.
     files: ['**/*.test.js', '**/*.mjs'],

@@ -13,6 +13,7 @@
   "devDependencies": {
     "@eslint/js": "^9.9.0",
     "eslint": "^9.9.0",
+    "miniprogram-automator": "^0.13.0",
     "miniprogram-ci": "^2.1.31",
     "vitest": "^4.1.9"
   }
