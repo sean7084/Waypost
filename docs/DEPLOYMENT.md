@@ -922,18 +922,18 @@ comparison, the cutover edit, the verification, the 30 days the `waypost_pg_data
 dated follow-up that may retire the `db` service — is [`RDS_MIGRATION.md`](RDS_MIGRATION.md). **Not yet
 performed:** no RDS instance exists.
 
-### 2.14 Wenqu (问渠) deployment
+### 2.14 Hongwen (泓问) deployment
 
-Wenqu is the merged customer helpdesk (the standalone FastAPI "Helpdesk" application,
-rebranded 问渠). It ships **inside this application**: `wenqu/` models + services,
-`api/wenqu_*` customer endpoints with SSE streaming, the staff admin pages under
-`/wenqu/`, and the native WeChat client in `wenqu-miniprogram/`. There is no second
+Hongwen is the merged customer helpdesk (the standalone FastAPI "Helpdesk" application,
+rebranded 泓问). It ships **inside this application**: `hongwen/` models + services,
+`api/hongwen_*` customer endpoints with SSE streaming, the staff admin pages under
+`/hongwen/`, and the native WeChat client in `hongwen-miniprogram/`. There is no second
 container to deploy. The architectural decisions (account reuse, embeddings, SSE,
 private media) are ADR-0021…0024 in
 [`ARCHITECTURAL_DECISION_RECORDS.md`](ARCHITECTURAL_DECISION_RECORDS.md).
 
 **Database.** The compose `db` service is already `pgvector/pgvector:pg16`
-(postgres:16 + the `vector` extension; `docker-compose.yml`). `wenqu/migrations/0002_pgvector`
+(postgres:16 + the `vector` extension; `docker-compose.yml`). `hongwen/migrations/0002_pgvector`
 runs `CREATE EXTENSION IF NOT EXISTS vector` on PostgreSQL and is a no-op on SQLite.
 Embeddings are stored as `JSONField` lists and cast to `vector` at query time
 (`(embedding::text)::vector <=> CAST(%s AS vector)`), so the same code runs on both
@@ -941,11 +941,11 @@ backends; an ivfflat index needs a real `vector` column and is deferred as perfo
 debt (ADR-0022). Nothing else to provision.
 
 **Private media and KB sources.** Customer uploads, TTS audio and KB attachments live
-in `WENQU_PRIVATE_MEDIA_ROOT` (compose: `/app/private_media`, bind-mounted from
+in `HONGWEN_PRIVATE_MEDIA_ROOT` (compose: `/app/private_media`, bind-mounted from
 `${WAYPOST_DATA_DIR}/private`) — deliberately **outside** `MEDIA_ROOT`, because nginx
 serves `/media/` world-readable and these files must only leave through authenticated
 `FileResponse` views. No nginx location and no www-data ACL is needed for them. KB
-*source documents* live in `WENQU_KB_SOURCES_DIR` (compose: `/app/kb_sources`, bind
+*source documents* live in `HONGWEN_KB_SOURCES_DIR` (compose: `/app/kb_sources`, bind
 mount `${WAYPOST_DATA_DIR}/kb_sources`); `KBDocument.path` is relative to that root.
 Both directories are created by the compose mount; ownership follows the rootless
 daemon user (`deploy`), same as `media/` (§2.3).
@@ -955,7 +955,7 @@ daemon user (`deploy`), same as `media/` (§2.3).
 gthread for the whole model turn; 24 threads keep a handful of concurrent customers
 from starving the rest of the API. ASGI was considered and rejected (ADR-0023).
 nginx already carries the three unbuffered SSE locations
-(`/api/v1/wenqu/chat/stream`, `/chat/regenerate/stream`, `/speak/stream`, PR4) with
+(`/api/v1/hongwen/chat/stream`, `/chat/regenerate/stream`, `/speak/stream`, PR4) with
 `proxy_buffering off` and `proxy_read_timeout 300s` matching Gunicorn's `--timeout`.
 
 **Environment.** Everything below is read by `waypost/settings.py`; provider names
@@ -965,22 +965,22 @@ actually need is missing.
 
 | Variable | Required | Notes |
 |---|---|---|
-| `WECHAT_WENQU_APPID` | **prod fail-fast** | Wenqu mini program AppID: `wxd152caad9f9c76ef`. Separate from the staff inspection client's `WECHAT_MINI_APPID`; scopes `WeChatIdentity` rows |
-| `WECHAT_WENQU_APPSECRET` | **prod fail-fast** | From the MP console (开发管理 → 开发设置). Server-side only |
-| `WECHAT_WENQU_CI_PRIVATE_KEY` | CI/release only | **Not read by Django.** PATH to `private.wxd152caad9f9c76ef.key` for `wenqu-miniprogram/scripts/ci.js` (local upload); GitHub Actions secret holds the key CONTENTS. Legacy fallback name `WECHAT_HELPDESK_CI_PRIVATE_KEY` is still accepted by ci.js only |
-| `WENQU_PRIVATE_MEDIA_ROOT` / `WENQU_KB_SOURCES_DIR` | compose sets | `/app/private_media` / `/app/kb_sources`; dev defaults are repo-local `private_media/` / `kb_sources/` |
-| `WENQU_TRIAGE_ENABLED` | optional (true) | Gates the guided-triage engine |
-| `WENQU_REGISTRY_TTL_SECONDS` | optional (900) | TTS/ASR share registries (Redis prod, locmem dev) |
-| `WENQU_SPEAK_STREAM_IP_WINDOW_SECONDS` / `WENQU_SPEAK_STREAM_IP_MAX_HITS` | optional (900 / 30) | Blast-radius IP throttle on `/speak/stream`; the real gate is `can_chat` |
+| `WECHAT_HONGWEN_APPID` | **prod fail-fast** | Hongwen mini program AppID: `wxd152caad9f9c76ef`. Separate from the staff inspection client's `WECHAT_MINI_APPID`; scopes `WeChatIdentity` rows |
+| `WECHAT_HONGWEN_APPSECRET` | **prod fail-fast** | From the MP console (开发管理 → 开发设置). Server-side only |
+| `WECHAT_HONGWEN_CI_PRIVATE_KEY` | CI/release only | **Not read by Django.** PATH to `private.wxd152caad9f9c76ef.key` for `hongwen-miniprogram/scripts/ci.js` (local upload); GitHub Actions secret holds the key CONTENTS. Legacy fallback name `WECHAT_HELPDESK_CI_PRIVATE_KEY` is still accepted by ci.js only |
+| `HONGWEN_PRIVATE_MEDIA_ROOT` / `HONGWEN_KB_SOURCES_DIR` | compose sets | `/app/private_media` / `/app/kb_sources`; dev defaults are repo-local `private_media/` / `kb_sources/` |
+| `HONGWEN_TRIAGE_ENABLED` | optional (true) | Gates the guided-triage engine |
+| `HONGWEN_REGISTRY_TTL_SECONDS` | optional (900) | TTS/ASR share registries (Redis prod, locmem dev) |
+| `HONGWEN_SPEAK_STREAM_IP_WINDOW_SECONDS` / `HONGWEN_SPEAK_STREAM_IP_MAX_HITS` | optional (900 / 30) | Blast-radius IP throttle on `/speak/stream`; the real gate is `can_chat` |
 | `QWEN_API_KEY` | for Qwen models | Fallback name `OPENROUTER_API_KEY`. Chat/embeddings/TTS via Qwen |
 | `VOLCENGINE_API_KEY` | for Volcengine | Fallbacks `VOLCENGINE_ARK_API_KEY`, `ARK_API_KEY`. ASR/TTS/embeddings |
 | `VOLCENGINE_SPEECH_API_KEY` | optional | Falls back to `VOLCENGINE_API_KEY` |
 | `PUBLIC_API_BASE_URL` | for Volcengine file ASR | Must be a public HTTPS base the provider can fetch: `https://waypost.istore-tech.cn`. Loopback/private hosts are refused |
-| `MODERATION_ENABLED` / `MODERATION_FAIL_OPEN` | optional (true / true) | WeChat msgSecCheck/imgSecCheck with the wenqu appid; no creds → checks skipped |
+| `MODERATION_ENABLED` / `MODERATION_FAIL_OPEN` | optional (true / true) | WeChat msgSecCheck/imgSecCheck with the hongwen appid; no creds → checks skipped |
 | `PASSWORD_RESET_EMAIL_ENABLED` + `SMTP_HOST/PORT/USERNAME/PASSWORD/FROM/SECURITY/TIMEOUT_SECONDS` | for customer reset email | Plain-SMTP relay, independent of Waypost's per-mailbox backend |
-| `WENQU_LEGACY_DSN` / `WENQU_LEGACY_UPLOADS_DIR` | migration window only | Legacy PG17 DSN + uploads root for `import_helpdesk` (§2.15). Empty otherwise; the command refuses to run without a DSN |
+| `HONGWEN_LEGACY_DSN` / `HONGWEN_LEGACY_UPLOADS_DIR` | migration window only | Legacy PG17 DSN + uploads root for `import_helpdesk` (§2.15). Empty otherwise; the command refuses to run without a DSN |
 
-Optional endpoint/model overrides (empty → vendor defaults / `wenqu.services.llm.model_selector`):
+Optional endpoint/model overrides (empty → vendor defaults / `hongwen.services.llm.model_selector`):
 `QWEN_EMBED_URL`, `QWEN_ASR_URL`, `QWEN_TTS_URL`, `QWEN_TTS_AUDIO_FORMAT`,
 `QWEN_TTS_SAMPLE_RATE`, `QWEN_WORKSPACE_ID`, `QWEN_DATA_INSPECTION`,
 `QWEN_INCLUDE_REASONING`, `QWEN_REFERRER`, `QWEN_TITLE`, `VOLCENGINE_ARK_BASE_URL`,
@@ -991,20 +991,20 @@ Optional endpoint/model overrides (empty → vendor defaults / `wenqu.services.l
 `QWEN_TTS_DEFAULT_VOICE`, `VOLCENGINE_TTS_DEFAULT_VOICE`, `MODERATION_SCENE`,
 `MODERATION_TIMEOUT_SECONDS`.
 
-> 🔴 **Env gap — the current root `.env` does NOT configure Wenqu auth.** It only
+> 🔴 **Env gap — the current root `.env` does NOT configure Hongwen auth.** It only
 > carries the legacy helpdesk names `WECHAT_HELPDESK_ID` and
 > `WECHAT_HELPDESK_CI_PRIVATE_KEY`, and the latter points at a key file that is not
-> present. Django reads **only** the `WECHAT_WENQU_*` names and fails fast in
+> present. Django reads **only** the `WECHAT_HONGWEN_*` names and fails fast in
 > production without them. Before the cutover, set in `/srv/waypost/app/.env`:
 >
 > ```bash
-> WECHAT_WENQU_APPID=wxd152caad9f9c76ef
-> WECHAT_WENQU_APPSECRET=<MP console → 开发管理 → 开发设置 → AppSecret>
+> WECHAT_HONGWEN_APPID=wxd152caad9f9c76ef
+> WECHAT_HONGWEN_APPSECRET=<MP console → 开发管理 → 开发设置 → AppSecret>
 > ```
 >
 > and on the release workstation, download the **actual** code-upload key file
 > `private.wxd152caad9f9c76ef.key` from the MP console (开发管理 → 开发设置 →
-> 小程序代码上传密钥) and set `WECHAT_WENQU_CI_PRIVATE_KEY=<path to that file>`.
+> 小程序代码上传密钥) and set `WECHAT_HONGWEN_CI_PRIVATE_KEY=<path to that file>`.
 > The legacy `WECHAT_HELPDESK_*` values cannot substitute: the key file they
 > reference is missing, and ci.js needs the real file (or the key contents as the
 > GitHub Actions secret).
@@ -1021,9 +1021,9 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://ams.istore-tech.cn,https://waypost.istore-te
 
 **Staff vs customers.** Legacy helpdesk admin/role users are imported as *customers*
 with their `can_*` permission bits preserved; they never become Waypost staff.
-Wenqu administration (customers, KB, playbooks) is done by existing Waypost accounts
-with `can_manage_wenqu()` (superadmin / IT administrator) through `/wenqu/`. There is
-no new "customer role" on `accounts.User` — the presence of a `WenquProfile` row is
+Hongwen administration (customers, KB, playbooks) is done by existing Waypost accounts
+with `can_manage_hongwen()` (superadmin / IT administrator) through `/hongwen/`. There is
+no new "customer role" on `accounts.User` — the presence of a `HongwenProfile` row is
 what marks a customer (ADR-0021).
 
 ### 2.15 Domain cutover runbook (ams → waypost) and the helpdesk merge
@@ -1031,8 +1031,8 @@ what marks a customer (ADR-0021).
 **You run these commands on the production host; this document does not execute
 them.** Each phase ends with an observation → conclusion table: run the command,
 compare the output, and only then move on. The hostname switch and the data merge
-are one window because the Wenqu mini program ships against `waypost.istore-tech.cn`
-(`wenqu-miniprogram/config/env.js`), and the inspection client's prod base URL has
+are one window because the Hongwen mini program ships against `waypost.istore-tech.cn`
+(`hongwen-miniprogram/config/env.js`), and the inspection client's prod base URL has
 been switched in `miniprogram/config/env.js` (it needs a re-release to reach users).
 
 Roles: `sean` owns the legacy helpdesk rootless daemon and its data; `deploy` owns
@@ -1044,8 +1044,8 @@ Host facts: ops KB `instance/waypost.md`, `instance/deployment.md`.
 1. DNS: an A record `waypost.istore-tech.cn` → `47.120.31.129` (same as ams).
 2. WeChat MP console: add `https://waypost.istore-tech.cn` to all three server-domain
    whitelists (request / uploadFile / downloadFile) for **both** mini programs
-   (inspection `wx6aafa4e05e26c068`, wenqu `wxd152caad9f9c76ef`). Keep ams listed.
-3. `.env` on the host: the `WECHAT_WENQU_*` pair, the provider keys (§2.14), and the
+   (inspection `wx6aafa4e05e26c068`, hongwen `wxd152caad9f9c76ef`). Keep ams listed.
+3. `.env` on the host: the `WECHAT_HONGWEN_*` pair, the provider keys (§2.14), and the
    two host lists above. The app refuses to boot without the WeChat pair when
    `DJANGO_DEBUG=False` — that fail-fast is the check.
 4. The legacy database must be at alembic head (0007: `token_version` +
@@ -1055,7 +1055,7 @@ Host facts: ops KB `instance/waypost.md`, `instance/deployment.md`.
 |---|---|---|
 | `dig +short waypost.istore-tech.cn` | `47.120.31.129` | DNS ready. Anything else → fix the A record first; HTTP-01 cannot pass without it |
 | `docker exec helpdesk_app alembic current` (as sean) | `0007 (head)` | Schema ready. Older → `docker exec helpdesk_app alembic upgrade head` first |
-| `grep -c WECHAT_WENQU /srv/waypost/app/.env` (as deploy) | `2` (appid+secret) | Auth configured. `0` → the next deploy will fail fast; set them now |
+| `grep -c WECHAT_HONGWEN /srv/waypost/app/.env` (as deploy) | `2` (appid+secret) | Auth configured. `0` → the next deploy will fail fast; set them now |
 
 #### Phase 1 — certificate (waypost SAN, HTTP-01)
 
@@ -1154,7 +1154,7 @@ app container for the window.
 
 ```bash
 # 1. FREEZE the legacy app (as sean). nginx keeps proxying; customers see errors
-#    until the wenqu client is released — this is the maintenance window.
+#    until the hongwen client is released — this is the maintenance window.
 docker stop helpdesk_app
 
 # 2. Legacy checkpoint = also the rollback artifact (as sean).
@@ -1181,19 +1181,19 @@ docker compose cp /srv/waypost/incoming/legacy/uploads app:/tmp/legacy-uploads
 
 # 6. DRY RUN first (as deploy). POSTGRES_PASSWORD is the value in .env.
 docker compose exec \
-  -e WENQU_LEGACY_DSN=postgresql://waypost_django:<POSTGRES_PASSWORD>@db:5432/helpdesk_legacy \
-  -e WENQU_LEGACY_UPLOADS_DIR=/tmp/legacy-uploads \
+  -e HONGWEN_LEGACY_DSN=postgresql://waypost_django:<POSTGRES_PASSWORD>@db:5432/helpdesk_legacy \
+  -e HONGWEN_LEGACY_UPLOADS_DIR=/tmp/legacy-uploads \
   app python manage.py import_helpdesk --dry-run
 
 # 7. Real run — same command without --dry-run. Ends with the per-table
 #    source-vs-imported reconciliation; every MISMATCH line must be explained.
 docker compose exec \
-  -e WENQU_LEGACY_DSN=postgresql://waypost_django:<POSTGRES_PASSWORD>@db:5432/helpdesk_legacy \
-  -e WENQU_LEGACY_UPLOADS_DIR=/tmp/legacy-uploads \
+  -e HONGWEN_LEGACY_DSN=postgresql://waypost_django:<POSTGRES_PASSWORD>@db:5432/helpdesk_legacy \
+  -e HONGWEN_LEGACY_UPLOADS_DIR=/tmp/legacy-uploads \
   app python manage.py import_helpdesk
 
 # 8. Spot-check (as deploy).
-docker compose exec app python manage.py shell -c "from wenqu.models import *; from accounts.models import User; print(Customer.objects.count(), WenquProfile.objects.count(), ChatSession.objects.count(), Message.objects.count(), KBDocument.objects.count(), KBChunk.objects.count(), UploadFile.objects.count())"
+docker compose exec app python manage.py shell -c "from hongwen.models import *; from accounts.models import User; print(Customer.objects.count(), HongwenProfile.objects.count(), ChatSession.objects.count(), Message.objects.count(), KBDocument.objects.count(), KBChunk.objects.count(), UploadFile.objects.count())"
 ```
 
 | Observation | Expected | Conclusion |
@@ -1211,15 +1211,15 @@ legacy pgvector text — **never recomputed** (no provider keys needed for the i
 #### Phase 4 — release the clients
 
 ```bash
-# Workstation: wenqu native client (prod base already waypost in its env.js).
-cd wenqu-miniprogram && npm run upload        # needs WECHAT_WENQU_APPID + the real CI key file
+# Workstation: hongwen native client (prod base already waypost in its env.js).
+cd hongwen-miniprogram && npm run upload        # needs WECHAT_HONGWEN_APPID + the real CI key file
 # Inspection client: miniprogram/config/env.js prod base is now waypost — build,
 # upload through its own ci.js, submit both for MP review, then release.
 ```
 
 | Observation | Expected | Conclusion |
 |---|---|---|
-| wenqu `wx.login` on a real device | `status: ok` (imported customer) or `new_user` | Auth + import aligned. `401`/error → check `WECHAT_WENQU_*` in `.env` and the MP whitelist |
+| hongwen `wx.login` on a real device | `status: ok` (imported customer) or `new_user` | Auth + import aligned. `401`/error → check `WECHAT_HONGWEN_*` in `.env` and the MP whitelist |
 | An imported customer's history | pre-merge sessions/messages visible | Natural keys matched the openid → identity → profile chain |
 | Chat reply streams token-by-token | typing effect, not one delayed blob | SSE locations + threads working. Buffered → check the nginx SSE `proxy_buffering off` blocks are the installed ones |
 | Inspection client requests | reach `waypost.istore-tech.cn` (release propagated) | Old installed versions still use ams — both names work until retirement |
@@ -1230,7 +1230,7 @@ Keep the legacy stack **stopped-but-intact for one week** (rollback below). Then
 as root, in ONE change: remove the helpdesk site **and** give waypost the
 default_server fallback the helpdesk site used to own — otherwise bare-IP requests
 land on an arbitrary block. The full procedure and the regression list are in
-[`OPERATIONS_RUNBOOK.md`](OPERATIONS_RUNBOOK.md) (Wenqu co-tenancy / Helpdesk
+[`OPERATIONS_RUNBOOK.md`](OPERATIONS_RUNBOOK.md) (Hongwen co-tenancy / Helpdesk
 retirement). Do not delete `/home/sean/helpdesk-rootless-data-v3/` or the legacy
 volumes in the same step; data retention is a separate, later decision.
 
@@ -1249,8 +1249,8 @@ curl -s -o /dev/null -w '%{http_code}\n' https://admin.helpdesk.istore-tech.cn/a
 | Observation | Expected | Conclusion |
 |---|---|---|
 | helpdesk admin login | `200` | Legacy stack serving again; the frozen data is exactly pre-merge |
-| waypost healthz | still `200` | Waypost unaffected; the wenqu client keeps working against the imported copy (two systems diverge from the freeze point — decide which is authoritative before accepting new writes on both) |
-| inspection client | ams still resolves to Waypost | No client rollback needed for the inspection app; the wenqu MP version can be reverted in the MP console if required |
+| waypost healthz | still `200` | Waypost unaffected; the hongwen client keeps working against the imported copy (two systems diverge from the freeze point — decide which is authoritative before accepting new writes on both) |
+| inspection client | ams still resolves to Waypost | No client rollback needed for the inspection app; the hongwen MP version can be reverted in the MP console if required |
 
 The Waypost-side database is **not** rolled back by this: the import is additive
 (upserts), and a Waypost release rollback follows the usual tiers
