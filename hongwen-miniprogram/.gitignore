@@ -10,6 +10,9 @@ project.private.config.json
 # miniprogram-ci preview QR (regenerated on every `npm run preview`)
 preview-qr.jpg
 
+# DevTools automator harness: generated test image (fixtures.py make-image)
+tests/automation/assets/
+
 # Local environment overrides
 .env
 .env.local
