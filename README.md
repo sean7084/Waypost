@@ -274,11 +274,11 @@ Configure `asset_prefix` on each `Company` model to control asset number generat
 
 | Version | Date | Focus |
 |---------|------|-------|
+| v0.4.1 | November 2026 | Fix Hongwen chat Chinese mojibake — force UTF-8 decoding of LLM provider responses |
 | v0.4.0 | November 2026 | Hongwen (泓问) customer helpdesk merged into Waypost — native WeChat mini program, RAG chat with SSE, guided triage, staff admin; ams→waypost domain cutover |
 | v0.3.0 | November 2026 | Quotation Excel import with per-line review and rollback, RFQ LLM spend metering/cap, gated OSS media backend, deploy checkpoint + runner-drift hardening, debug-only security guards |
-| v0.2.0 | October 2026 | Store-inspection module + WeChat mini program, Waypost rebrand, token-driven UI with full zh-cn coverage, containerised production deployment |
 
-### Current Status (v0.4.0)
+### Current Status (v0.4.1)
 
 #### Fully Operational Features
 
