@@ -23,7 +23,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.db import connection
-from django.test import TestCase, override_settings
+from django.test import TestCase, TransactionTestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -503,7 +503,13 @@ def _fake_deltas(*, preparation, regenerate=False, temperature=0.2):
     yield '世界', 'dashscope/qwen-test'
 
 
-class ChatStreamTests(_CustomerAPIMixin, TestCase):
+class ChatStreamTests(_CustomerAPIMixin, TransactionTestCase):
+    # TransactionTestCase, not TestCase: the SSE generator performs a late DB
+    # write in its ``finally`` when the client disconnects (res.close() throws
+    # GeneratorExit). Under TestCase's single wrapped transaction that late
+    # write leaves the PostgreSQL connection closed, poisoning every later test
+    # in the class ("connection already closed"). TransactionTestCase gives each
+    # test its own connection lifecycle, so the disconnect path is isolated.
     def _post_stream(self, payload=None):
         return self.client.post(
             _STREAM_URL, payload or {'type': 'text', 'content': {'text': '路由器亮红灯'}}, format='json',
