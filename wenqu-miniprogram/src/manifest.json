@@ -1,0 +1,18 @@
+{
+    "appid" : "__UNI__BF39803",
+    "name" : "helpdesk-mini",
+    "description" : "Helpdesk client for WeChat mini program",
+    "versionName" : "1.0.1",
+    "versionCode" : "2",
+    "transformPx" : false,
+    "mp-weixin" : {
+        "appid" : "wxd152caad9f9c76ef",
+        "lazyCodeLoading" : "requiredComponents",
+        "setting" : {
+            "minified" : true
+        }
+    },
+    "quickapp" : {},
+    "fallbackLocale" : "zh-Hans",
+    "locale" : "zh-Hans"
+}
